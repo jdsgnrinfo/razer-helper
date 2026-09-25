@@ -66,7 +66,9 @@ public sealed class TrayIconHost : IDisposable
     {
         if (_popup.Visible)
         {
-            _popup.Hide();
+            // Fades out first; RequestHide does nothing while a fade-out runs,
+            // so a double click cannot interrupt it.
+            _popup.RequestHide();
             return;
         }
 

@@ -4,11 +4,21 @@ namespace RazerHelper.UI.Sections;
 
 /// <summary>
 /// Base for the popup's sections: the shared look (dark, fills its grid cell,
-/// 8px gap below) and a safe way to update the UI from hardware and power
+/// a gap below; see GapBelow) and a safe way to update the UI from hardware and power
 /// callbacks, which arrive on other threads.
 /// </summary>
 internal abstract class SectionPanel : Panel
 {
+    /// <summary>
+    /// The space below every section, which sets the sections apart. The
+    /// row heights were designed around an 8px gap; the host
+    /// adds <see cref="ExtraGap"/> to each section's row for the rest.
+    /// </summary>
+    public static int GapBelow => S(14);
+
+    /// <summary>How much more room each section row needs than its original 8px gap.</summary>
+    public static int ExtraGap => GapBelow - S(8);
+
     // Post through the UI thread's context instead of Control.BeginInvoke,
     // which needs a window handle. A tray popup has none until it is first
     // shown, and power events can arrive long before that.
@@ -18,7 +28,7 @@ internal abstract class SectionPanel : Panel
     {
         BackColor = BackgroundColor;
         Dock = DockStyle.Fill;
-        Margin = S(new Padding(0, 0, 0, 8));
+        Margin = new Padding(0, 0, 0, GapBelow);
         Padding = Padding.Empty;
 
         // Read here, not in a field initializer: those run before the Control

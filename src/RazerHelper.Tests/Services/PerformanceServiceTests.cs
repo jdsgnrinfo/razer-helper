@@ -47,6 +47,20 @@ public class PerformanceServiceTests
     }
 
     [Fact]
+    public void ApplyProfile_Gaming_WritesByteOneToBothZones()
+    {
+        // Gaming is wire byte 1, as a Blade 15 Base (2020) reads it back.
+        var (ec, service) = Create(Balanced);
+
+        var state = service.ApplyProfile(new PowerProfile(PerformanceMode.Gaming));
+
+        Assert.Equal(PerformanceMode.Gaming, state.Mode);
+        Assert.Equal(
+            ["0D02:01010100", "0D02:01020100"],
+            ec.Writes.Select(Describe));
+    }
+
+    [Fact]
     public void ReadState_InCustom_AlsoReadsTheBoostLevels()
     {
         var (_, service) = Create(Custom, cpu: 2, gpu: 1);
@@ -417,5 +431,75 @@ public class PerformanceServiceTests
 
         Assert.Equal(PerformanceMode.Custom, state.Mode);
         Assert.Equal(CpuBoost.High, applied.Cpu);
+    }
+
+    // ---- Manual fan method (Blade 15 Base 2020) -------------------------------
+
+    private static (FakeEc Ec, PerformanceService Service) CreateManual(byte mode)
+    {
+        var ec = new FakeEc();
+        ec.SetBothZones(mode);
+        return (ec, new PerformanceService(ec, MaxFanMethod.ManualFan));
+    }
+
+    [Fact]
+    public void ManualMaxFan_SendsTheBytesCheckedOnTheLaptop()
+    {
+        // Balanced, both fans manual at 7000 RPM, above their ceiling so they
+        // run at full power (5000 already made a Blade 15 Base (2020) audibly
+        // spin up). The mode itself is left alone.
+        var (ec, service) = CreateManual(Balanced);
+
+        var state = service.SetMaxFan(true);
+
+        Assert.Equal(
+            ["0D02:01010001", "0D01:010146", "0D02:01020001", "0D01:010246"],
+            ec.Writes.Select(Describe));
+        Assert.True(state.MaxFan);
+        Assert.Equal(PerformanceMode.Balanced, state.Mode);
+    }
+
+    [Fact]
+    public void ManualMaxFan_Off_PutsBothFansBackOnAutomatic()
+    {
+        var (ec, service) = CreateManual(Balanced);
+        service.SetMaxFan(true);
+        ec.Log.Clear();
+
+        var state = service.SetMaxFan(false);
+
+        Assert.Equal(["0D02:01010000", "0D02:01020000"], ec.Writes.Select(Describe));
+        Assert.False(state.MaxFan);
+    }
+
+    [Fact]
+    public void ManualMaxFan_IsReadInModesOtherThanCustom()
+    {
+        var (ec, service) = CreateManual(Balanced);
+        ec.ZoneFanMode[0] = 1;
+        ec.ZoneFanMode[1] = 1;
+
+        Assert.True(service.ReadState().MaxFan);
+    }
+
+    [Fact]
+    public void ManualMaxFan_IsNeverTurnedOnInSilent()
+    {
+        var (ec, service) = CreateManual(Silent);
+
+        Assert.Throws<InvalidOperationException>(() => service.SetMaxFan(true));
+        Assert.Empty(ec.Writes);
+    }
+
+    [Fact]
+    public void ManualMaxFan_ChangingModeTurnsItOff()
+    {
+        // A mode write carries "fans automatic", so Max never outlives a mode change.
+        var (_, service) = CreateManual(Balanced);
+        service.SetMaxFan(true);
+
+        var state = service.ApplyProfile(new PowerProfile(PerformanceMode.Gaming));
+
+        Assert.False(state.MaxFan);
     }
 }

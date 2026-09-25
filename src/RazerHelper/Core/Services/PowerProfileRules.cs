@@ -12,19 +12,30 @@ internal static class PowerProfileRules
     public static bool TreatAsPluggedIn(bool? isPluggedIn) => isPluggedIn != false;
 
     /// <summary>
-    /// Like Synapse, only Balanced is offered on battery. That is Synapse
-    /// policy, not a hardware limit: the EC accepts every mode on battery.
+    /// On battery Balanced and Silent are offered (Synapse offers only
+    /// Balanced); Custom stays plugged-in only. That is policy, not a hardware
+    /// limit: the EC accepts every mode on battery.
     /// </summary>
     public static bool IsModeAllowed(PerformanceMode mode, bool pluggedIn) =>
-        pluggedIn || mode == PerformanceMode.Balanced;
+        pluggedIn || mode is PerformanceMode.Balanced or PerformanceMode.Silent;
 
     /// <summary>
-    /// Max fan speed is a Custom-only setting (the EC rejects it elsewhere), and
-    /// like Custom itself it is offered only when plugged in. Synapse also
-    /// requires CPU Boost and GPU High; this deliberately does not, yet.
+    /// Max fan speed is offered only when plugged in, like Custom. With the
+    /// controller flag it is a Custom-only setting (the EC rejects it
+    /// elsewhere); Synapse also requires CPU Boost and GPU High, which this
+    /// deliberately does not, yet. With the manual fan method it works in any
+    /// mode but Silent, which holds the fans down.
     /// </summary>
-    public static bool CanUseMaxFan(PerformanceState state, bool pluggedIn) =>
-        state.Mode == PerformanceMode.Custom && IsModeAllowed(PerformanceMode.Custom, pluggedIn);
+    public static bool CanUseMaxFan(
+        PerformanceState state,
+        bool pluggedIn,
+        MaxFanMethod method = MaxFanMethod.ControllerFlag) =>
+        pluggedIn && method switch
+        {
+            MaxFanMethod.ControllerFlag => state.Mode == PerformanceMode.Custom,
+            MaxFanMethod.ManualFan => state.Mode is PerformanceMode mode && mode != PerformanceMode.Silent,
+            _ => false
+        };
 
     /// <summary>Boost levels belong to Custom, so they follow Custom's availability.</summary>
     public static bool CanChangeBoost(PerformanceState state, bool pluggedIn) =>

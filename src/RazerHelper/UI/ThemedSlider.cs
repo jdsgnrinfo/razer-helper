@@ -34,6 +34,8 @@ internal sealed class ThemedSlider : Control
     private static readonly SolidBrush SelectedLabelBrush = new(Color.White);
     private static readonly Pen FocusRingPen = new(Color.White, 2);
     private static readonly StringFormat CenteredFormat = new() { Alignment = StringAlignment.Center };
+    private static readonly StringFormat NearFormat = new() { Alignment = StringAlignment.Near };
+    private static readonly StringFormat FarFormat = new() { Alignment = StringAlignment.Far };
 
     private readonly int _minimum;
     private readonly int _maximum;
@@ -79,6 +81,31 @@ internal sealed class ThemedSlider : Control
 
     public event EventHandler? Committed;
 
+    /// <summary>
+    /// False draws the slider like a disabled one and ignores the mouse and
+    /// keyboard, yet leaves it enabled underneath, because WinForms shows no
+    /// tooltip on a disabled control. The same approach as the unavailable
+    /// buttons, so hovering can say why it cannot be used.
+    /// </summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool Available
+    {
+        get => _available;
+        set
+        {
+            _available = value;
+            TabStop = value;
+            _dragging = false;
+            Invalidate();
+        }
+    }
+
+    private bool _available = true;
+
+    // Enabled and available: the only state in which it reacts or looks live.
+    private bool IsLive => Enabled && _available;
+
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int Value
@@ -105,7 +132,7 @@ internal sealed class ThemedSlider : Control
     {
         base.OnMouseDown(e);
 
-        if (e.Button != MouseButtons.Left || !Enabled)
+        if (e.Button != MouseButtons.Left || !IsLive)
             return;
 
         Focus();
@@ -135,6 +162,9 @@ internal sealed class ThemedSlider : Control
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+
+        if (!IsLive)
+            return;
 
         var target = e.KeyCode switch
         {
@@ -192,7 +222,7 @@ internal sealed class ThemedSlider : Control
         graphics.Clear(BackColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var accent = Enabled ? AccentBrush : DisabledBrush;
+        var accent = IsLive ? AccentBrush : DisabledBrush;
         var thumbX = XAt(_value);
 
         // Track, then the filled part up to the thumb.
@@ -200,23 +230,33 @@ internal sealed class ThemedSlider : Control
         graphics.FillRectangle(TrackBrush, track);
         graphics.FillRectangle(accent, track.Left, track.Top, thumbX - track.Left, track.Height);
 
-        // One label per step, the selected one brighter.
+        // One label per step, the selected one brighter. The end labels line up
+        // with the thumb's outer edge instead of centering on their step, so
+        // they never spill past the slider (and the window's margins).
         if (_showLabels)
         {
-            var normal = Enabled ? LabelBrush : DisabledBrush;
-            var selected = Enabled ? SelectedLabelBrush : DisabledBrush;
+            var normal = IsLive ? LabelBrush : DisabledBrush;
+            var selected = IsLive ? SelectedLabelBrush : DisabledBrush;
+            var last = _stepLabels.Length - 1;
 
-            for (var index = 0; index < _stepLabels.Length; index++)
+            for (var index = 0; index <= last; index++)
             {
                 var step = _minimum + index * _step;
+
+                var (x, format) = index switch
+                {
+                    0 => (XAt(step) - ThumbRadius, NearFormat),
+                    _ when index == last => (XAt(step) + ThumbRadius, FarFormat),
+                    _ => (XAt(step), CenteredFormat)
+                };
 
                 graphics.DrawString(
                     _stepLabels[index],
                     LabelFont,
                     step == _value ? selected : normal,
-                    XAt(step),
+                    x,
                     LabelTop,
-                    CenteredFormat);
+                    format);
             }
         }
 
@@ -225,7 +265,7 @@ internal sealed class ThemedSlider : Control
 
         graphics.FillEllipse(accent, thumb);
 
-        if (Focused && Enabled)
+        if (Focused && IsLive)
             graphics.DrawEllipse(FocusRingPen, thumb);
     }
 

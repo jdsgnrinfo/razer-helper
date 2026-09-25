@@ -43,7 +43,8 @@ internal sealed class DisplaySection : SectionPanel
         // Ascending and distinct, so the second-to-last entry is the next rate down from the fastest.
         _secondHz = detectedRates.Count >= 2 ? detectedRates[^2] : null;
 
-        var header = CreateTwoColumnLayout(60F, 40F);
+        // The title is short; the detected mode ("1920x1080 | 120 Hz") needs the room.
+        var header = CreateTwoColumnLayout(40F, 60F);
         header.Dock = DockStyle.Top;
         header.Height = S(28);
 
@@ -57,7 +58,7 @@ internal sealed class DisplaySection : SectionPanel
             TextAlign = ContentAlignment.MiddleRight
         };
 
-        header.Controls.Add(CreateSectionLabel("Display"), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Display", Glyph.Display), 0, 0);
         header.Controls.Add(_statusLabel, 1, 0);
 
         var modes = OfferedModes();
@@ -216,8 +217,9 @@ internal sealed class DisplaySection : SectionPanel
     {
         var displayInfo = _displayService.GetInternalDisplayInfo();
 
+        // Just the facts beside the "Display" title: "1920x1080 | 120 Hz".
         _statusLabel.Text = displayInfo is null
-            ? "Display information not available"
-            : $"Display: {displayInfo.Width}x{displayInfo.Height} @ {displayInfo.RefreshRateHz} Hz";
+            ? "Not available"
+            : $"{displayInfo.Width}x{displayInfo.Height} | {displayInfo.RefreshRateHz} Hz";
     }
 }

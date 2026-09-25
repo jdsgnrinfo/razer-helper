@@ -1,3 +1,5 @@
+using RazerHelper.Core.Models;
+
 namespace RazerHelper.Core.Hardware;
 
 /// <summary>
@@ -23,8 +25,23 @@ internal static class RazerLaptopModels
         new RazerLaptopModel(0x02B7, "Razer Blade 16 (2024)", Verified: false),
         new RazerLaptopModel(0x02C6, "Razer Blade 16 (2025)", Verified: false),
 
-        // Reported directly by a user from their own Device Manager's
-        // Hardware Ids, not from a published table. Same caveat as above.
-        new RazerLaptopModel(0x0255, "Razer Blade 15 Base (2020)", Verified: false),
+        // Tested by a user on their own RZ09-0328: performance modes (Gaming
+        // included), Custom boost levels, lighting (its keyboard is a single
+        // zone, so no Wave) and the controller temperature work. Its firmware
+        // echoes every class 0x07
+        // read and write without acting on it, so the charge limit and the
+        // max fan flag only look accepted; max fan speed works through the
+        // older manual fan method instead (not in Silent). It has no fan speed
+        // command (0x0D88).
+        new RazerLaptopModel(
+            0x0255,
+            "Razer Blade 15 Base (2020)",
+            Verified: false,
+            HasChargeLimit: false,
+            MaxFan: MaxFanMethod.ManualFan,
+            HasGamingMode: true,
+            HasKeyboardColor: true,
+            HasFanSpeeds: false,
+            HasWaveEffect: false),
     ];
 }

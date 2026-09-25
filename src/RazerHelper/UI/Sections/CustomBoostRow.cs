@@ -4,14 +4,17 @@ using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI.Sections;
 
-/// <summary>CPU and GPU boost selectors shown while the Custom performance mode is active.</summary>
+/// <summary>
+/// CPU and GPU boost selectors shown while the Custom performance mode is
+/// active, the GPU's under the CPU's. Stacked rather than side by side so
+/// every label ("Medium" included) fits a narrow window.
+/// </summary>
 internal sealed class CustomBoostRow : TableLayoutPanel
 {
-    public static int RowHeight => S(72);
+    // Each selector: its title and a row of buttons.
+    private static int SelectorHeight => S(66);
 
-    // Clear space between the CPU and GPU groups. Without it the last CPU
-    // button and the first GPU button sit as close as buttons in one group.
-    private static int GroupGap => S(16);
+    public static int RowHeight => 2 * SelectorHeight;
 
     private readonly Dictionary<CpuBoost, Button> _cpuButtons = [];
     private readonly Dictionary<GpuBoost, Button> _gpuButtons = [];
@@ -19,26 +22,20 @@ internal sealed class CustomBoostRow : TableLayoutPanel
     public CustomBoostRow()
     {
         BackColor = BackgroundColor;
-        ColumnCount = 3;
+        ColumnCount = 1;
         Dock = DockStyle.Bottom;
         Height = RowHeight;
         Margin = Padding.Empty;
         Padding = Padding.Empty;
-        RowCount = 1;
+        RowCount = 2;
         Visible = false;
 
-        var cpuLevels = Enum.GetValues<CpuBoost>();
-        var gpuLevels = Enum.GetValues<GpuBoost>();
+        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        RowStyles.Add(new RowStyle(SizeType.Absolute, SelectorHeight));
+        RowStyles.Add(new RowStyle(SizeType.Absolute, SelectorHeight));
 
-        // Width follows the option count so every button is the same size;
-        // the gap column between the groups is a fixed width.
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F * cpuLevels.Length / (cpuLevels.Length + gpuLevels.Length)));
-        ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, GroupGap));
-        ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F * gpuLevels.Length / (cpuLevels.Length + gpuLevels.Length)));
-        RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-        Controls.Add(CreateSelector("CPU", cpuLevels, _cpuButtons, level => CpuSelected?.Invoke(this, level)), 0, 0);
-        Controls.Add(CreateSelector("GPU", gpuLevels, _gpuButtons, level => GpuSelected?.Invoke(this, level)), 2, 0);
+        Controls.Add(CreateSelector("CPU", Glyph.Cpu, Enum.GetValues<CpuBoost>(), _cpuButtons, level => CpuSelected?.Invoke(this, level)), 0, 0);
+        Controls.Add(CreateSelector("GPU", Glyph.Gpu, Enum.GetValues<GpuBoost>(), _gpuButtons, level => GpuSelected?.Invoke(this, level)), 0, 1);
     }
 
     public event EventHandler<CpuBoost>? CpuSelected;
@@ -54,6 +51,7 @@ internal sealed class CustomBoostRow : TableLayoutPanel
 
     private static Panel CreateSelector<TLevel>(
         string title,
+        Glyph glyph,
         TLevel[] levels,
         Dictionary<TLevel, Button> buttons,
         Action<TLevel> onSelected)
@@ -78,17 +76,13 @@ internal sealed class CustomBoostRow : TableLayoutPanel
 
         // Dock order: the label docks first, the buttons fill what is left.
         panel.Controls.Add(grid);
-        panel.Controls.Add(new Label
-        {
-            AutoSize = false,
-            Dock = DockStyle.Top,
-            Font = GetDesignFont("Segoe UI", 9.5F, FontStyle.Bold),
-            ForeColor = Color.White,
-            Height = S(22),
-            Padding = S(new Padding(4, 0, 0, 0)), // Line up with the section titles.
-            Text = title,
-            TextAlign = ContentAlignment.MiddleLeft
-        });
+        // The title with its icon, inset 4px to line up with the buttons.
+        var label = CreateSectionLabel(title, glyph, inset: S(4));
+        label.AutoSize = false;
+        label.Dock = DockStyle.Top;
+        label.Font = GetDesignFont("Segoe UI", 9.5F, FontStyle.Bold);
+        label.Height = S(22);
+        panel.Controls.Add(label);
 
         return panel;
     }

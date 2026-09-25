@@ -12,12 +12,12 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 
 ## What it does today
 
-- **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom.
-- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. On battery only Balanced is offered, as in Synapse.
+- **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom. On the Blade 15 Base (2020) also Gaming, its high-performance mode.
+- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** 60%, 80% or 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
 - **Temperatures:** CPU and GPU, shown at the top to the left of the power source, only while the window is open. The GPU reading comes from the graphics driver (the same source Task Manager uses). The CPU reading comes from the laptop's own controller. Compared with MSI Afterburner under load on the developer's laptop it was very close, but it updates more slowly, so Afterburner's number moves faster (hover it for a reminder). It is not read from the CPU die itself. The GPU is read every 2 seconds and the CPU every 4, and nothing is read while the window is closed.
-- **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs Custom mode and AC power; **Auto** turns it off, and it clears by itself when you leave Custom.
+- **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
 - **Settings** (link at the bottom right): start at login, switch profile automatically when you plug in or unplug, hide the window when you click away, keep it always on top, close apps using the dedicated GPU when you unplug (see below), shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
@@ -42,7 +42,7 @@ Manual fan control, the CPU overclock toggle, independent verification on any Bl
 
 **The CPU die temperature is not shown.** Windows does not expose it without a kernel driver (its own thermal zones on this laptop are fixed values that do not move under load), and razer-helper deliberately installs no driver. The CPU figure above comes from a sensor in the laptop's controller instead. It was found by scanning the controller's read-only commands on a Blade 16 (2023), is not documented anywhere, and other Blade models may not have it (the app then simply shows no CPU temperature).
 
-**Choosing a keyboard color and per-key lighting are not available.** On the Blade 16 the laptop only honors a chosen color in a "driver mode" that also switches off the Fn media keys (volume, screen and keyboard brightness), and razer-helper does not trade those away. In normal mode a static effect always shows Razer green, which is why the option is called **Static green**. Effects the laptop does not run on its own, such as Wheel, are not offered either. The built-in effects listed above are the ones the laptop runs by itself.
+**Choosing a keyboard color is only available on the Blade 15 Base (2020), and per-key lighting on none.** On that model a static color of your choice is sent with the older "standard" lighting command, which it shows in normal mode; pick it from the color list that appears next to the keyboard effect while it is on **Static** (white, Razer green and seven other colors); **Breathing** takes the chosen color too. Its keyboard is a single zone, so there is no Wave. On the Blade 16 the laptop only honors a chosen color in a "driver mode" that also switches off the Fn media keys (volume, screen and keyboard brightness), and razer-helper does not trade those away. In normal mode a static effect always shows Razer green, which is why the option is called **Static green**. Effects the laptop does not run on its own, such as Wheel, are not offered either. The built-in effects listed above are the ones the laptop runs by itself.
 
 ## Closing apps that use the dedicated GPU
 
@@ -75,7 +75,7 @@ The window is drawn a little larger on high-resolution screens so it stays easy 
   | Razer Blade 14 (2023) Mercury | `0x029D` | No — community-reported ID only |
   | Razer Blade 16 (2024) | `0x02B7` | No — community-reported ID only |
   | Razer Blade 16 (2025) | `0x02C6` | No — community-reported ID only |
-  | Razer Blade 15 Base (2020) | `0x0255` | No — reported by a user, from their own Device Manager |
+  | Razer Blade 15 Base (2020) | `0x0255` | Partly, by a user: performance modes (Gaming included), Custom boost and lighting work; no battery charge limit or fan RPM on this model; max fan speed works except in Silent |
 
   An unverified model runs the exact commands documented in [Credits](#credits); one the firmware does not support simply fails instead of doing something unexpected. If you have one of these and something looks wrong, please [open an issue](https://github.com/Paulrod20/razer-helper/issues) — the log (Settings > "Open log folder") says which model was detected.
 - The [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (choose ".NET Desktop Runtime" for x64). The installer checks for it and will not install without it.

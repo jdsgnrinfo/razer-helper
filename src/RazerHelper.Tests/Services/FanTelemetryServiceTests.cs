@@ -152,4 +152,19 @@ public class FanTelemetryServiceTests
 
         Assert.Null(await service.ReadAsync());
     }
+
+    [Fact]
+    public async Task ReadAsync_OnAModelWithoutTheCommand_AsksOnceAndThenStops()
+    {
+        // The Blade 15 Base (2020) answers "not supported"; polling it every
+        // two seconds after that would only be noise on the shared channel.
+        var (ec, service) = Create();
+        ec.FanRpmUnsupported = true;
+
+        Assert.Null(await service.ReadAsync());
+        Assert.Null(await service.ReadAsync());
+
+        Assert.False(service.IsSupported);
+        Assert.Single(ec.Log);
+    }
 }

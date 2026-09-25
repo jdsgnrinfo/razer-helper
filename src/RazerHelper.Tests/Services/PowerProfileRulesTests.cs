@@ -24,9 +24,11 @@ public class PowerProfileRulesTests
     [InlineData((byte)PerformanceMode.Silent, true, true)]
     [InlineData((byte)PerformanceMode.Custom, true, true)]
     [InlineData((byte)PerformanceMode.Balanced, false, true)]
-    [InlineData((byte)PerformanceMode.Silent, false, false)]
+    [InlineData((byte)PerformanceMode.Silent, false, true)]
     [InlineData((byte)PerformanceMode.Custom, false, false)]
-    public void IsModeAllowed_OffersEverythingOnPowerAndOnlyBalancedOnBattery(
+    [InlineData((byte)PerformanceMode.Gaming, true, true)]
+    [InlineData((byte)PerformanceMode.Gaming, false, false)]   // like Custom, plugged in only
+    public void IsModeAllowed_OffersEverythingOnPowerAndBalancedOrSilentOnBattery(
         byte modeByte, bool pluggedIn, bool expected)
     {
         Assert.Equal(expected, PowerProfileRules.IsModeAllowed((PerformanceMode)modeByte, pluggedIn));
@@ -57,6 +59,27 @@ public class PowerProfileRulesTests
         Assert.Equal(expected, PowerProfileRules.CanUseMaxFan(state, pluggedIn));
     }
 
+    [Theory]
+    [InlineData((byte)PerformanceMode.Balanced, true, true)]
+    [InlineData((byte)PerformanceMode.Gaming, true, true)]
+    [InlineData((byte)PerformanceMode.Custom, true, true)]
+    [InlineData((byte)PerformanceMode.Silent, true, false)]    // Silent holds the fans down
+    [InlineData((byte)PerformanceMode.Balanced, false, false)] // plugged in only, as with the flag
+    public void CanUseMaxFan_WithTheManualFanMethod_NeedsACPowerAndAnyModeButSilent(byte modeByte, bool pluggedIn, bool expected)
+    {
+        var state = new PerformanceState((PerformanceMode)modeByte, null, null);
+
+        Assert.Equal(expected, PowerProfileRules.CanUseMaxFan(state, pluggedIn, MaxFanMethod.ManualFan));
+    }
+
+    [Fact]
+    public void CanUseMaxFan_IsNeverTrueWithoutAMethod()
+    {
+        var state = new PerformanceState(PerformanceMode.Custom, CpuBoost.Boost, GpuBoost.High);
+
+        Assert.False(PowerProfileRules.CanUseMaxFan(state, pluggedIn: true, MaxFanMethod.None));
+    }
+
     [Fact]
     public void CanUseMaxFan_IsFalseWhenTheModeIsUnknown()
     {
@@ -81,7 +104,6 @@ public class PowerProfileRulesTests
     }
 
     [Theory]
-    [InlineData((byte)PerformanceMode.Silent)]
     [InlineData((byte)PerformanceMode.Custom)]
     public void Sanitize_TurnsAStaleBatteryModeIntoBalanced(byte staleModeByte)
     {

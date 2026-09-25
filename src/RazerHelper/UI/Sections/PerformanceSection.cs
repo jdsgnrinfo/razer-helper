@@ -25,7 +25,6 @@ internal sealed class PerformanceSection : SectionPanel
     private readonly IPowerSource _powerSource;
     private readonly Dictionary<PerformanceMode, Button> _buttons = [];
     private readonly CustomBoostRow _customRow = new();
-    private readonly Label _sourceLabel;
     private readonly Label _temperatureLabel;
     private readonly ThemedToolTip _toolTip = new();
 
@@ -36,6 +35,7 @@ internal sealed class PerformanceSection : SectionPanel
     private bool? _appliedSource;
     private bool _busy;
     private bool _reapplyRequested;
+    private readonly MaxFanMethod _maxFanMethod;
     private bool _autoSwitchProfiles = true;
 
     // Tracked here because Control.Visible reads false whenever any parent is
@@ -46,8 +46,11 @@ internal sealed class PerformanceSection : SectionPanel
         PerformanceService performanceService,
         IPowerSource powerSource,
         PowerProfile? pluggedInProfile,
-        PowerProfile? onBatteryProfile)
+        PowerProfile? onBatteryProfile,
+        bool offerGaming = false,
+        MaxFanMethod maxFanMethod = MaxFanMethod.ControllerFlag)
     {
+        _maxFanMethod = maxFanMethod;
         _performanceService = performanceService;
         _powerSource = powerSource;
 
@@ -58,7 +61,9 @@ internal sealed class PerformanceSection : SectionPanel
         };
 
         // Synapse's order. Enum.GetValues would sort by wire byte instead.
-        PerformanceMode[] modes = [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Custom];
+        PerformanceMode[] modes = offerGaming
+            ? [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Gaming, PerformanceMode.Custom]
+            : [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Custom];
         var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton");
 
         foreach (var button in grid.Controls.OfType<Button>())
@@ -66,16 +71,27 @@ internal sealed class PerformanceSection : SectionPanel
             var mode = Enum.Parse<PerformanceMode>((string)button.Tag!);
             _buttons[mode] = button;
             button.Click += async (_, _) => await SelectModeAsync(mode);
+
+            if (button is RoundedButton rounded)
+            {
+                rounded.GlyphAbove = true;
+                rounded.Glyph = mode switch
+                {
+                    PerformanceMode.Balanced => Glyph.Balanced,
+                    PerformanceMode.Silent => Glyph.Silent,
+                    PerformanceMode.Gaming => Glyph.Gaming,
+                    _ => Glyph.Custom
+                };
+            }
         }
 
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
         _customRow.GpuSelected += async (_, level) => await SelectGpuAsync(level);
 
-        _sourceLabel = CreateHeaderValueLabel();
         _temperatureLabel = CreateHeaderValueLabel();
 
-        // The GPU temperature and the power source sit together on the right,
-        // the temperature first. The temperature is empty (and takes no room)
+        // The temperatures sit on the right. (The power source is shown in the
+        // Battery section.) The temperature is empty (and takes no room)
         // until a reading arrives, and for good when the GPU reports none.
         var headerValues = new FlowLayoutPanel
         {
@@ -89,12 +105,11 @@ internal sealed class PerformanceSection : SectionPanel
         };
 
         headerValues.Controls.Add(_temperatureLabel);
-        headerValues.Controls.Add(_sourceLabel);
 
         var header = CreateTwoColumnLayout(50F, 50F);
         header.Dock = DockStyle.Top;
         header.Height = S(28);
-        header.Controls.Add(CreateSectionLabel("Performance Mode"), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Performance Mode", Glyph.Performance), 0, 0);
         header.Controls.Add(headerValues, 1, 0);
 
         // Dock order: the header docks first, then the custom row, and the
@@ -106,7 +121,6 @@ internal sealed class PerformanceSection : SectionPanel
         // Start with the row where the active profile last had it, so the
         // popup does not jump when the real mode is read a moment later.
         SetCustomRowShown(ActiveProfile.Mode == PerformanceMode.Custom);
-        UpdateSourceLabel();
         UpdateButtonStates();
 
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
@@ -161,28 +175,52 @@ internal sealed class PerformanceSection : SectionPanel
             return;
 
         _temperatureLabel.Text = text;
-        _temperatureLabel.Margin = text.Length > 0 ? S(new Padding(0, 0, 16, 0)) : Padding.Empty;
+        _temperatureLabel.Margin = Padding.Empty;
         _toolTip.SetToolTip(_temperatureLabel, TemperatureText.Explain(reading.CpuCelsius, reading.GpuCelsius));
     }
 
     /// <summary>Applies the profile for the current power source, e.g. at startup.</summary>
-    public Task RestoreAsync() => ApplyActiveProfileAsync();
+    public Task RestoreAsync() => ApplyActiveProfileAsync(atStartup: true);
 
     /// <summary>
     /// Turns max fan speed on or off. A one-off: it is not stored in a profile,
-    /// and the EC clears it by itself when the mode leaves Custom. Ignored when
-    /// it is already in that state, while something else is talking to the EC,
-    /// or when Max is not available (Custom mode, plugged in).
+    /// and any mode change puts the fans back on automatic. Ignored when it is
+    /// already in that state, while something else is talking to the EC, or
+    /// when turning it on is not available (see PowerProfileRules.CanUseMaxFan).
+    /// Turning it off is always allowed.
     /// </summary>
     public Task SetMaxFanAsync(bool enabled)
     {
-        if (_busy || enabled == (_state.MaxFan == true) || !PowerProfileRules.CanUseMaxFan(_state, IsPluggedIn))
+        if (_busy || enabled == (_state.MaxFan == true) ||
+            (enabled && !PowerProfileRules.CanUseMaxFan(_state, IsPluggedIn, _maxFanMethod)))
             return Task.CompletedTask;
 
         return RunAsync(
             () => _performanceService.SetMaxFanAsync(enabled),
             "Could not change max fan speed.",
             _ => { }); // Nothing to remember: it is not part of a profile.
+    }
+
+    /// <summary>
+    /// Called as the app exits. Max is a one-off the app is watching over; the
+    /// controller keeps the fans flat out after the app has gone (on the Blade
+    /// 15 Base 2020 even across restarts of the app), so it is put back on
+    /// automatic here. Runs synchronously: the app is about to end.
+    /// </summary>
+    public void TurnOffMaxFanBeforeExit()
+    {
+        if (_state.MaxFan != true)
+            return;
+
+        try
+        {
+            _performanceService.SetMaxFan(false);
+            AppLog.Info("Max fan speed turned off as RazerHelper exits.");
+        }
+        catch (Exception exception)
+        {
+            AppLog.Error("Could not turn off max fan speed on exit.", exception);
+        }
     }
 
     /// <summary>Shows the mode and boost levels the EC is actually in.</summary>
@@ -229,16 +267,21 @@ internal sealed class PerformanceSection : SectionPanel
     private void PowerSource_PowerSourceChanged(object? sender, EventArgs e) =>
         _ = PostToUiAsync(() =>
         {
-            UpdateSourceLabel();
             UpdateButtonStates();
 
             // Windows also raises this for battery percentage changes; only a
             // change of source means a different profile.
             if (_autoSwitchProfiles && IsPluggedIn != _appliedSource)
                 _ = ApplyActiveProfileAsync();
+            else
+                TurnOffMaxFanOnBattery();
         });
 
-    private Task ApplyActiveProfileAsync()
+    /// <param name="atStartup">
+    /// Also turn off a Max left on from before the app started (a crash, or a
+    /// shutdown with Max on): Max is a one-off, never part of a profile.
+    /// </param>
+    private Task ApplyActiveProfileAsync(bool atStartup = false)
     {
         if (_busy)
         {
@@ -251,9 +294,27 @@ internal sealed class PerformanceSection : SectionPanel
         var profile = _profiles[source];
 
         return RunAsync(
-            () => _performanceService.ApplyProfileAsync(profile),
+            async () =>
+            {
+                var state = await _performanceService.ApplyProfileAsync(profile);
+
+                // Max is a plugged-in setting. A mode change already puts the
+                // fans back on automatic; when the profile keeps the same mode
+                // (Balanced both plugged in and on battery) it has to be done here.
+                return (atStartup || !source) && state.MaxFan == true
+                    ? await _performanceService.SetMaxFanAsync(false)
+                    : state;
+            },
             "Could not apply the power profile.",
             _ => _appliedSource = source);
+    }
+
+    // With automatic profile switching off, nothing else runs on unplugging,
+    // so Max is turned off on its own.
+    private void TurnOffMaxFanOnBattery()
+    {
+        if (!IsPluggedIn && _state.MaxFan == true)
+            _ = SetMaxFanAsync(false);
     }
 
     private Task SelectModeAsync(PerformanceMode mode) =>
@@ -355,7 +416,9 @@ internal sealed class PerformanceSection : SectionPanel
 
         HighlightSelected(
             _buttons.Values,
-            state.Mode is PerformanceMode known ? _buttons[known] : null);
+            // A mode with no button here (Gaming set by Fn keys on a model
+            // where it is not offered) highlights nothing.
+            state.Mode is PerformanceMode known ? _buttons.GetValueOrDefault(known) : null);
 
         // Highlighting resets the text colors, so redo the unavailable look.
         UpdateButtonStates();
@@ -388,9 +451,6 @@ internal sealed class PerformanceSection : SectionPanel
         Margin = Padding.Empty,
         TextAlign = ContentAlignment.MiddleRight
     };
-
-    private void UpdateSourceLabel() =>
-        _sourceLabel.Text = IsPluggedIn ? "Plugged in" : "On battery";
 
     private void UpdateButtonStates()
     {

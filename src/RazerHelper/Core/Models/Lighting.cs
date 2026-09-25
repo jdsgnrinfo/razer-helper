@@ -19,6 +19,12 @@ internal enum KeyboardEffect
     Breathing
 }
 
+/// <summary>A solid keyboard color, on the models that can show one (see RazerLaptopModel.HasKeyboardColor).</summary>
+internal readonly record struct RgbColor(byte Red, byte Green, byte Blue)
+{
+    public static RgbColor White { get; } = new(0xFF, 0xFF, 0xFF);
+}
+
 /// <summary>What the Razer logo on the lid is doing.</summary>
 internal enum LogoMode
 {
@@ -39,7 +45,8 @@ internal sealed record LightingState(
     KeyboardEffect? Keyboard,
     int? KeyboardBrightness,
     LogoMode? Logo,
-    int? LogoBrightness)
+    int? LogoBrightness,
+    RgbColor? KeyboardColor = null)
 {
     public static LightingState Unknown { get; } = new(null, null, null, null);
 }

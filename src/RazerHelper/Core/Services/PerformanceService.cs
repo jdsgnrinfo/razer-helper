@@ -5,9 +5,20 @@ using RazerHelper.Core.Models;
 namespace RazerHelper.Core.Services;
 
 /// <summary>Reads and changes the EC's performance mode and, in Custom, its CPU and GPU boost levels.</summary>
-internal sealed class PerformanceService(IRazerTransport transport)
+/// <param name="maxFanMethod">How this laptop runs its fans flat out (see <see cref="MaxFanMethod"/>).</param>
+internal sealed class PerformanceService(IRazerTransport transport, MaxFanMethod maxFanMethod = MaxFanMethod.ControllerFlag)
 {
     private const byte FanModeAuto = 0x00;
+    private const byte FanModeManual = 0x01;
+
+    // The speed the manual fan method asks for, in hundreds of RPM: 7000, well
+    // above what these fans can reach (about 5000 on a Blade 15 Base 2020), so
+    // the controller drives them at full power, their true maximum, whatever
+    // it is. The model does not report real fan speeds, so the ceiling cannot
+    // be read; the controller stores any target without clamping it. 7000 was
+    // held without complaint on that laptop; the extreme byte values were not
+    // tried, since how the firmware takes them is unknown.
+    private const byte ManualMaxRpmHundreds = 70;
     private const byte CpuCluster = 0x01;
     private const byte GpuCluster = 0x02;
     private const byte MaxFanOn = 0x02;
@@ -64,6 +75,11 @@ internal sealed class PerformanceService(IRazerTransport transport)
     {
         var mode = GetMode();
 
+        // The manual fan method's state is the fan mode the controller reports
+        // in every performance mode, not only in Custom.
+        if (maxFanMethod == MaxFanMethod.ManualFan && mode != PerformanceMode.Custom)
+            return new PerformanceState(mode, null, null, ReadManualFan());
+
         if (mode != PerformanceMode.Custom)
             return new PerformanceState(mode, null, null);
 
@@ -74,7 +90,12 @@ internal sealed class PerformanceService(IRazerTransport transport)
             mode,
             Enum.IsDefined((CpuBoost)cpu) ? (CpuBoost)cpu : null,
             Enum.IsDefined((GpuBoost)gpu) ? (GpuBoost)gpu : null,
-            ReadMaxFan());
+            maxFanMethod switch
+            {
+                MaxFanMethod.ControllerFlag => ReadMaxFan(),
+                MaxFanMethod.ManualFan => ReadManualFan(),
+                _ => null
+            });
     }
 
     /// <summary>
@@ -86,15 +107,17 @@ internal sealed class PerformanceService(IRazerTransport transport)
 
     internal PerformanceState SetMaxFan(bool enabled)
     {
-        // The EC rejects this command outside Custom, so it is never sent from
-        // any other mode, whatever the caller believes the mode is.
-        if (GetMode() != PerformanceMode.Custom)
-            throw new InvalidOperationException("Max fan speed can only be changed in Custom mode.");
-
-        transport.SendAndConfirm(
-            RazerCommands.SetMaxFan,
-            [enabled ? MaxFanOn : MaxFanOff],
-            $"max fan speed {(enabled ? "on" : "off")}");
+        switch (maxFanMethod)
+        {
+            case MaxFanMethod.ControllerFlag:
+                SetMaxFanFlag(enabled);
+                break;
+            case MaxFanMethod.ManualFan:
+                SetManualFan(enabled);
+                break;
+            default:
+                throw new InvalidOperationException("This laptop has no max fan speed.");
+        }
 
         var state = ReadState();
 
@@ -104,6 +127,65 @@ internal sealed class PerformanceService(IRazerTransport transport)
 
         return state;
     }
+
+    private void SetMaxFanFlag(bool enabled)
+    {
+        // The EC rejects this command outside Custom, so it is never sent from
+        // any other mode, whatever the caller believes the mode is.
+        if (GetMode() != PerformanceMode.Custom)
+            throw new InvalidOperationException("Max fan speed can only be changed in Custom mode.");
+
+        transport.SendAndConfirm(
+            RazerCommands.SetMaxFan,
+            [enabled ? MaxFanOn : MaxFanOff],
+            $"max fan speed {(enabled ? "on" : "off")}");
+    }
+
+    // Each fan is switched to manual (or back to automatic) by rewriting the
+    // current mode with the fan byte set, then given its fixed speed. The mode
+    // itself is left as it is.
+    private void SetManualFan(bool enabled)
+    {
+        // Silent holds the fans down whatever is asked, so Max would only look
+        // on there. Turning it off is allowed in any known mode.
+        if (GetMode() is not PerformanceMode mode || (enabled && mode == PerformanceMode.Silent))
+            throw new InvalidOperationException("Max fan speed is not available in this mode.");
+
+        foreach (var zone in Zones)
+        {
+            transport.SendAndConfirm(
+                RazerCommands.SetPerformanceMode,
+                [0x01, zone, (byte)mode, enabled ? FanModeManual : FanModeAuto],
+                $"fan mode {(enabled ? "manual" : "automatic")} for zone {zone}");
+
+            if (enabled)
+            {
+                transport.SendAndConfirm(
+                    RazerCommands.SetFanRpm,
+                    [0x01, zone, ManualMaxRpmHundreds],
+                    $"fan speed for zone {zone}");
+            }
+        }
+    }
+
+    // Both fans manual means Max is on, both automatic that it is off.
+    private bool? ReadManualFan()
+    {
+        var cpu = ReadZoneFanMode(Zones[0]);
+        var gpu = ReadZoneFanMode(Zones[1]);
+
+        return cpu == gpu
+            ? cpu switch
+            {
+                FanModeManual => true,
+                FanModeAuto => false,
+                _ => null
+            }
+            : null;
+    }
+
+    private byte ReadZoneFanMode(byte zone) =>
+        RazerHidPacket.GetArgument(transport.Send(RazerCommands.GetPerformanceMode, [0x00, zone, 0x00, 0x00]), 3);
 
     // 2 turns it on and 0 off (checked on a Blade 16). Only meaningful in
     // Custom mode, which is the only place this is called from.

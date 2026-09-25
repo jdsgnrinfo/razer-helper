@@ -14,8 +14,19 @@ internal sealed class FanTelemetryService(IRazerTransport transport)
     private bool _stoppedReadingPending;
     private bool _readFailing;
 
+    /// <summary>
+    /// False once the laptop has said it does not report fan speeds (the Blade
+    /// 15 Base 2020 does not implement the command). It is not asked again.
+    /// </summary>
+    public bool IsSupported { get; private set; } = true;
+
     public Task<FanRpmReading?> ReadAsync() => Task.Run(() =>
     {
+        // A model without this command answers "not supported" once; asking
+        // again every couple of seconds would be pointless traffic.
+        if (!IsSupported)
+            return null;
+
         try
         {
             var reading = Read();
@@ -27,6 +38,12 @@ internal sealed class FanTelemetryService(IRazerTransport transport)
             }
 
             return reading;
+        }
+        catch (RazerCommandNotSupportedException)
+        {
+            IsSupported = false;
+            AppLog.Info("This laptop does not report fan speeds through its controller.");
+            return null;
         }
         catch (Exception exception) when (
             exception is InvalidOperationException or Win32Exception)
@@ -54,6 +71,9 @@ internal sealed class FanTelemetryService(IRazerTransport transport)
 
     private int ReadFanRpm(byte fanZone)
     {
+        // Older models (Blade 15 Base 2020) do not have this command. Their
+        // 0x0D81 is no substitute: it holds the controller's fan target, which
+        // sits at 2000 whatever the fans are really doing.
         var response = transport.Send(
             RazerCommands.GetActualFanRpm,
             [0x00, fanZone, 0x00]);

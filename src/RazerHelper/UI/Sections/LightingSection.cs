@@ -7,9 +7,12 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// Keyboard backlight and lid logo: an effect drop-down and a brightness
-/// slider for each. Always available, on battery or plugged in (the laptop has
-/// no power-source rule for lighting), and never part of the power profiles.
+/// Keyboard backlight and lid logo, each as a small stack: its name, then its
+/// effect drop-down (and the color list beside it where one applies), then
+/// its brightness slider. Stacked rather than side by side so the section
+/// fits a narrow window. Always available, on battery or plugged in (the
+/// laptop has no power-source rule for lighting), and never part of the power
+/// profiles.
 /// </summary>
 /// <remarks>
 /// The laptop is the source of truth. The controls show what it reports when
@@ -19,14 +22,14 @@ namespace RazerHelper.UI.Sections;
 internal sealed class LightingSection : SectionPanel
 {
     private static int HeaderHeight => S(28);
-    private static int LineHeight => S(34);
     private static int BottomGap => S(8);
 
-    /// <summary>The header, the two lines, and the gap that separates this section from the next.</summary>
-    public static int RowHeight => HeaderHeight + 2 * LineHeight + BottomGap;
+    /// <summary>The header, the two stacks, and the gap that separates this section from the next.</summary>
+    public static int RowHeight => HeaderHeight + 2 * Line.Height + BottomGap;
 
-    private static readonly KeyboardEffect[] KeyboardEffects =
-        [KeyboardEffect.Off, KeyboardEffect.StaticGreen, KeyboardEffect.Spectrum, KeyboardEffect.Wave, KeyboardEffect.Breathing];
+    // The effects offered, in the list's order. Wave only where the keyboard
+    // has zones to move across (see RazerLaptopModel.HasWaveEffect).
+    private readonly KeyboardEffect[] _keyboardEffects;
 
     private static readonly LogoMode[] LogoModes = [LogoMode.Off, LogoMode.On, LogoMode.Breathing];
 
@@ -34,19 +37,65 @@ internal sealed class LightingSection : SectionPanel
     private readonly Line _keyboard;
     private readonly Line _logo;
 
+    // The colors offered in the color list, in its order.
+    private static readonly (string Name, RgbColor Color)[] PresetColors =
+    [
+        ("White", RgbColor.White),
+        ("Razer green", new RgbColor(0x44, 0xD6, 0x2C)),
+        ("Red", new RgbColor(0xFF, 0x00, 0x00)),
+        ("Orange", new RgbColor(0xFF, 0x80, 0x00)),
+        ("Yellow", new RgbColor(0xFF, 0xFF, 0x00)),
+        ("Cyan", new RgbColor(0x00, 0xFF, 0xFF)),
+        ("Blue", new RgbColor(0x00, 0x00, 0xFF)),
+        ("Purple", new RgbColor(0x80, 0x00, 0xFF)),
+        ("Pink", new RgbColor(0xFF, 0x00, 0x80))
+    ];
+
+    // Only on models that show a chosen color, and only visible while the
+    // keyboard is on Static or Breathing: the color list, in the same dark
+    // drop-down style, beside the keyboard's effect.
+    private readonly DropdownButton? _colorDropdown;
+    private RgbColor _color = RgbColor.White;
+
+    // The keyboard effect the laptop last reported, which a new color keeps.
+    private KeyboardEffect? _keyboardEffect;
+
     private bool _busy;
 
-    public LightingSection(LightingService lightingService)
+    public LightingSection(LightingService lightingService, bool offersColor = false, bool offersWave = true)
     {
         _lightingService = lightingService;
+        _keyboardEffects = offersWave
+            ? [KeyboardEffect.Off, KeyboardEffect.StaticGreen, KeyboardEffect.Spectrum, KeyboardEffect.Wave, KeyboardEffect.Breathing]
+            : [KeyboardEffect.Off, KeyboardEffect.StaticGreen, KeyboardEffect.Spectrum, KeyboardEffect.Breathing];
 
-        _keyboard = new Line("Keyboard", KeyboardEffects.Select(Describe));
+        if (offersColor)
+        {
+            _colorDropdown = new DropdownButton(
+                [.. PresetColors.Select(preset => preset.Name)],
+                swatches: [.. PresetColors.Select(preset => (Color?)ToColor(preset.Color))])
+            {
+                Visible = false
+            };
+
+            _colorDropdown.SelectionChanged += async (_, _) => await PickColorAsync(_colorDropdown.SelectedIndex);
+        }
+
+        _keyboard = new Line("Keyboard", _keyboardEffects.Select(effect => Describe(effect, offersColor)), _colorDropdown);
         _logo = new Line("Logo", LogoModes.Select(Describe));
 
         _keyboard.Effect.SelectionChanged += async (_, _) =>
+        {
+            var effect = _keyboardEffects[_keyboard.Effect.SelectedIndex];
+
+            // Where a color can be shown, Static and Breathing use that color.
             await ApplyAsync(
-                () => _lightingService.SetKeyboardEffectAsync(KeyboardEffects[_keyboard.Effect.SelectedIndex]),
+                offersColor && IsColored(effect)
+                    ? () => SetColoredEffectAsync(effect, _color)
+                    : () => _lightingService.SetKeyboardEffectAsync(effect),
                 "Could not change the keyboard lighting.");
+        };
+
         _keyboard.Brightness.Committed += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetKeyboardBrightnessAsync(_keyboard.Brightness.Value),
@@ -64,31 +113,68 @@ internal sealed class LightingSection : SectionPanel
         var lines = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
-            ColumnCount = 4,
+            ColumnCount = 1,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
             RowCount = 3
         };
 
-        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(84)));
-        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(150)));
         lines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(48)));
-        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, LineHeight));
-        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, LineHeight));
-        lines.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Takes the spare height, so the two lines keep their size.
+        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
+        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
+        lines.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Takes the spare height, so the two stacks keep their size.
+        lines.Controls.Add(_keyboard.Panel, 0, 0);
+        lines.Controls.Add(_logo.Panel, 0, 1);
 
-        _keyboard.AddTo(lines, 0);
-        _logo.AddTo(lines, 1);
-
-        // Dock order: the header docks first, and the lines fill what is left.
+        // Dock order: the header docks first, and the stacks fill what is left.
         Controls.Add(lines);
-        Controls.Add(CreateSectionHeader("Lighting", string.Empty));
+        Controls.Add(CreateSectionHeader("Lighting", string.Empty, Glyph.Lighting));
     }
 
     /// <summary>Raised with a user-facing message about the last operation.</summary>
     public event EventHandler<SectionStatus>? StatusChanged;
+
+    private async Task PickColorAsync(int index)
+    {
+        if (index < 0)
+            return;
+
+        var color = PresetColors[index].Color;
+
+        // The list is only shown on a colored effect; the new color keeps it.
+        var effect = _keyboardEffect is { } shown && IsColored(shown) ? shown : KeyboardEffect.StaticGreen;
+
+        _color = color;
+        await ApplyAsync(
+            () => SetColoredEffectAsync(effect, color),
+            "Could not change the keyboard color.");
+    }
+
+    // The effects that show the chosen color, on models that offer one.
+    private static bool IsColored(KeyboardEffect effect) =>
+        effect is KeyboardEffect.StaticGreen or KeyboardEffect.Breathing;
+
+    private Task SetColoredEffectAsync(KeyboardEffect effect, RgbColor color) =>
+        effect == KeyboardEffect.Breathing
+            ? _lightingService.SetKeyboardBreathingAsync(color)
+            : _lightingService.SetKeyboardColorAsync(color);
+
+    // Selects the matching preset. A color set some other way that is not in
+    // the list shows no selection rather than a wrong one.
+    private void ShowColor(RgbColor color) =>
+        _colorDropdown?.Select(Array.FindIndex(PresetColors, candidate => candidate.Color == color));
+
+    // The color list only means something while the keyboard is on Static or
+    // Breathing. Its half of the row stays reserved, so the effect list beside
+    // it never changes size.
+    private void SetColorListShown(bool shown)
+    {
+        if (_colorDropdown is not null)
+            _colorDropdown.Visible = shown;
+    }
+
+    private static Color ToColor(RgbColor color) => Color.FromArgb(color.Red, color.Green, color.Blue);
 
     /// <summary>Shows what the laptop's lighting is actually set to.</summary>
     public async Task RefreshAsync()
@@ -147,8 +233,9 @@ internal sealed class LightingSection : SectionPanel
         });
     }
 
-    private static string Describe(KeyboardEffect effect) =>
-        effect == KeyboardEffect.StaticGreen ? "Static green" : effect.ToString();
+    // Where a color can be chosen, the static effect shows that color, not green.
+    private static string Describe(KeyboardEffect effect, bool offersColor) =>
+        effect == KeyboardEffect.StaticGreen ? (offersColor ? "Static" : "Static green") : effect.ToString();
 
     private static string Describe(LogoMode mode) => mode == LogoMode.On ? "On" : mode.ToString();
 
@@ -176,28 +263,50 @@ internal sealed class LightingSection : SectionPanel
     {
         _keyboard.Enabled = enabled;
         _logo.Enabled = enabled;
+
+        if (_colorDropdown is not null)
+            _colorDropdown.Enabled = enabled;
     }
 
     private void ShowState(LightingState state)
     {
-        _keyboard.Show(state.Keyboard is { } effect ? Array.IndexOf(KeyboardEffects, effect) : -1, state.KeyboardBrightness);
+        // The list shows the color the laptop reports, so the next Static
+        // (or the picker) starts from what is really lit.
+        if (state.KeyboardColor is { } color)
+        {
+            _color = color;
+            ShowColor(color);
+        }
+
+        _keyboardEffect = state.Keyboard;
+        SetColorListShown(state.Keyboard is { } shown && IsColored(shown));
+
+        _keyboard.Show(state.Keyboard is { } effect ? Array.IndexOf(_keyboardEffects, effect) : -1, state.KeyboardBrightness);
         _logo.Show(state.Logo is { } mode ? Array.IndexOf(LogoModes, mode) : -1, state.LogoBrightness);
     }
 
-    /// <summary>One line of the section: a name, an effect drop-down, a brightness slider and its percentage.</summary>
+    /// <summary>
+    /// One light as a stack of three rows: its name; its effect drop-down, with
+    /// an optional second drop-down (the color list) beside it; and its
+    /// brightness slider with the percentage.
+    /// </summary>
     private sealed class Line
     {
-        private readonly string _name;
+        private static int NameHeight => S(22);
+        private static int ChoiceHeight => S(34);
+        private static int SliderHeight => S(30);
+
+        /// <summary>The whole stack's height.</summary>
+        public static int Height => NameHeight + ChoiceHeight + SliderHeight;
+
         private readonly Label _percent;
 
-        public Line(string name, IEnumerable<string> effects)
+        public Line(string name, IEnumerable<string> effects, DropdownButton? companion = null)
         {
-            _name = name;
-
             Effect = new DropdownButton(effects.ToArray())
             {
                 Dock = DockStyle.Fill,
-                Margin = S(new Padding(0, 3, 4, 3))
+                Margin = S(new Padding(4, 3, 4, 3))
             };
 
             Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 5, showLabels: false)
@@ -219,7 +328,77 @@ internal sealed class LightingSection : SectionPanel
 
             // The percentage follows the slider while it is dragged, before anything is sent.
             Brightness.ValueChanged += (_, _) => _percent.Text = $"{Brightness.Value}%";
+
+            // The effect and its companion share the row half and half, so
+            // the effect list keeps its width whether the companion shows.
+            var choices = new TableLayoutPanel
+            {
+                BackColor = BackgroundColor,
+                ColumnCount = 2,
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                RowCount = 1
+            };
+
+            choices.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            choices.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            choices.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            choices.Controls.Add(Effect, 0, 0);
+
+            if (companion is not null)
+            {
+                companion.Dock = DockStyle.Fill;
+                companion.Margin = S(new Padding(4, 3, 4, 3));
+                choices.Controls.Add(companion, 1, 0);
+            }
+
+            var slider = new TableLayoutPanel
+            {
+                BackColor = BackgroundColor,
+                ColumnCount = 2,
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                RowCount = 1
+            };
+
+            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(48)));
+            slider.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            slider.Controls.Add(Brightness, 0, 0);
+            slider.Controls.Add(_percent, 1, 0);
+
+            Panel = new TableLayoutPanel
+            {
+                BackColor = BackgroundColor,
+                ColumnCount = 1,
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
+                RowCount = 3
+            };
+
+            Panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            Panel.RowStyles.Add(new RowStyle(SizeType.Absolute, NameHeight));
+            Panel.RowStyles.Add(new RowStyle(SizeType.Absolute, ChoiceHeight));
+            Panel.RowStyles.Add(new RowStyle(SizeType.Absolute, SliderHeight));
+            Panel.Controls.Add(new Label
+            {
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                Font = GetDesignFont("Segoe UI", 9.5F),
+                ForeColor = Color.Silver,
+                Margin = S(new Padding(4, 0, 0, 0)),
+                Text = name,
+                TextAlign = ContentAlignment.BottomLeft
+            }, 0, 0);
+            Panel.Controls.Add(choices, 0, 1);
+            Panel.Controls.Add(slider, 0, 2);
         }
+
+        /// <summary>The whole stack, to place in the section.</summary>
+        public TableLayoutPanel Panel { get; }
 
         public DropdownButton Effect { get; }
 
@@ -243,21 +422,5 @@ internal sealed class LightingSection : SectionPanel
                 Brightness.Value = percent;
         }
 
-        public void AddTo(TableLayoutPanel lines, int row)
-        {
-            lines.Controls.Add(new Label
-            {
-                AutoSize = false,
-                Dock = DockStyle.Fill,
-                Font = GetDesignFont("Segoe UI", 9.5F),
-                ForeColor = Color.Silver,
-                Margin = S(new Padding(4, 0, 0, 0)),
-                Text = _name,
-                TextAlign = ContentAlignment.MiddleLeft
-            }, 0, row);
-            lines.Controls.Add(Effect, 1, row);
-            lines.Controls.Add(Brightness, 2, row);
-            lines.Controls.Add(_percent, 3, row);
-        }
     }
 }

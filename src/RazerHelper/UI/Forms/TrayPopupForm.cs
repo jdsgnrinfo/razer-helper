@@ -1,3 +1,4 @@
+using System.Drawing.Drawing2D;
 using System.ServiceProcess;
 using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Hardware;
@@ -27,9 +28,10 @@ public sealed class TrayPopupForm : Form
         Footer
     }
 
-    private static int HeaderRowHeight => S(34);
+    private static int HeaderRowHeight => S(36);
     private static int DisplayRowHeight => S(74);
-    private static int BatteryRowHeight => S(104);
+    // Header (28), spacer (5), slider with its labels (50) and the 8px gap, plus the limit line and the details button.
+    private static int BatteryRowHeight => S(91) + BatterySection.LimitLineHeight + BatterySection.DetailsRowHeight;
     private static int FooterRowHeight => S(24);
 
     private static int PerformanceBaseRowHeight => S(124);
@@ -46,6 +48,9 @@ public sealed class TrayPopupForm : Form
     private readonly SettingsService _settingsService;
     // One EC connection shared by every service that talks to the hardware.
     private readonly IRazerTransport _transport;
+
+    // The laptop found at startup, or null when none was.
+    private readonly RazerLaptopModel? _model;
     private readonly IPowerSource _powerSource;
     private readonly IStartupRegistration _startupRegistration;
     private readonly bool _ownsDependencies;
@@ -59,8 +64,15 @@ public sealed class TrayPopupForm : Form
     private readonly FactoryReset _factoryReset;
     private readonly SynchronizationContext _uiContext;
     private readonly Label _headerStatusLabel = CreateHeaderStatusLabel();
+    // Set in CreateAppHeader; the model name is appended to the title once known.
+    private Label _titleLabel = null!;
     private readonly ToolTip _toolTip = new();
     private readonly GlobalHotkey _hotkey = new();
+
+    // The popup fades in on every showing and fades out before hiding
+    // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
+    private readonly System.Windows.Forms.Timer _fadeTimer = new() { Interval = 15 };
+    private double _fadeTarget = 1;
     private TableLayoutPanel _content = null!;
     private AppSettings _settings;
 
@@ -119,12 +131,20 @@ public sealed class TrayPopupForm : Form
             new EcTemperatureService(_transport),
             gpuTemperature ?? new NoGpuTemperature());
         _fanSection.MaxFanRequested += FanSection_MaxFanRequested;
+        _fanSection.ReadingsHidden += (_, _) => ResizeToFitRows();
+
+        // Found before the sections are built: which modes are offered depends on it.
+        _model = new DeviceSupportService().TryGetPresentModel(out var model) ? model : null;
+
+        var maxFanMethod = _model?.MaxFan ?? MaxFanMethod.ControllerFlag;
 
         _performanceSection = new PerformanceSection(
-            new PerformanceService(_transport),
+            new PerformanceService(_transport, maxFanMethod),
             _powerSource,
             _settings.PluggedInProfile,
-            _settings.OnBatteryProfile);
+            _settings.OnBatteryProfile,
+            offerGaming: _model?.HasGamingMode == true,
+            maxFanMethod: maxFanMethod);
         _performanceSection.ProfileChanged += PerformanceSection_ProfileChanged;
         _performanceSection.CustomRowVisibilityChanged += PerformanceSection_CustomRowVisibilityChanged;
         _performanceSection.StatusChanged += Section_StatusChanged;
@@ -143,13 +163,19 @@ public sealed class TrayPopupForm : Form
 
         _batterySection = new BatterySection(
             new BatteryChargeLimitService(_transport),
-            _settings.BatteryChargeLimit);
+            _settings.BatteryChargeLimit,
+            _powerSource);
         _batterySection.ChargeLimitApplied += BatterySection_ChargeLimitApplied;
         _batterySection.StatusChanged += Section_StatusChanged;
+        _batterySection.LimitLineHidden += (_, _) => ResizeToFitRows();
+        _batterySection.DetailsRequested += (_, _) => ShowBatteryDetails();
 
-        _lightingSection = new LightingSection(new LightingService(_transport));
+        var offersColor = _model?.HasKeyboardColor == true;
+        _lightingSection = new LightingSection(
+            new LightingService(_transport, offersColor),
+            offersColor,
+            offersWave: _model?.HasWaveEffect ?? true);
         _lightingSection.StatusChanged += Section_StatusChanged;
-
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
             new RazerSoftwareManager(
@@ -179,7 +205,7 @@ public sealed class TrayPopupForm : Form
         _factoryReset = new FactoryReset(
             _settingsService,
             _startupRegistration,
-            new PerformanceService(_transport),
+            new PerformanceService(_transport, _model?.MaxFan ?? MaxFanMethod.ControllerFlag),
             new BatteryChargeLimitService(_transport));
 
         // Keep the tray popup's design surface stable across display scales.
@@ -199,6 +225,7 @@ public sealed class TrayPopupForm : Form
         TopMost = _settings.AlwaysOnTop;
         _hotkey.Pressed += (_, _) => ToggleFromShortcut();
         StartShortcut();
+        _fadeTimer.Tick += OnFadeTick;
     }
 
     /// <summary>
@@ -217,13 +244,16 @@ public sealed class TrayPopupForm : Form
         if (Visible && ContainsFocus)
         {
             AppLog.Info($"{GlobalHotkey.Text} pressed: hiding the window.");
-            Hide();
+            RequestHide();
             return;
         }
 
         // Above everything for this showing even when "Always on top" is off; it
         // drops back to the setting when the popup is hidden.
         TopMost = true;
+
+        // Reverses a fade-out that is still running (the window never left).
+        FadeTo(1);
 
         if (!Visible)
         {
@@ -237,6 +267,53 @@ public sealed class TrayPopupForm : Form
         // What happened, so a game that will not show the window can be told apart
         // from a shortcut that never arrived.
         AppLog.Info($"{GlobalHotkey.Text} pressed: showing the window (on top: {TopMost}, focus granted: {gotFocus}).");
+    }
+
+    // --- Fade in and out ---------------------------------------------------
+
+    private const double FadeStep = 0.15; // opacity per 15 ms tick: ~120 ms in total
+
+    // Hides the popup, but only once it has faded out, so it never pops away.
+    // Safe to call repeatedly: while a fade-out is running it does nothing,
+    // and while one is not it merely starts one.
+    public void RequestHide()
+    {
+        if (!Visible || _fadeTarget == 0)
+            return;
+
+        FadeTo(0);
+    }
+
+    private void FadeTo(double target)
+    {
+        _fadeTarget = target;
+
+        if (!_fadeTimer.Enabled)
+            _fadeTimer.Start();
+    }
+
+    private void OnFadeTick(object? sender, EventArgs e)
+    {
+        if (Opacity < _fadeTarget)
+        {
+            Opacity = Math.Min(_fadeTarget, Opacity + FadeStep);
+
+            if (Opacity >= _fadeTarget)
+                _fadeTimer.Stop();
+
+            return;
+        }
+
+        Opacity = Math.Max(_fadeTarget, Opacity - FadeStep);
+
+        if (Opacity > _fadeTarget)
+            return;
+
+        _fadeTimer.Stop();
+
+        // Only a finished fade-out completes the hide; a finished fade-in is done.
+        if (_fadeTarget == 0 && Visible)
+            Hide();
     }
 
     // The shortcut is always on. If another program already owns the key, say so
@@ -259,6 +336,9 @@ public sealed class TrayPopupForm : Form
 
     public void CloseForApplicationExit()
     {
+        // Nothing is left watching the fans once the app is gone.
+        _performanceSection.TurnOffMaxFanBeforeExit();
+
         _allowClose = true;
         Close();
     }
@@ -270,11 +350,23 @@ public sealed class TrayPopupForm : Form
         Font = GetDesignFont("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
-        // Wide enough that the longest button label ("Medium" in the Custom row)
-        // fits with a clear gap between the CPU and GPU groups.
-        ClientSize = S(new Size(584, 600));
+
+        // Every showing fades in from nothing (see OnFadeTick).
+        Opacity = 0;
+        // Narrow: sections that would not fit side by side (Custom's CPU and
+        // GPU levels, each light in Lighting) are stacked instead.
+        ClientSize = S(new Size(480, 600));
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
+
+        // The rounded outline is drawn here; the window's region is given the
+        // same shape (see ApplyRoundedRegion) so the border is never clipped.
+        Paint += (_, args) =>
+        {
+            using var pen = new Pen(BorderColor);
+            args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            args.Graphics.DrawPath(pen, RoundedPath(ClientRectangle, S(CornerRadius)));
+        };
     }
 
     private void BuildView()
@@ -301,9 +393,9 @@ public sealed class TrayPopupForm : Form
         AddRow(Row.Header, CreateAppHeader(), HeaderRowHeight);
         AddRow(Row.Performance, _performanceSection, PerformanceBaseRowHeight);
         AddRow(Row.Fans, _fanSection, FanRowHeight);
-        AddRow(Row.Display, _displaySection, DisplayRowHeight);
-        AddRow(Row.Battery, _batterySection, BatteryRowHeight);
-        AddRow(Row.Lighting, _lightingSection, LightingSection.RowHeight);
+        AddRow(Row.Display, _displaySection, DisplayRowHeight + SectionPanel.ExtraGap);
+        AddRow(Row.Battery, _batterySection, BatteryRowHeight + SectionPanel.ExtraGap); // Sized in ResizeToFitRows.
+        AddRow(Row.Lighting, _lightingSection, LightingSection.RowHeight + SectionPanel.ExtraGap);
         AddRow(Row.Services, _servicesSection, 0); // Grows when Razer's software is installed.
         AddRow(Row.Footer, footer, FooterRowHeight);
 
@@ -327,13 +419,17 @@ public sealed class TrayPopupForm : Form
 
     // Two rows change height: Performance gains the Custom boost row, and the
     // Razer services row only exists when Razer's software is installed. Grow
-    // or shrink the popup to match, then re-anchor it to the taskbar so it
-    // does not end up floating or overlapping it.
+    // or shrink the popup to match, then re-anchor it to the taskbar so it does
+    // not end up floating or overlapping it.
     private void ResizeToFitRows()
     {
-        RowStyleOf(Row.Performance).Height = PerformanceBaseRowHeight +
+        RowStyleOf(Row.Performance).Height = PerformanceBaseRowHeight + SectionPanel.ExtraGap +
             (_customRowShown ? CustomBoostRow.RowHeight : 0);
-        RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0;
+        RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0; // No gap below: the footer follows.
+        RowStyleOf(Row.Battery).Height = BatteryRowHeight + SectionPanel.ExtraGap -
+            (_batterySection.IsLimitLineShown ? 0 : BatterySection.LimitLineHeight);
+        RowStyleOf(Row.Fans).Height = FanRowHeight + SectionPanel.ExtraGap -
+            (_fanSection.AreReadingsShown ? 0 : FanSection.ReadingsHeight);
 
         var contentHeight = _content.Padding.Vertical +
             _content.RowStyles.Cast<RowStyle>().Sum(row => row.Height);
@@ -344,37 +440,70 @@ public sealed class TrayPopupForm : Form
             Location = TaskbarPlacement.GetPopupLocation(Size);
     }
 
-    // Left: the app name. Right: the laptop model, or a red message when
-    // something fails. The bottom of the popup belongs to the Razer services
-    // row, so this is where status text lives.
+    // Left: the app name and, once the laptop is identified, its model after a
+    // dash, all in one bold white label. Middle: errors, in red, only while they
+    // last. Right: the close button (an X). The bottom of the popup belongs to the Razer
+    // services row, so this is where status text lives.
     private Control CreateAppHeader()
     {
         var header = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
-            ColumnCount = 2,
+            ColumnCount = 3,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
             RowCount = 1
         };
 
+        // The title hugs the left; errors take the slack; Close hugs the right.
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        header.Controls.Add(new Label
+        _titleLabel = new Label
         {
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Font = GetDesignFont("Segoe UI", 12F, FontStyle.Bold),
-            ForeColor = RazerGreen,
-            Text = "RazerHelper",
+            Font = GetDesignFont("Segoe UI", 10F),
+            ForeColor = Color.White,
+            Margin = Padding.Empty,
             TextAlign = ContentAlignment.MiddleLeft
-        }, 0, 0);
+        };
+        UpdateTitleText();
+        header.Controls.Add(_titleLabel, 0, 0);
         header.Controls.Add(_headerStatusLabel, 1, 0);
+        header.Controls.Add(CreateCloseButton(), 2, 0);
 
         return header;
+    }
+
+    // "RazerHelper" alone until the laptop is identified, then its model after
+    // a dash, in the same bold white type.
+    private void UpdateTitleText() =>
+        _titleLabel.Text = _modelText == DeviceSupportService.GenericModelName
+            ? "RazerHelper"
+            : $"RazerHelper - {_modelText}";
+
+    // The top-right close button: an X in the icons' style, a little larger
+    // than the section icons (18px against 16) in a 28px target so it is easy
+    // to hit. It hides the popup to the tray (fading out first); the app
+    // keeps running.
+    private GlyphButton CreateCloseButton()
+    {
+        var button = new GlyphButton(Glyph.Close, S(18))
+        {
+            AccessibleName = "Close",
+            Anchor = AnchorStyles.Right,
+            BackColor = BackgroundColor,
+            Margin = Padding.Empty,
+            Size = S(new Size(28, 28))
+        };
+
+        button.Click += (_, _) => RequestHide();
+        _toolTip.SetToolTip(button, "Close (RazerHelper keeps running in the tray)");
+        return button;
     }
 
     // The user asked to close the apps keeping the dedicated GPU awake. The
@@ -410,6 +539,19 @@ public sealed class TrayPopupForm : Form
         }, null);
 
         return answer.Task;
+    }
+
+    // Beside the popup and in front of it, like Settings, and the popup stays
+    // open meanwhile. The window reads the battery only while it is open.
+    private void ShowBatteryDetails()
+    {
+        using var detailsForm = new BatteryDetailsForm(BatteryReader.Read);
+
+        detailsForm.PlaceBeside(this);
+        detailsForm.TopMost = TopMost;
+
+        using (KeepOpen())
+            detailsForm.ShowDialog(this);
     }
 
     private void ShowSettings()
@@ -498,7 +640,7 @@ public sealed class TrayPopupForm : Form
         Dock = DockStyle.Fill,
         Font = GetDesignFont("Segoe UI", 8.5F),
         ForeColor = SubtleTextColor,
-        Margin = S(new Padding(12, 0, 0, 0)),
+        Margin = S(new Padding(12, 0, 10, 0)),
         Text = DeviceSupportService.GenericModelName,
         TextAlign = ContentAlignment.MiddleRight
     };
@@ -507,8 +649,12 @@ public sealed class TrayPopupForm : Form
     // worth words. They replace the model name in red until the next result.
     private void ShowStatus(SectionStatus status)
     {
+        // The model name lives in the title; this line carries errors only.
         _headerStatusLabel.ForeColor = status.IsError ? Color.IndianRed : SubtleTextColor;
-        _headerStatusLabel.Text = status.IsError ? status.Message : _modelText;
+        _headerStatusLabel.Text = status.IsError ? status.Message : string.Empty;
+
+        if (!status.IsError)
+            UpdateTitleText();
 
         // The label cuts long text short with an ellipsis; the tooltip has the rest.
         _toolTip.SetToolTip(_headerStatusLabel, status.IsError ? status.Message : string.Empty);
@@ -516,10 +662,19 @@ public sealed class TrayPopupForm : Form
 
     private void CheckForSupportedDevice()
     {
-        if (new DeviceSupportService().TryGetPresentModel(out var model))
+        if (_model is RazerLaptopModel model)
         {
             _modelText = model.Name;
             ShowStatus(new SectionStatus(model.Name));
+
+            // Runs before RestoreAsync, so an ignored limit is never re-sent.
+            if (!model.HasChargeLimit)
+                _batterySection.MarkUnsupported();
+
+            _fanSection.SetMaxFanMethod(model.MaxFan);
+
+            if (!model.HasFanSpeeds)
+                _fanSection.HideReadings();
 
             AppLog.Info(model.Verified
                 ? $"{model.Name} control interface found."
@@ -624,7 +779,7 @@ public sealed class TrayPopupForm : Form
         if (!_allowClose && _settings.HideWhenClickedAway && _hasBeenActive && _modalDepth == 0 && Visible && !ContainsFocus)
         {
             AppLog.Info("The window lost focus and hid itself (Hide when clicking away is on).");
-            Hide();
+            RequestHide();
         }
     }
 
@@ -652,6 +807,44 @@ public sealed class TrayPopupForm : Form
     {
         base.OnHandleCreated(e);
         WindowChrome.Apply(Handle, BorderColor);
+        ApplyRoundedRegion();
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        ApplyRoundedRegion();
+    }
+
+    // --- Rounded outline ------------------------------------------------------
+
+    private const int CornerRadius = 12; // base-design pixels, scaled like everything else
+
+    // Gives the window the same rounded shape the Paint handler draws, and
+    // keeps the standard drop shadow, which follows the region's outline.
+    // Redone on every resize because a region is a fixed bitmap.
+    private void ApplyRoundedRegion()
+    {
+        if (IsDisposed || !IsHandleCreated || ClientSize.Width <= 0 || ClientSize.Height <= 0)
+            return;
+
+        using var path = RoundedPath(ClientRectangle, S(CornerRadius));
+        var previous = Region;
+        Region = new Region(path);
+        previous?.Dispose();
+    }
+
+    private static GraphicsPath RoundedPath(Rectangle bounds, int radius)
+    {
+        var diameter = radius * 2;
+
+        var path = new GraphicsPath();
+        path.AddArc(bounds.X, bounds.Y, diameter, diameter, 180, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Y, diameter, diameter, 270, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+        path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        return path;
     }
 
     protected override void Dispose(bool disposing)
@@ -664,6 +857,7 @@ public sealed class TrayPopupForm : Form
         {
             _toolTip.Dispose();
             _hotkey.Dispose();
+            _fadeTimer.Dispose();
             _dgpuCoordinator.Dispose();
 
             // Only what the form created itself; supplied dependencies belong to the caller.
@@ -680,7 +874,7 @@ public sealed class TrayPopupForm : Form
         if (!_allowClose)
         {
             e.Cancel = true;
-            Hide();
+            RequestHide();
             return;
         }
 
@@ -715,10 +909,14 @@ public sealed class TrayPopupForm : Form
 
         if (Visible)
         {
+            FadeTo(1); // fade in; a fade-out still running reverses course
             _fanSection.StartPolling();
 
             // A game may have changed the resolution or refresh rate since it was last read.
             _displaySection.RefreshStatus();
+
+            // The battery charge has moved on since it was last shown.
+            _batterySection.RefreshPowerStatus();
 
             // Fn+P changes the mode without telling us; show what the EC has.
             _ = _performanceSection.RefreshAsync();

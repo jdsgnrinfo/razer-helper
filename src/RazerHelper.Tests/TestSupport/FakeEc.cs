@@ -16,6 +16,13 @@ internal sealed class FakeEc : IRazerTransport
     private const byte CustomMode = 4;
 
     public readonly byte[] ZoneMode = [0, 0];
+
+    /// <summary>Each zone's fan mode, the performance mode command's last byte: 0 automatic, 1 manual.</summary>
+    public readonly byte[] ZoneFanMode = [0, 0];
+
+    /// <summary>Each zone's fixed fan speed in hundreds of RPM, as set by the manual fan command.</summary>
+    public readonly byte[] ManualFanRpmHundreds = [0x14, 0x14];
+
     public byte CpuBoost;
     public byte GpuBoost;
     public readonly byte[] FanRpmHundreds = [0, 0];
@@ -28,6 +35,9 @@ internal sealed class FakeEc : IRazerTransport
     /// <summary>When true the controller does not implement the temperature register, like a different model.</summary>
     public bool TemperaturesUnsupported;
 
+    /// <summary>When true the controller does not implement the fan speed command, like the Blade 15 Base (2020).</summary>
+    public bool FanRpmUnsupported;
+
     // Lighting, in the units the real laptop uses.
     /// <summary>Keyboard effect id: 0 off, 2 breathing, 3 spectrum, 4 wave (1 static, 5 reactive and 7 starlight exist too).</summary>
     public byte KeyboardEffectId = 3;
@@ -36,6 +46,9 @@ internal sealed class FakeEc : IRazerTransport
     public bool LogoOn;
     public byte LogoModeByte; // 0 steady, 2 breathing.
     public byte LogoBrightness = 255;
+
+    /// <summary>The standard matrix effect, [effect, ...colors], as a Blade 15 Base (2020) reports it.</summary>
+    public byte[] StandardEffect = [0x04, 0x00, 0x00, 0x00, 0x00];
 
     /// <summary>When true a keyboard effect write is acknowledged but the laptop keeps showing what it had.</summary>
     public bool IgnoreKeyboardEffectWrites;
@@ -66,18 +79,23 @@ internal sealed class FakeEc : IRazerTransport
 
         return command switch
         {
-            RazerCommands.GetPerformanceMode => Respond(0x00, args[1], ZoneMode[args[1] - 1], 0x00),
+            RazerCommands.GetPerformanceMode => Respond(0x00, args[1], ZoneMode[args[1] - 1], ZoneFanMode[args[1] - 1]),
+            RazerCommands.SetFanRpm => SetFanRpm(args),
             RazerCommands.SetPerformanceMode => SetMode(args),
             RazerCommands.GetBoost => Respond(0x00, args[1], args[1] == 1 ? CpuBoost : GpuBoost),
             RazerCommands.SetBoost => SetBoost(args),
             RazerCommands.GetMaxFan => Respond((byte)(MaxFan ? 2 : 0), 0x00),
             RazerCommands.SetMaxFan => SetMaxFan(args),
-            RazerCommands.GetActualFanRpm => Respond(0x00, args[1], FanRpmHundreds[args[1] - 1]),
+            RazerCommands.GetActualFanRpm => FanRpmUnsupported
+                ? throw new RazerCommandNotSupportedException(command)
+                : Respond(0x00, args[1], FanRpmHundreds[args[1] - 1]),
             RazerCommands.GetTemperatures => TemperaturesUnsupported
                 ? throw new RazerCommandNotSupportedException(command)
                 : Respond(0x02, CpuTemperature, GpuTemperature),
             RazerCommands.SetBatteryChargeLimit => SetBattery(args),
             RazerCommands.SetKeyboardEffect => SetKeyboardEffect(args),
+            RazerCommands.SetStandardEffect => SetStandardEffect(args),
+            RazerCommands.GetStandardEffect => Respond(StandardEffect),
             RazerCommands.GetKeyboardEffect => Respond(args[0], args[1], KeyboardEffectId, KeyboardWaveDirection),
             RazerCommands.SetBrightness => SetBrightness(args),
             RazerCommands.GetBrightness => Respond(args[0], args[1], args[1] == 5 ? KeyboardBrightness : LogoBrightness),
@@ -103,9 +121,17 @@ internal sealed class FakeEc : IRazerTransport
         if (!IgnoreModeWrites)
         {
             ZoneMode[args[1] - 1] = args[2];
+            ZoneFanMode[args[1] - 1] = args[3];
             ClearMaxFanOutsideCustom();
         }
 
+        return Echo(args);
+    }
+
+    private byte[] SetFanRpm(byte[] args)
+    {
+        // args: [enable, zone, rpm / 100]. Replies with the same bytes.
+        ManualFanRpmHundreds[args[1] - 1] = args[2];
         return Echo(args);
     }
 
@@ -133,6 +159,25 @@ internal sealed class FakeEc : IRazerTransport
             CpuBoost = args[2];
         else
             GpuBoost = args[2];
+
+        return Echo(args);
+    }
+
+    private byte[] SetStandardEffect(byte[] args)
+    {
+        // args: [effect, ...colors]. Replies with the same bytes. Like the Blade
+        // 15 Base (2020), the effect also shows in the extended read-back.
+        if (!IgnoreKeyboardEffectWrites)
+        {
+            StandardEffect = [.. args.Take(5), .. new byte[Math.Max(0, 5 - args.Length)]];
+            KeyboardEffectId = args[0] switch
+            {
+                0x06 => 1, // static
+                0x03 => 2, // breathing
+                0x04 => 3, // spectrum
+                _ => KeyboardEffectId
+            };
+        }
 
         return Echo(args);
     }

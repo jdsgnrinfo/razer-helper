@@ -22,13 +22,13 @@ internal static class UiControls
         return layout;
     }
 
-    public static Control CreateSectionHeader(string title, string detail)
+    public static Control CreateSectionHeader(string title, string detail, Glyph? icon = null)
     {
         var header = CreateTwoColumnLayout(60F, 40F);
         header.Dock = DockStyle.Top;
         header.Height = S(28);
 
-        header.Controls.Add(CreateSectionLabel(title), 0, 0);
+        header.Controls.Add(CreateSectionLabel(title, icon), 0, 0);
 
         if (!string.IsNullOrWhiteSpace(detail))
         {
@@ -46,7 +46,8 @@ internal static class UiControls
         return header;
     }
 
-    public static Label CreateSectionLabel(string text) => new()
+    /// <param name="inset">Space before the icon (or the text, without one), for titles that line up with an indented row.</param>
+    public static Label CreateSectionLabel(string text, Glyph? icon = null, int inset = 0) => new SectionLabel(icon, inset)
     {
         AutoSize = true,
         Dock = DockStyle.Left,
@@ -55,6 +56,36 @@ internal static class UiControls
         Text = text,
         TextAlign = ContentAlignment.MiddleLeft
     };
+
+    /// <summary>
+    /// A section title with an optional icon before it, in the text color.
+    /// The icon sits in the label's left padding, so auto-sizing leaves room
+    /// for it and the text lines up exactly as without one.
+    /// </summary>
+    private sealed class SectionLabel : Label
+    {
+        private static int IconSize => S(16);
+        private static int IconGap => S(6);
+
+        private readonly Glyph? _icon;
+        private readonly int _inset;
+
+        public SectionLabel(Glyph? icon, int inset = 0)
+        {
+            _icon = icon;
+            _inset = inset;
+
+            Padding = new Padding(inset + (icon is null ? 0 : IconSize + IconGap), 0, 0, 0);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            if (_icon is { } icon)
+                Glyphs.Draw(e.Graphics, icon, new RectangleF(_inset, (Height - IconSize) / 2f, IconSize, IconSize), ForeColor);
+        }
+    }
 
     public static Control CreateButtonGrid(IReadOnlyList<string> buttonNames, string nameSuffix)
     {
@@ -93,7 +124,6 @@ internal static class UiControls
 
             button.BackColor = isSelected ? RazerGreen : ButtonColor;
             button.ForeColor = isSelected ? BackgroundColor : Color.White;
-            button.FlatAppearance.BorderColor = isSelected ? RazerGreen : BorderColor;
         }
     }
 
@@ -116,21 +146,15 @@ internal static class UiControls
 
     public static Button CreateActionButton(string text)
     {
-        var button = new Button
+        return new RoundedButton
         {
             BackColor = ButtonColor,
             Cursor = Cursors.Hand,
             Dock = DockStyle.Fill,
-            FlatStyle = FlatStyle.Flat,
             Font = GetDesignFont("Segoe UI", 9.5F),
             ForeColor = Color.White,
             Margin = S(new Padding(4)),
-            Text = text,
-            UseVisualStyleBackColor = false
+            Text = text
         };
-
-        button.FlatAppearance.BorderColor = BorderColor;
-        button.FlatAppearance.BorderSize = 1;
-        return button;
     }
 }

@@ -13,6 +13,71 @@ public class LightingServiceTests
         return (new LightingService(ec), ec);
     }
 
+    // ---- Keyboard color (Blade 15 Base 2020) -------------------------------
+
+    [Fact]
+    public void KeyboardColor_SendsTheStandardStaticEffectVerifiedOnTheLaptop()
+    {
+        // White sent as [6, FF, FF, FF] lit a Blade 15 Base (2020) white.
+        var ec = new FakeEc();
+        var service = new LightingService(ec, offersColor: true);
+
+        service.SetKeyboardColor(RgbColor.White);
+
+        var write = Assert.Single(ec.Writes);
+        Assert.Equal(RazerCommands.SetStandardEffect, write.Command);
+        Assert.Equal("06FFFFFF", Convert.ToHexString(write.Arguments));
+    }
+
+    [Fact]
+    public void KeyboardColor_IsReadBackOnlyWhileTheEffectIsStatic()
+    {
+        var ec = new FakeEc();
+        var service = new LightingService(ec, offersColor: true);
+
+        ec.StandardEffect = [0x06, 0x12, 0x34, 0x56];
+        Assert.Equal(new RgbColor(0x12, 0x34, 0x56), service.ReadState().KeyboardColor);
+
+        ec.StandardEffect = [0x04, 0x00, 0x00, 0x00]; // spectrum: no single color
+        Assert.Null(service.ReadState().KeyboardColor);
+    }
+
+    [Fact]
+    public void KeyboardColor_ThatTheLaptopDoesNotTake_Fails()
+    {
+        var ec = new FakeEc { IgnoreKeyboardEffectWrites = true };
+        var service = new LightingService(ec, offersColor: true);
+
+        Assert.Throws<InvalidOperationException>(() => service.SetKeyboardColor(RgbColor.White));
+    }
+
+    [Fact]
+    public void KeyboardColor_OnAModelWithoutColor_IsNeverSentOrRead()
+    {
+        var (service, ec) = Create();
+
+        Assert.Null(service.ReadState().KeyboardColor);
+        Assert.Throws<InvalidOperationException>(() => service.SetKeyboardColor(RgbColor.White));
+        Assert.DoesNotContain(ec.Log, sent => sent.Command is RazerCommands.SetStandardEffect or RazerCommands.GetStandardEffect);
+    }
+
+    [Fact]
+    public void KeyboardBreathing_SendsTheOneColorBreathingCheckedOnTheLaptop()
+    {
+        // [3, 1, FF, FF, FF] made a Blade 15 Base (2020) breathe in white.
+        var ec = new FakeEc();
+        var service = new LightingService(ec, offersColor: true);
+
+        service.SetKeyboardBreathing(RgbColor.White);
+
+        var write = Assert.Single(ec.Writes);
+        Assert.Equal("0301FFFFFF", Convert.ToHexString(write.Arguments));
+
+        var state = service.ReadState();
+        Assert.Equal(KeyboardEffect.Breathing, state.Keyboard);
+        Assert.Equal(RgbColor.White, state.KeyboardColor);
+    }
+
     // The exact bytes sent to a Razer Blade 16 (2023) during the hardware
     // tests, so a refactor can never quietly change what goes on the wire.
 

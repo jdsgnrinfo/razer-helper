@@ -22,6 +22,12 @@ internal sealed class PowerSourceService : IPowerSource, IDisposable
 
     public bool? IsPluggedIn => _readPluggedIn();
 
+    // Windows reports a fraction, or 255 when there is no battery or it cannot tell.
+    public int? BatteryPercent =>
+        SystemInformation.PowerStatus.BatteryLifePercent is var fraction and >= 0f and <= 1f
+            ? (int)Math.Round(fraction * 100)
+            : null;
+
     public event EventHandler? PowerSourceChanged;
 
     private void SystemEvents_PowerModeChanged(

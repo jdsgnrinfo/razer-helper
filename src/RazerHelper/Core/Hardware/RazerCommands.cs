@@ -18,6 +18,11 @@ internal static class RazerCommands
     public const ushort GetBoost = 0x0D87;
     public const ushort GetActualFanRpm = 0x0D88;
 
+    // Class 0x0D: a fan's fixed speed, [enable, zone, rpm / 100]. Only acted on
+    // while that zone's fan is set to manual by SetPerformanceMode's last
+    // argument (MaxFanMethod.ManualFan).
+    public const ushort SetFanRpm = 0x0D01;
+
     // Class 0x0D: temperatures. Found by a read-only scan of a Blade 16 (2023)'s
     // controller; it is in neither razer-ctl nor OpenRazer. The reply is
     // [2, cpu, gpu] in whole degrees Celsius. The CPU byte follows CPU heat but
@@ -40,6 +45,13 @@ internal static class RazerCommands
     public const ushort GetLogoMode = 0x0382;
     public const ushort SetBrightness = 0x0303;
     public const ushort GetBrightness = 0x0383;
+
+    // Class 0x03: the older "standard" matrix effect, [effect, red, green,
+    // blue]. On the Blade 15 Base (2020) a static effect (6) sent this way
+    // shows the chosen color in Normal mode, which the extended effect below
+    // never does, and the get answers the same layout.
+    public const ushort SetStandardEffect = 0x030A;
+    public const ushort GetStandardEffect = 0x038A;
 
     // Class 0x0F: keyboard backlight effect (extended matrix effect).
     public const ushort SetKeyboardEffect = 0x0F02;

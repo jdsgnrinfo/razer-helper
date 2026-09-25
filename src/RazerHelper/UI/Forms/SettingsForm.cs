@@ -9,11 +9,14 @@ namespace RazerHelper.UI.Forms;
 
 /// <summary>
 /// The small Settings window. Every checkbox applies as soon as it is ticked,
-/// so there is nothing to confirm: the window only has a Close button.
+/// so there is nothing to confirm: the window only has a close X (Esc works
+/// too), like the popup's.
 /// </summary>
 internal sealed class SettingsForm : Form
 {
     private static int ContentWidth => S(340);
+    private static int ActionButtonHeight => S(32);
+    private static int ActionButtonGap => S(8);
     private static int HintIndent => S(22);
 
     private readonly IStartupRegistration _startupRegistration;
@@ -38,6 +41,7 @@ internal sealed class SettingsForm : Form
         ForeColor = Color.White;
         Font = GetDesignFont("Segoe UI", 9F);
         FormBorderStyle = FormBorderStyle.None;
+        KeyPreview = true; // Esc closes, as the old Close button's Cancel role did.
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterParent;
         Text = "RazerHelper Settings";
@@ -53,14 +57,7 @@ internal sealed class SettingsForm : Form
             WrapContents = false
         };
 
-        layout.Controls.Add(new Label
-        {
-            AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 12F, FontStyle.Bold),
-            ForeColor = RazerGreen,
-            Margin = S(new Padding(0, 0, 0, 10)),
-            Text = "Settings"
-        });
+        layout.Controls.Add(CreateTitleRow());
 
         _startAtLoginBox = AddOption(layout, "Start at login", "Open RazerHelper in the tray when you sign in to Windows.");
         _autoSwitchBox = AddOption(layout, "Switch profile when plugging in or unplugging", "Off keeps whatever mode you are in.");
@@ -78,20 +75,15 @@ internal sealed class SettingsForm : Form
         };
         layout.Controls.Add(_errorLabel);
 
-        layout.Controls.Add(CreateDivider());
-        layout.Controls.Add(CreateLink("Razer drivers and support", ExternalLinks.OpenRazerDrivers));
-        layout.Controls.Add(CreateLink("Open log folder", ExternalLinks.OpenLogFolder));
-        layout.Controls.Add(CreateLink("Reset to defaults...", ConfirmReset, Color.IndianRed));
+        // The actions: Razer's drivers on their own full-width row, then the
+        // log folder and the reset side by side.
+        var driversRow = CreateActionRow(("Razer drivers and support", ExternalLinks.OpenRazerDrivers, null));
+        driversRow.Margin = new Padding(0, S(8), 0, ActionButtonGap);
+        layout.Controls.Add(driversRow);
+        layout.Controls.Add(CreateActionRow(
+            ("Open log folder", ExternalLinks.OpenLogFolder, null),
+            ("Reset to defaults...", ConfirmReset, Color.IndianRed)));
 
-        var closeButton = CreateActionButton("Close");
-        closeButton.Dock = DockStyle.None;
-        closeButton.DialogResult = DialogResult.OK;
-        closeButton.Margin = new Padding(ContentWidth - S(88), S(8), 0, 0);
-        closeButton.Size = S(new Size(88, 30));
-        layout.Controls.Add(closeButton);
-
-        AcceptButton = closeButton;
-        CancelButton = closeButton;
         Controls.Add(layout);
 
         _autoSwitchBox.Checked = settings.AutoSwitchProfiles;
@@ -186,7 +178,7 @@ internal sealed class SettingsForm : Form
 
     private static CheckBox AddOption(FlowLayoutPanel layout, string text, string hint)
     {
-        var box = new CheckBox
+        var box = new ThemedCheckBox
         {
             AutoSize = true,
             Cursor = Cursors.Hand,
@@ -210,29 +202,86 @@ internal sealed class SettingsForm : Form
         return box;
     }
 
-    private static Control CreateDivider() => new Panel
+    // "Settings" on the left, the close X on the right, as in the popup.
+    private Control CreateTitleRow()
     {
-        BackColor = BorderColor,
-        Height = 1,
-        Margin = S(new Padding(0, 6, 0, 8)),
-        Width = ContentWidth
-    };
-
-    private static LinkLabel CreateLink(string text, Action open, Color? color = null)
-    {
-        var link = new LinkLabel
+        var row = new TableLayoutPanel
         {
-            ActiveLinkColor = Color.White,
-            AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 9.5F),
-            LinkBehavior = LinkBehavior.HoverUnderline,
-            LinkColor = color ?? RazerGreen,
-            Margin = S(new Padding(0, 2, 0, 2)),
-            Text = text
+            BackColor = BackgroundColor,
+            ColumnCount = 2,
+            Height = S(30),
+            Margin = S(new Padding(0, 0, 0, 10)),
+            Padding = Padding.Empty,
+            RowCount = 1,
+            Width = ContentWidth
         };
 
-        link.LinkClicked += (_, _) => open();
-        return link;
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        row.Controls.Add(new Label
+        {
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Font = GetDesignFont("Segoe UI", 12F, FontStyle.Bold),
+            ForeColor = RazerGreen,
+            Margin = Padding.Empty,
+            Text = "Settings"
+        }, 0, 0);
+
+        var close = new GlyphButton(Glyph.Close, S(18))
+        {
+            AccessibleName = "Close",
+            Anchor = AnchorStyles.Right,
+            BackColor = BackgroundColor,
+            Margin = Padding.Empty,
+            Size = S(new Size(28, 28))
+        };
+
+        close.Click += (_, _) => Close();
+        row.Controls.Add(close, 1, 0);
+        return row;
+    }
+
+    // A row of the app's rounded buttons, sharing the content width equally.
+    private static Control CreateActionRow(params (string Text, Action Open, Color? TextColor)[] actions)
+    {
+        var row = new TableLayoutPanel
+        {
+            BackColor = BackgroundColor,
+            ColumnCount = actions.Length,
+            Height = ActionButtonHeight,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            RowCount = 1,
+            Width = ContentWidth
+        };
+
+        row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        for (var index = 0; index < actions.Length; index++)
+        {
+            var (text, open, textColor) = actions[index];
+
+            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / actions.Length));
+
+            var button = CreateActionButton(text);
+            button.ForeColor = textColor ?? Color.White;
+            button.Margin = new Padding(index == 0 ? 0 : ActionButtonGap / 2, 0, index == actions.Length - 1 ? 0 : ActionButtonGap / 2, 0);
+            button.Click += (_, _) => open();
+            row.Controls.Add(button, index, 0);
+        }
+
+        return row;
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        if (e.KeyCode == Keys.Escape)
+            Close();
     }
 
     /// <summary>Opens next to this window (the popup) instead of centered over it, where it would hide it.</summary>

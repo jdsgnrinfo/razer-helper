@@ -21,7 +21,6 @@ internal sealed class FanSection : SectionPanel
     // Each button plus its margins.
     private static int ModeButtonCellWidth => S(140);
 
-    private const string MaxUnavailableHint = "Needs Custom mode, plugged in";
 
     private readonly FanTelemetryService _telemetryService;
     private readonly ICpuTemperatureSource _cpuTemperature;
@@ -35,12 +34,14 @@ internal sealed class FanSection : SectionPanel
     };
     private readonly Label _cpuFanLabel;
     private readonly Label _gpuFanLabel;
+    private readonly TableLayoutPanel _readings;
     private readonly Button[] _modeButtons;
     private readonly Button _autoButton;
     private readonly Button _maxButton;
 
     private PerformanceState _performanceState = PerformanceState.Unknown;
     private bool _isMaxAvailable;
+    private MaxFanMethod _maxFanMethod = MaxFanMethod.ControllerFlag;
     private bool _isPolling;
     private bool _refreshInProgress;
 
@@ -61,12 +62,12 @@ internal sealed class FanSection : SectionPanel
         // Each reading sits above its own button: CPU over Auto, GPU over Max,
         // side by side. The columns are the same width as the button cells
         // below, so the text lines up with the left edge of each button.
-        var readings = new TableLayoutPanel
+        var readings = _readings = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
             ColumnCount = 3,
             Dock = DockStyle.Top,
-            Height = S(24),
+            Height = ReadingsHeight,
             Margin = Padding.Empty,
             Padding = S(new Padding(0, 0, 0, 2)),
             RowCount = 1
@@ -98,10 +99,36 @@ internal sealed class FanSection : SectionPanel
         // buttons fill what is left.
         Controls.Add(modeGrid);
         Controls.Add(readings);
-        Controls.Add(CreateSectionHeader("Fans", string.Empty));
+        Controls.Add(CreateSectionHeader("Fans", string.Empty, Glyph.Fans));
 
         _pollTimer.Tick += PollTimer_Tick;
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
+    }
+
+    /// <summary>The height of the fan speed line, which goes away on a laptop that does not report fan speeds.</summary>
+    public static int ReadingsHeight => S(24);
+
+    /// <summary>False once the fan speed line has been removed.</summary>
+    // Tracked in a field: Control.Visible reads false whenever the popup is hidden.
+    public bool AreReadingsShown => !_readingsHidden;
+
+    private bool _readingsHidden;
+
+    /// <summary>Raised once, when the fan speed line is removed, so the host can shrink the row.</summary>
+    public event EventHandler? ReadingsHidden;
+
+    /// <summary>
+    /// Removes the CPU and GPU fan speed line for a laptop that does not report
+    /// fan speeds, rather than showing placeholders that never fill in.
+    /// </summary>
+    public void HideReadings()
+    {
+        if (_readingsHidden)
+            return;
+
+        _readingsHidden = true;
+        _readings.Visible = false;
+        ReadingsHidden?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Raised when the user asks for max fan speed on (true) or off (false). The host performs it.</summary>
@@ -154,18 +181,34 @@ internal sealed class FanSection : SectionPanel
         PostToUi(UpdateModeButtons);
 
     // Shows what the laptop is doing (Max when its flag is on, otherwise Auto)
-    // and whether Max can be chosen. When it cannot (it needs Custom mode,
-    // plugged in) the button is drawn like a disabled one and hovering it says
+    // and whether Max can be chosen. When it cannot (see
+    // PowerProfileRules.CanUseMaxFan) the button is drawn like a disabled one and hovering it says
     // why. It is deliberately still enabled underneath, because WinForms shows
     // no tooltip on a disabled control, so RequestMaxFan must refuse the click.
     private void UpdateModeButtons()
     {
         var pluggedIn = PowerProfileRules.TreatAsPluggedIn(_powerSource.IsPluggedIn);
-        _isMaxAvailable = PowerProfileRules.CanUseMaxFan(_performanceState, pluggedIn);
+        _isMaxAvailable = PowerProfileRules.CanUseMaxFan(_performanceState, pluggedIn, _maxFanMethod);
 
         // Highlighting resets the text colors, so the unavailable look goes on after it.
         HighlightSelected(_modeButtons, _performanceState.MaxFan == true ? _maxButton : _autoButton);
-        SetAvailability(_maxButton, _isMaxAvailable, _toolTip, MaxUnavailableHint);
+        SetAvailability(
+            _maxButton,
+            _isMaxAvailable,
+            _toolTip,
+            _maxFanMethod switch
+            {
+                MaxFanMethod.ControllerFlag => "Needs Custom mode, plugged in",
+                MaxFanMethod.ManualFan => "Needs to be plugged in, and not in Silent mode",
+                _ => "This laptop does not support max fan speed"
+            });
+    }
+
+    /// <summary>Tells the fan buttons how this laptop runs its fans flat out, which decides when Max is offered.</summary>
+    public void SetMaxFanMethod(MaxFanMethod method)
+    {
+        _maxFanMethod = method;
+        UpdateModeButtons();
     }
 
     private void RequestMaxFan(bool enabled)
@@ -195,13 +238,20 @@ internal sealed class FanSection : SectionPanel
         {
             // Read together, so the temperatures never trail the fan speeds.
             var temperatures = Task.Run(ReadTemperatures);
-            var reading = await _telemetryService.ReadAsync();
+            var reading = _readingsHidden ? null : await _telemetryService.ReadAsync();
             var temperature = await temperatures;
 
             if (!_isPolling)
                 return;
 
             TemperaturesRead?.Invoke(this, temperature);
+
+            // A laptop that turns out not to report fan speeds loses the line.
+            if (!_telemetryService.IsSupported)
+            {
+                HideReadings();
+                return;
+            }
 
             if (reading is null)
                 return;
