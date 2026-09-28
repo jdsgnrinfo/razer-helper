@@ -1,4 +1,5 @@
 using RazerHelper.Core.Localization;
+using RazerHelper.Core.Models;
 using RazerHelper.Helpers;
 using RazerHelper.UI.Forms;
 
@@ -9,10 +10,13 @@ public sealed class TrayIconHost : IDisposable
     private readonly ContextMenuStrip _menu;
     private readonly NotifyIcon _notifyIcon;
     private readonly TrayPopupForm _popup;
+    private readonly TrayIconArt _art;
+    private PerformanceMode? _shownMode;
 
     public TrayIconHost(TrayPopupForm popup)
     {
         _popup = popup;
+        _art = new TrayIconArt(LoadTrayIcon());
 
         _menu = new ContextMenuStrip();
         _menu.Items.Add(L.T("Open RazerHelper"), null, (_, _) => TogglePopup());
@@ -22,12 +26,29 @@ public sealed class TrayIconHost : IDisposable
         _notifyIcon = new NotifyIcon
         {
             ContextMenuStrip = _menu,
-            Icon = LoadTrayIcon(),
+            Icon = _art.For(null),
             Text = "RazerHelper",
             Visible = true
         };
 
         _notifyIcon.MouseClick += OnTrayIconMouseClick;
+        _popup.PerformanceModeChanged += OnPerformanceModeChanged;
+    }
+
+    /// <summary>What the icon says on hover: "RazerHelper (Gaming)", or just the name while the mode is unknown.</summary>
+    internal static string HoverText(PerformanceMode? mode) =>
+        mode is PerformanceMode known ? $"RazerHelper ({L.T(known.ToString())})" : "RazerHelper";
+
+    // The icon takes the mode's color and names it on hover. Nothing is
+    // redrawn when the mode is the one already shown.
+    private void OnPerformanceModeChanged(object? sender, PerformanceMode? mode)
+    {
+        if (mode == _shownMode)
+            return;
+
+        _shownMode = mode;
+        _notifyIcon.Icon = _art.For(mode);
+        _notifyIcon.Text = HoverText(mode);
     }
 
     // The icon file holds several sizes; ask for the one the tray uses at this
@@ -51,9 +72,11 @@ public sealed class TrayIconHost : IDisposable
 
     public void Dispose()
     {
+        _popup.PerformanceModeChanged -= OnPerformanceModeChanged;
         _notifyIcon.MouseClick -= OnTrayIconMouseClick;
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
+        _art.Dispose();
         _menu.Dispose();
     }
 

@@ -817,9 +817,13 @@ public sealed class TrayPopupForm : Form
         _ = _performanceSection.SetMaxFanAsync(enabled);
 
     // Max fan speed only exists in Custom mode, so the fan buttons follow the performance state.
+    /// <summary>Raised with the performance mode the laptop is in after every confirmed change (null when unknown), for the tray icon.</summary>
+    internal event EventHandler<PerformanceMode?>? PerformanceModeChanged;
+
     private void PerformanceSection_StateChanged(object? sender, PerformanceState state)
     {
         _fanSection.ShowPerformanceState(state);
+        PerformanceModeChanged?.Invoke(this, state.Mode);
 
         // The levels only mean something in Custom (the charger switching
         // profiles, or the Fn keys, can leave it while the window is open).
