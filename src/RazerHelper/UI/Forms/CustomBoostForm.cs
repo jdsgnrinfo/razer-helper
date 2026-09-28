@@ -4,33 +4,28 @@ using RazerHelper.Core.Localization;
 using RazerHelper.Core.Services;
 using RazerHelper.Helpers;
 using RazerHelper.UI.Sections;
-using static RazerHelper.UI.UiControls;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI.Forms;
 
 /// <summary>
-/// The Custom mode's window beside the popup, like Settings: what the CPU and
-/// the GPU are doing now, side by side, then their boost levels. Each click
-/// applies at once, so there is only a close X (Esc works too). The selectors
-/// belong to the Performance section, which keeps them up to date; this
-/// window borrows them and hands them back. The figures are read every couple
-/// of seconds, only while the window is open.
+/// The Custom mode's window beside the popup, like Settings: for the CPU and
+/// then the GPU, its boost levels and, under them, what it is doing now. Each
+/// click applies at once, so there is only a close X (Esc works too). The
+/// selectors belong to the Performance section, which keeps them up to date;
+/// this window borrows them and hands them back. The figures are read every
+/// couple of seconds, only while the window is open.
 /// </summary>
 internal sealed class CustomBoostForm : Form
 {
     private const int RefreshIntervalMilliseconds = 2_000;
 
     private static int ContentWidth => S(400);
-    private static int CardGap => S(8);
-    private static Padding CardPadding => S(new Padding(10, 8, 10, 8));
-    private static int StatTitleHeight => S(26);
-    private static int StatLineHeight => S(22);
 
-    // The GPU card has the most lines; both cards are that tall, so they line up.
-    private const int MostStatLines = 4;
+    // A row of figures: 12px above, then each figure's name and value, 8px apart and around.
+    private static int StatsHeight => S(12 + 8 + 15 + 8 + 15 + 8);
 
-    private readonly CustomBoostRow _selectors;
+    private readonly CustomBoostSelectors _selectors;
     private readonly CpuStatsReader _cpuReader = new();
     private readonly GpuStatsReader _gpuReader = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = RefreshIntervalMilliseconds };
@@ -38,7 +33,6 @@ internal sealed class CustomBoostForm : Form
     private readonly Label _cpuTemperature;
     private readonly Label _cpuUsage;
     private readonly Label _cpuSpeed;
-    private readonly Label _gpuState;
     private readonly Label _gpuTemperature;
     private readonly Label _gpuUsage;
     private readonly Label _gpuCoreClock;
@@ -47,7 +41,7 @@ internal sealed class CustomBoostForm : Form
     private Form? _anchor;
     private Task _read = Task.CompletedTask;
 
-    public CustomBoostForm(CustomBoostRow selectors)
+    public CustomBoostForm(CustomBoostSelectors selectors)
     {
         _selectors = selectors;
 
@@ -56,7 +50,7 @@ internal sealed class CustomBoostForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
         ForeColor = Color.White;
-        Font = GetDesignFont("Segoe UI", 9F);
+        Font = DesignFont(12);
         FormBorderStyle = FormBorderStyle.None;
         KeyPreview = true;
         ShowInTaskbar = false;
@@ -70,76 +64,43 @@ internal sealed class CustomBoostForm : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(16, 14, 16, 16)),
+            Padding = S(new Padding(20)),
             WrapContents = false
         };
 
-        layout.Controls.Add(WindowTitleRow.Create(this, "Custom", ContentWidth));
+        layout.Controls.Add(WindowTitleRow.Create(this, "Custom", Glyph.Custom, ContentWidth));
 
-        // What the two chips are doing now, side by side.
-        var (cpuCard, _, cpuValues) = CreateStatsCard("CPU", Glyph.Cpu,
-            "Temperature", "Usage", "Speed");
+        var cpuValues = CreateStatsRow(out var cpuStats, "Temperature", "Usage", "Speed");
         (_cpuTemperature, _cpuUsage, _cpuSpeed) = (cpuValues[0], cpuValues[1], cpuValues[2]);
 
-        var (gpuCard, gpuNote, gpuValues) = CreateStatsCard("GPU", Glyph.Gpu,
-            "Temperature", "Usage", "Core clock", "Memory clock");
-        _gpuState = gpuNote;
-        (_gpuTemperature, _gpuUsage, _gpuCoreClock, _gpuMemoryClock) =
-            (gpuValues[0], gpuValues[1], gpuValues[2], gpuValues[3]);
+        var gpuValues = CreateStatsRow(out var gpuStats, "Temperature", "Usage", "Core clock", "Memory clock");
+        (_gpuTemperature, _gpuUsage, _gpuCoreClock, _gpuMemoryClock) = (gpuValues[0], gpuValues[1], gpuValues[2], gpuValues[3]);
 
-        var stats = new TableLayoutPanel
-        {
-            BackColor = BackgroundColor,
-            ColumnCount = 2,
-            Margin = new Padding(0, 0, 0, CardGap),
-            Padding = Padding.Empty,
-            RowCount = 1,
-            Size = new Size(ContentWidth, StatsCardHeight)
-        };
-
-        stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        stats.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        cpuCard.Margin = new Padding(0, 0, CardGap / 2, 0);
-        gpuCard.Margin = new Padding(CardGap / 2, 0, 0, 0);
-        stats.Controls.Add(cpuCard, 0, 0);
-        stats.Controls.Add(gpuCard, 1, 0);
-        layout.Controls.Add(stats);
+        // Each chip: 20px below what comes before, its selector, then its figures.
+        AddSelector(layout, _selectors.Cpu);
+        layout.Controls.Add(cpuStats);
+        AddSelector(layout, _selectors.Gpu);
+        layout.Controls.Add(gpuStats);
 
         layout.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 8F),
-            ForeColor = SubtleTextColor,
-            Margin = S(new Padding(0, 2, 0, 8)),
+            Font = DesignFont(11),
+            ForeColor = Color.White,
+            Margin = new Padding(0, S(20), 0, 0),
             MaximumSize = new Size(ContentWidth, 0),
             Text = L.T("Boost levels apply right away and are saved in the current power profile.")
         });
-
-        var selectorsCard = new CardPanel
-        {
-            ColumnCount = 1,
-            Margin = Padding.Empty,
-            Padding = CardPadding,
-            RowCount = 1,
-            Size = new Size(ContentWidth, CustomBoostRow.RowHeight + CardPadding.Vertical)
-        };
-
-        _selectors.Dock = DockStyle.Fill;
-        selectorsCard.Controls.Add(_selectors, 0, 0);
-        layout.Controls.Add(selectorsCard);
 
         Controls.Add(layout);
 
         _refreshTimer.Tick += (_, _) => StartRead();
     }
 
-    private static int StatsCardHeight => CardPadding.Vertical + StatTitleHeight + MostStatLines * StatLineHeight;
-
     /// <summary>
     /// The CPU temperature, from the laptop's controller. It is already read
-    /// for the popup's header, so the host passes each reading on rather than
-    /// this window asking the controller again.
+    /// for the popup, so the host passes each reading on rather than this
+    /// window asking the controller again.
     /// </summary>
     public void ShowCpuTemperature(double? celsius) =>
         _cpuTemperature.Text = HardwareStatsText.Celsius(celsius);
@@ -187,7 +148,7 @@ internal sealed class CustomBoostForm : Form
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         _refreshTimer.Stop();
-        _selectors.Parent?.Controls.Remove(_selectors);
+        _selectors.Detach();
         base.OnFormClosed(e);
     }
 
@@ -207,6 +168,14 @@ internal sealed class CustomBoostForm : Form
         }
 
         base.Dispose(disposing);
+    }
+
+    private static void AddSelector(FlowLayoutPanel layout, Panel selector)
+    {
+        selector.Dock = DockStyle.None;
+        selector.Margin = new Padding(0, S(16), 0, 0);
+        selector.Width = ContentWidth;
+        layout.Controls.Add(selector);
     }
 
     // Reads off the UI thread (the counters and the driver can take a moment),
@@ -229,70 +198,59 @@ internal sealed class CustomBoostForm : Form
         _cpuUsage.Text = HardwareStatsText.Percent(cpu.UsagePercent);
         _cpuSpeed.Text = HardwareStatsText.Gigahertz(cpu.CurrentMhz, CultureInfo.CurrentCulture);
 
-        _gpuState.Text = gpu.Asleep ? L.T("Asleep") : string.Empty;
-        _gpuTemperature.Text = HardwareStatsText.Celsius(gpu.Celsius);
-        _gpuUsage.Text = HardwareStatsText.Percent(gpu.UsagePercent);
-        _gpuCoreClock.Text = HardwareStatsText.Megahertz(gpu.CoreMhz);
-        _gpuMemoryClock.Text = HardwareStatsText.Megahertz(gpu.MemoryMhz);
+        // A GPU that is powered down has nothing to show; saying so beats a row of dashes.
+        var asleep = gpu.Asleep ? L.T("Asleep") : null;
+        _gpuTemperature.Text = asleep ?? HardwareStatsText.Celsius(gpu.Celsius);
+        _gpuUsage.Text = asleep ?? HardwareStatsText.Percent(gpu.UsagePercent);
+        _gpuCoreClock.Text = asleep ?? HardwareStatsText.Megahertz(gpu.CoreMhz);
+        _gpuMemoryClock.Text = asleep ?? HardwareStatsText.Megahertz(gpu.MemoryMhz);
     }
 
-    // A card with the chip's name (and a note on the right, such as "Asleep"),
-    // then one line per figure: its name on the left, the value on the right.
-    // Returns the value labels in the order the names were given.
-    private static (CardPanel Card, Label Note, Label[] Values) CreateStatsCard(string title, Glyph glyph, params string[] names)
+    // The figures side by side in equal columns: each one's name in bold and,
+    // under it, its value. Returns the value labels in the order of the names.
+    private static Label[] CreateStatsRow(out Control row, params string[] names)
     {
-        var card = new CardPanel
+        var table = new TableLayoutPanel
         {
-            ColumnCount = 2,
-            Dock = DockStyle.Fill,
-            Padding = CardPadding,
-            RowCount = names.Length + 2
+            BackColor = BackgroundColor,
+            ColumnCount = names.Length,
+            Margin = Padding.Empty,
+            Padding = new Padding(0, S(12 + 8), 0, S(8)),
+            RowCount = 2,
+            Size = new Size(ContentWidth, StatsHeight)
         };
 
-        card.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        card.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        card.RowStyles.Add(new RowStyle(SizeType.Absolute, StatTitleHeight));
-
-        // The title with its icon, bold like the selectors' titles below.
-        var heading = CreateSectionLabel(title, glyph);
-        heading.Dock = DockStyle.Fill;
-        heading.Font = GetDesignFont("Segoe UI", 9.5F, FontStyle.Bold);
-        heading.Margin = Padding.Empty;
-        heading.BackColor = CardColor;
-        card.Controls.Add(heading, 0, 0);
-
-        var note = CreateStatLabel(SubtleTextColor, ContentAlignment.MiddleRight);
-        note.Font = GetDesignFont("Segoe UI", 8.5F);
-        card.Controls.Add(note, 1, 0);
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, S(15 + 8)));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         var values = new Label[names.Length];
 
         for (var index = 0; index < names.Length; index++)
         {
-            card.RowStyles.Add(new RowStyle(SizeType.Absolute, StatLineHeight));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / names.Length));
 
-            var name = CreateStatLabel(Color.Silver, ContentAlignment.MiddleLeft);
+            var name = CreateStatLabel(DesignFont(12, FontStyle.Bold));
             name.Text = L.T(names[index]);
-            card.Controls.Add(name, 0, index + 1);
+            name.Margin = new Padding(0, 0, 0, S(8));
+            table.Controls.Add(name, index, 0);
 
-            values[index] = CreateStatLabel(Color.White, ContentAlignment.MiddleRight);
+            values[index] = CreateStatLabel(DesignFont(12));
             values[index].Text = HardwareStatsText.NoReading;
-            card.Controls.Add(values[index], 1, index + 1);
+            table.Controls.Add(values[index], index, 1);
         }
 
-        // Whatever height is left over, so a shorter card still fills its column.
-        card.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        return (card, note, values);
+        row = table;
+        return values;
     }
 
-    private static Label CreateStatLabel(Color color, ContentAlignment alignment) => new()
+    private static Label CreateStatLabel(Font font) => new()
     {
-        AutoSize = true,
-        BackColor = CardColor,
+        AutoEllipsis = true,
+        BackColor = BackgroundColor,
         Dock = DockStyle.Fill,
-        Font = GetDesignFont("Segoe UI", 9F),
-        ForeColor = color,
+        Font = font,
+        ForeColor = Color.White,
         Margin = Padding.Empty,
-        TextAlign = alignment
+        TextAlign = ContentAlignment.TopLeft
     };
 }

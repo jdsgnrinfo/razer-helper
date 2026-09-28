@@ -16,8 +16,10 @@ namespace RazerHelper.UI.Forms;
 internal sealed class SettingsForm : Form
 {
     private static int ContentWidth => S(400);
-    private static int ActionButtonHeight => S(32);
-    private static int ActionButtonGap => S(8);
+    private static int TextColumnWidth => S(260);
+    private static int RowGap => S(16);
+    private static int ActionButtonHeight => S(36);
+    private static int ActionButtonGap => S(7);
 
     private readonly IStartupRegistration _startupRegistration;
     private readonly CheckBox _startAtLoginBox;
@@ -40,7 +42,7 @@ internal sealed class SettingsForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
         ForeColor = Color.White;
-        Font = GetDesignFont("Segoe UI", 9F);
+        Font = GetDesignFont(FontFamilyName, 9F);
         FormBorderStyle = FormBorderStyle.None;
         KeyPreview = true; // Esc closes, as the old Close button's Cancel role did.
         ShowInTaskbar = false;
@@ -54,11 +56,11 @@ internal sealed class SettingsForm : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(16, 14, 16, 14)),
+            Padding = S(new Padding(20)),
             WrapContents = false
         };
 
-        layout.Controls.Add(WindowTitleRow.Create(this, "Settings", ContentWidth));
+        layout.Controls.Add(WindowTitleRow.Create(this, "Settings", Glyph.Settings, ContentWidth));
         layout.Controls.Add(CreateLanguageRow());
 
         _startAtLoginBox = AddOption(layout, "Start at login", "Opens in the tray when you sign in.");
@@ -72,20 +74,18 @@ internal sealed class SettingsForm : Form
         {
             AutoSize = true,
             ForeColor = Color.IndianRed,
-            Margin = S(new Padding(0, 0, 0, 6)),
+            Margin = new Padding(0, RowGap, 0, 0),
             MaximumSize = new Size(ContentWidth, 0),
             Visible = false
         };
         layout.Controls.Add(_errorLabel);
 
-        // The actions: Razer's drivers on their own full-width row, then the
-        // log folder and the reset side by side.
-        var driversRow = CreateActionRow(("Razer drivers and support", ExternalLinks.OpenRazerDrivers, null));
-        driversRow.Margin = new Padding(0, S(8), 0, ActionButtonGap);
-        layout.Controls.Add(driversRow);
+        // The actions in one row: Razer's drivers across half of it, then the
+        // log folder and the reset (which asks first) sharing the other half.
         layout.Controls.Add(CreateActionRow(
-            ("Open log folder", ExternalLinks.OpenLogFolder, null),
-            ("Reset to defaults...", ConfirmReset, Color.IndianRed)));
+            ("Razer drivers and support", ExternalLinks.OpenRazerDrivers, 2),
+            ("Logs", ExternalLinks.OpenLogFolder, 1),
+            ("Reset", ConfirmReset, 1)));
 
         Controls.Add(layout);
 
@@ -186,10 +186,9 @@ internal sealed class SettingsForm : Form
         Close();
     }
 
-    // One setting as Windows 11 lays it out, on a card of its own: the title
-    // and, under it, what it does, wrapping onto more lines as needed, on the
-    // left; the switch on the right, centered on them. Clicking anywhere on
-    // the card flips the switch.
+    // One setting as Windows 11 lays it out: the title and, under it, what it
+    // does, wrapping onto more lines as needed, on the left; the switch on the
+    // right, centered on them. Clicking anywhere on the row flips the switch.
     private static CheckBox AddOption(FlowLayoutPanel layout, string text, string hint)
     {
         var toggle = new ToggleSwitch
@@ -214,21 +213,19 @@ internal sealed class SettingsForm : Form
         return toggle;
     }
 
-    // A card with a title and a description on the left and a control on the
-    // right, in the content width, however long the texts run.
-    private static CardPanel CreateCard(string text, string hint, Control control)
+    // A setting's row, 24px below the one before: a bold title and, 8px under
+    // it, what it does, in a 260px column on the left, however long the texts
+    // run; the control at the right edge.
+    private static TableLayoutPanel CreateCard(string text, string hint, Control control)
     {
-        control.Margin = new Padding(S(12), 0, 0, 0);
-
-        var padding = S(new Padding(14, 11, 12, 11));
-        var textWidth = ContentWidth - padding.Horizontal - control.Width - control.Margin.Horizontal;
+        control.Margin = Padding.Empty;
 
         var words = new FlowLayoutPanel
         {
             Anchor = AnchorStyles.Left,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            BackColor = CardColor,
+            BackColor = BackgroundColor,
             FlowDirection = FlowDirection.TopDown,
             Margin = Padding.Empty,
             WrapContents = false
@@ -237,44 +234,40 @@ internal sealed class SettingsForm : Form
         words.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 9.5F),
+            Font = DesignFont(12, FontStyle.Bold),
             ForeColor = Color.White,
             Margin = Padding.Empty,
-            MaximumSize = new Size(textWidth, 0),
+            MaximumSize = new Size(TextColumnWidth, 0),
             Text = L.T(text)
         });
 
-        var hintLabel = CreateHint(hint);
-        hintLabel.Margin = S(new Padding(0, 2, 0, 0));
-        hintLabel.MaximumSize = new Size(textWidth, 0);
-        words.Controls.Add(hintLabel);
+        words.Controls.Add(new Label
+        {
+            AutoSize = true,
+            Font = DesignFont(10),
+            ForeColor = Color.White,
+            Margin = new Padding(0, S(6), 0, 0),
+            MaximumSize = new Size(TextColumnWidth, 0),
+            Text = L.T(hint)
+        });
 
-        var card = new CardPanel
+        var row = new TableLayoutPanel
         {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = BackgroundColor,
             ColumnCount = 2,
-            Margin = S(new Padding(0, 0, 0, 6)),
-            Padding = padding,
+            Margin = new Padding(0, RowGap, 0, 0),
+            Padding = Padding.Empty,
             RowCount = 1
         };
 
-        card.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, textWidth));
-        card.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        card.Controls.Add(words, 0, 0);
-        card.Controls.Add(control, 1, 0);
-        return card;
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, ContentWidth - control.Width));
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        row.Controls.Add(words, 0, 0);
+        row.Controls.Add(control, 1, 0);
+        return row;
     }
-
-    private static Label CreateHint(string hint) => new()
-    {
-        AutoSize = true,
-        Font = GetDesignFont("Segoe UI", 8F),
-        ForeColor = SubtleTextColor,
-        Margin = new Padding(0, 0, 0, S(6)),
-        MaximumSize = new Size(ContentWidth, 0),
-        Text = L.T(hint)
-    };
 
     // "Language" on the left and the list on the right. Each language is named
     // in itself, so it can be found whatever the current one is. Picking a
@@ -283,11 +276,11 @@ internal sealed class SettingsForm : Form
     {
         var languages = Enum.GetValues<AppLanguage>();
 
-        // The buttons' color, lighter than the card, so it stands out on it.
         var dropdown = new DropdownButton([.. languages.Select(LanguageName)])
         {
             Anchor = AnchorStyles.Right,
-            Size = S(new Size(130, 30))
+            Font = DesignFont(10, FontStyle.Bold),
+            Size = S(new Size(150, 34))
         };
 
         dropdown.Select(Array.IndexOf(languages, L.Current));
@@ -311,15 +304,16 @@ internal sealed class SettingsForm : Form
         _ => "English"
     };
 
-    // A row of the app's rounded buttons, sharing the content width equally.
-    private static Control CreateActionRow(params (string Text, Action Open, Color? TextColor)[] actions)
+    // One row of the app's buttons, each taking its share of the content
+    // width (a weight of 2 is twice as wide as 1), 7px apart.
+    private static Control CreateActionRow(params (string Text, Action Open, int Weight)[] actions)
     {
         var row = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
             ColumnCount = actions.Length,
             Height = ActionButtonHeight,
-            Margin = Padding.Empty,
+            Margin = new Padding(0, S(18), 0, 0),
             Padding = Padding.Empty,
             RowCount = 1,
             Width = ContentWidth
@@ -327,15 +321,21 @@ internal sealed class SettingsForm : Form
 
         row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
+        var gaps = ActionButtonGap * (actions.Length - 1);
+        var share = (ContentWidth - gaps) / (float)actions.Sum(action => action.Weight);
+
         for (var index = 0; index < actions.Length; index++)
         {
-            var (text, open, textColor) = actions[index];
+            var (text, open, weight) = actions[index];
+            var last = index == actions.Length - 1;
 
-            row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / actions.Length));
+            row.ColumnStyles.Add(last
+                ? new ColumnStyle(SizeType.Percent, 100F) // The rest, so rounding never leaves a sliver.
+                : new ColumnStyle(SizeType.Absolute, share * weight + ActionButtonGap));
 
             var button = CreateActionButton(text);
-            button.ForeColor = textColor ?? Color.White;
-            button.Margin = new Padding(index == 0 ? 0 : ActionButtonGap / 2, 0, index == actions.Length - 1 ? 0 : ActionButtonGap / 2, 0);
+            button.Font = DesignFont(10, FontStyle.Bold);
+            button.Margin = new Padding(0, 0, last ? 0 : ActionButtonGap, 0);
             button.Click += (_, _) => open();
             row.Controls.Add(button, index, 0);
         }

@@ -44,20 +44,11 @@ internal sealed class DisplaySection : SectionPanel
         // Ascending and distinct, so the second-to-last entry is the next rate down from the fastest.
         _secondHz = detectedRates.Count >= 2 ? detectedRates[^2] : null;
 
-        // The title is short; the detected mode ("1920x1080 | 120 Hz") needs the room.
-        var header = CreateTwoColumnLayout(40F, 60F);
-        header.Dock = DockStyle.Top;
-        header.Height = S(28);
+        // The title is short; the detected mode ("1920x1080 (120 Hz)") needs the room.
+        var header = CreateHeaderLayout(40F, 60F);
 
-        _statusLabel = new Label
-        {
-            AutoSize = true,
-            Dock = DockStyle.Right,
-            Font = GetDesignFont("Segoe UI", 9.5F),
-            ForeColor = Color.Silver,
-            Text = L.T("Current: -- Hz"),
-            TextAlign = ContentAlignment.MiddleRight
-        };
+        _statusLabel = CreateHeaderValueLabel();
+        _statusLabel.Text = L.T("Current: -- Hz");
 
         header.Controls.Add(CreateSectionLabel("Display", Glyph.Display), 0, 0);
         header.Controls.Add(_statusLabel, 1, 0);
@@ -81,10 +72,10 @@ internal sealed class DisplaySection : SectionPanel
     /// <summary>Raised after a mode is chosen and applied.</summary>
     public event EventHandler<DisplayRefreshMode>? DisplayModeChanged;
 
-    /// <summary>60 Hz (always offered), the next rate down from the fastest if it differs, the fastest rate if it differs, then Auto.</summary>
+    /// <summary>Auto, then 60 Hz (always offered), the next rate down from the fastest if it differs, and the fastest rate if it differs.</summary>
     private IReadOnlyList<DisplayRefreshMode> OfferedModes()
     {
-        var modes = new List<DisplayRefreshMode> { DisplayRefreshMode.Fixed(DisplayRefreshMode.OnBatteryHz) };
+        var modes = new List<DisplayRefreshMode> { DisplayRefreshMode.Auto, DisplayRefreshMode.Fixed(DisplayRefreshMode.OnBatteryHz) };
 
         if (_secondHz is int secondHz && secondHz != DisplayRefreshMode.OnBatteryHz)
             modes.Add(DisplayRefreshMode.Fixed(secondHz));
@@ -92,7 +83,6 @@ internal sealed class DisplaySection : SectionPanel
         if (_fastHz != DisplayRefreshMode.OnBatteryHz)
             modes.Add(DisplayRefreshMode.Fixed(_fastHz));
 
-        modes.Add(DisplayRefreshMode.Auto);
         return modes;
     }
 
@@ -218,9 +208,9 @@ internal sealed class DisplaySection : SectionPanel
     {
         var displayInfo = _displayService.GetInternalDisplayInfo();
 
-        // Just the facts beside the "Display" title: "1920x1080 | 120 Hz".
+        // Just the facts beside the "Display" title: "1920x1080 (120 Hz)".
         _statusLabel.Text = displayInfo is null
             ? L.T("Not available")
-            : $"{displayInfo.Width}x{displayInfo.Height} | {displayInfo.RefreshRateHz} Hz";
+            : $"{displayInfo.Width}x{displayInfo.Height} ({displayInfo.RefreshRateHz} Hz)";
     }
 }

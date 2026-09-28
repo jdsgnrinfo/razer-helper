@@ -15,7 +15,7 @@ namespace RazerHelper.UI;
 /// </remarks>
 internal sealed class DropdownButton : RoundedButton
 {
-    private static readonly Color HoverColor = Color.FromArgb(70, 70, 70);
+    private static readonly Color HoverColor = Color.FromArgb(0x33, 0x33, 0x33);
     private static readonly SolidBrush ArrowBrush = new(Color.Silver);
     private static readonly SolidBrush DisabledArrowBrush = new(SystemColors.GrayText);
 
@@ -38,9 +38,9 @@ internal sealed class DropdownButton : RoundedButton
 
         BackColor = ButtonColor;
         Cursor = Cursors.Hand;
-        Font = GetDesignFont("Segoe UI", 9.5F);
+        Font = DesignFont(11, FontStyle.Bold);
         ForeColor = Color.White;
-        Padding = S(new Padding(_swatches is null ? 8 : 26, 0, 22, 0));
+        Padding = S(new Padding(_swatches is null ? 12 : 12 + 16 + 8, 0, 12 + 16 + 8, 0));
         TextAlign = ContentAlignment.MiddleLeft;
 
         _menu.BackColor = ButtonColor;
@@ -75,7 +75,7 @@ internal sealed class DropdownButton : RoundedButton
         UpdateText();
     }
 
-    private static int SwatchSize => S(12);
+    private static int SwatchSize => S(16);
 
     // Base-design pixels: the gap between the list's edge and the items, so the
     // hover highlight never touches the rounded corners, and that highlight's
@@ -132,17 +132,17 @@ internal sealed class DropdownButton : RoundedButton
         TextRenderer.MeasureText(item.Text, _menu.Font, Size.Empty, TextFormatFlags.NoPadding).Width +
         2 * ItemInset;
 
-    private static int SwatchGap => S(6);
+    private static int SwatchGap => S(8);
 
     // Where an item's swatch, or its text without one, starts: as on the button.
-    private static int ItemInset => S(8);
+    private static int ItemInset => S(12);
 
     protected override void OnPaint(PaintEventArgs pevent)
     {
         base.OnPaint(pevent);
 
         // The arrow, drawn as a small triangle.
-        var centerX = Width - S(12);
+        var centerX = Width - S(12 + 8);
         var centerY = Height / 2;
 
         pevent.Graphics.FillPolygon(Enabled ? ArrowBrush : DisabledArrowBrush,
@@ -155,13 +155,10 @@ internal sealed class DropdownButton : RoundedButton
         // The chosen item's swatch, in the gap the left padding leaves for it.
         if (_selectedIndex >= 0 && _swatches?[_selectedIndex] is { } swatch)
         {
-            var box = new Rectangle(S(8), (Height - SwatchSize) / 2, SwatchSize, SwatchSize);
+            var box = new Rectangle(S(12), (Height - SwatchSize) / 2, SwatchSize, SwatchSize);
 
             using var fill = new SolidBrush(swatch);
-            using var border = new Pen(Color.Silver);
-
             pevent.Graphics.FillRectangle(fill, box);
-            pevent.Graphics.DrawRectangle(border, box.X, box.Y, box.Width - 1, box.Height - 1);
         }
     }
 

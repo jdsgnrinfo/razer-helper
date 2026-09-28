@@ -11,14 +11,15 @@ internal sealed class PerformanceService(IRazerTransport transport, MaxFanMethod
     private const byte FanModeAuto = 0x00;
     private const byte FanModeManual = 0x01;
 
-    // The speed the manual fan method asks for, in hundreds of RPM: 7000, well
+    // The speed the manual fan method asks for, in hundreds of RPM: 10000, far
     // above what these fans can reach (about 5000 on a Blade 15 Base 2020), so
     // the controller drives them at full power, their true maximum, whatever
     // it is. The model does not report real fan speeds, so the ceiling cannot
     // be read; the controller stores any target without clamping it. 7000 was
-    // held without complaint on that laptop; the extreme byte values were not
-    // tried, since how the firmware takes them is unknown.
-    private const byte ManualMaxRpmHundreds = 70;
+    // held without complaint on that laptop; 10000 is being tried by the
+    // user, at their own request, to hear whether it changes anything. If
+    // the fans misbehave, go back to 70.
+    private const byte ManualMaxRpmHundreds = 100;
     private const byte CpuCluster = 0x01;
     private const byte GpuCluster = 0x02;
     private const byte MaxFanOn = 0x02;

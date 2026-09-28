@@ -5,7 +5,7 @@ internal static class TemperatureText
 {
     /// <summary>
     /// The readings that exist, side by side, for example "GPU: 62\u00B0C" or
-    /// "CPU: 71\u00B0C  \u00B7  GPU: 62\u00B0C". Empty when there is nothing to show, so a
+    /// "CPU: 71\u00B0C | GPU: 62\u00B0C". Empty when there is nothing to show, so a
     /// missing sensor leaves no placeholder and no wrong number.
     /// </summary>
     public static string Format(double? cpuCelsius, double? gpuCelsius)
@@ -18,7 +18,7 @@ internal static class TemperatureText
         if (gpuCelsius is { } gpu)
             parts.Add($"GPU: {Round(gpu)}\u00B0C");
 
-        return string.Join("  \u00B7  ", parts);
+        return string.Join(" | ", parts);
     }
 
     // Whole degrees: a tenth of a degree is noise on a fluctuating reading.

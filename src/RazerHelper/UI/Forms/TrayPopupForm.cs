@@ -28,14 +28,13 @@ public sealed class TrayPopupForm : Form
         Footer
     }
 
-    private static int HeaderRowHeight => S(36);
-    private static int DisplayRowHeight => S(74);
-    // Header (28), spacer (5), slider with its labels (50) and the 8px gap, plus the limit line and the details button.
-    private static int BatteryRowHeight => S(91) + BatterySection.LimitLineHeight + BatterySection.DetailsRowHeight;
-    private static int FooterRowHeight => S(24);
-
-    private static int PerformanceBaseRowHeight => S(124);
-    private static int FanRowHeight => S(98); // Header, the two readouts and the Auto / Max buttons, as tall as the Display ones.
+    // Each section row: its title row, what it shows, and the gap below it.
+    private static int HeaderRowHeight => S(24) + SectionPanel.GapBelow;
+    private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(84) + SectionPanel.GapBelow;
+    private static int ButtonRowHeight => UiControls.SectionHeaderHeight + S(40) + SectionPanel.GapBelow;
+    private static int BatteryRowHeight => BatterySection.ContentHeight + SectionPanel.GapBelow;
+    private static int LightingRowHeight => LightingSection.ContentHeight + SectionPanel.GapBelow;
+    private static int FooterRowHeight => S(26);
 
     // Set for real once CheckForSupportedDevice() runs; a generic label until then.
     private string _modelText = DeviceSupportService.GenericModelName;
@@ -153,8 +152,6 @@ public sealed class TrayPopupForm : Form
         _performanceSection.StatusChanged += Section_StatusChanged;
         _performanceSection.StateChanged += PerformanceSection_StateChanged;
         _performanceSection.AutoSwitchProfiles = _settings.AutoSwitchProfiles;
-
-        // The fan poll reads the temperatures; the Performance header is where they are shown.
         _fanSection.TemperaturesRead += (_, reading) => _performanceSection.ShowTemperatures(reading);
 
         _displaySection = new DisplaySection(
@@ -170,7 +167,6 @@ public sealed class TrayPopupForm : Form
             _powerSource);
         _batterySection.ChargeLimitApplied += BatterySection_ChargeLimitApplied;
         _batterySection.StatusChanged += Section_StatusChanged;
-        _batterySection.LimitLineHidden += (_, _) => ResizeToFitRows();
         _batterySection.DetailsRequested += (_, _) => ShowBatteryDetails();
 
         var offersColor = _model?.HasKeyboardColor == true;
@@ -357,15 +353,14 @@ public sealed class TrayPopupForm : Form
     {
         BackColor = BackgroundColor;
         ForeColor = Color.White;
-        Font = GetDesignFont("Segoe UI", 9F);
+        Font = GetDesignFont(FontFamilyName, 9F);
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
 
         // Every showing fades in from nothing (see OnFadeTick).
         Opacity = 0;
-        // Narrow: sections that would not fit side by side (Custom's CPU and
-        // GPU levels, each light in Lighting) are stacked instead.
-        ClientSize = S(new Size(480, 600));
+        // The design's width: 552px of content inside a 32px margin.
+        ClientSize = S(new Size(500, 600));
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 
@@ -381,7 +376,7 @@ public sealed class TrayPopupForm : Form
             ColumnCount = 1,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
-            Padding = S(new Padding(16, 12, 16, 12)),
+            Padding = S(new Padding(20)),
             RowCount = Enum.GetValues<Row>().Length
         };
 
@@ -391,15 +386,16 @@ public sealed class TrayPopupForm : Form
         _content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
         var footer = new AppFooter();
+        footer.SystemInfoRequested += (_, _) => ShowSystemInfo();
         footer.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
         footer.SettingsRequested += (_, _) => ShowSettings();
 
         AddRow(Row.Header, CreateAppHeader(), HeaderRowHeight);
-        AddRow(Row.Performance, _performanceSection, PerformanceBaseRowHeight);
-        AddRow(Row.Fans, _fanSection, FanRowHeight);
-        AddRow(Row.Display, _displaySection, DisplayRowHeight + SectionPanel.ExtraGap);
-        AddRow(Row.Battery, _batterySection, BatteryRowHeight + SectionPanel.ExtraGap); // Sized in ResizeToFitRows.
-        AddRow(Row.Lighting, _lightingSection, LightingSection.RowHeight + SectionPanel.ExtraGap);
+        AddRow(Row.Performance, _performanceSection, PerformanceRowHeight);
+        AddRow(Row.Fans, _fanSection, ButtonRowHeight); // Sized in ResizeToFitRows.
+        AddRow(Row.Display, _displaySection, ButtonRowHeight);
+        AddRow(Row.Battery, _batterySection, BatteryRowHeight);
+        AddRow(Row.Lighting, _lightingSection, LightingRowHeight);
         AddRow(Row.Services, _servicesSection, 0); // Grows when Razer's software is installed.
         AddRow(Row.Footer, footer, FooterRowHeight);
 
@@ -421,17 +417,14 @@ public sealed class TrayPopupForm : Form
     private RowStyle RowStyleOf(Row row) => _content.RowStyles[(int)row];
 
     // Some rows change height: the Razer services row only exists when Razer's
-    // software is installed, and Battery and Fans lose their readout lines when
-    // there is nothing to show. Grow or shrink the popup to match, then
+    // software is installed, and Fans shows its speed line only on a laptop
+    // that reports fan speeds. Grow or shrink the popup to match, then
     // re-anchor it to the taskbar so it does not end up floating or overlapping it.
     private void ResizeToFitRows()
     {
-        RowStyleOf(Row.Performance).Height = PerformanceBaseRowHeight + SectionPanel.ExtraGap;
         RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0;
-        RowStyleOf(Row.Battery).Height = BatteryRowHeight + SectionPanel.ExtraGap -
-            (_batterySection.IsLimitLineShown ? 0 : BatterySection.LimitLineHeight);
-        RowStyleOf(Row.Fans).Height = FanRowHeight + SectionPanel.ExtraGap -
-            (_fanSection.AreReadingsShown ? 0 : FanSection.ReadingsHeight);
+        RowStyleOf(Row.Fans).Height = ButtonRowHeight +
+            (_fanSection.AreReadingsShown ? FanSection.ReadingsHeight : 0);
 
         var contentHeight = _content.Padding.Vertical +
             _content.RowStyles.Cast<RowStyle>().Sum(row => row.Height);
@@ -453,7 +446,7 @@ public sealed class TrayPopupForm : Form
             BackColor = BackgroundColor,
             ColumnCount = 3,
             Dock = DockStyle.Fill,
-            Margin = Padding.Empty,
+            Margin = new Padding(0, 0, 0, SectionPanel.GapBelow),
             Padding = Padding.Empty,
             RowCount = 1
         };
@@ -468,7 +461,7 @@ public sealed class TrayPopupForm : Form
         {
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Font = GetDesignFont("Segoe UI", 10F),
+            Font = DesignFont(13, FontStyle.Bold),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             TextAlign = ContentAlignment.MiddleLeft
@@ -500,7 +493,7 @@ public sealed class TrayPopupForm : Form
             Anchor = AnchorStyles.Right,
             BackColor = BackgroundColor,
             Margin = Padding.Empty,
-            Size = S(new Size(28, 28))
+            Size = S(new Size(24, 24))
         };
 
         button.Click += (_, _) => RequestHide();
@@ -556,6 +549,18 @@ public sealed class TrayPopupForm : Form
             detailsForm.ShowDialog(this);
     }
 
+    // The System information window, beside the popup like the Battery details.
+    private void ShowSystemInfo()
+    {
+        using var infoForm = new SystemInfoForm(SystemInfoReader.Read);
+
+        infoForm.PlaceBeside(this);
+        infoForm.TopMost = TopMost;
+
+        using (KeepOpen())
+            infoForm.ShowDialog(this);
+    }
+
     // Custom's CPU and GPU levels, beside the popup like Settings. Only one
     // at a time; it closes by itself if the laptop leaves Custom meanwhile.
     private void ShowCustomBoost()
@@ -569,7 +574,7 @@ public sealed class TrayPopupForm : Form
         boostForm.TopMost = TopMost;
         _customBoostForm = boostForm;
 
-        // The fan poll already reads the CPU temperature for the header; pass it on.
+        // The fan poll already reads the CPU temperature for the header; pass it on too.
         void ShowTemperature(object? sender, TemperatureReading reading) => boostForm.ShowCpuTemperature(reading.CpuCelsius);
         _fanSection.TemperaturesRead += ShowTemperature;
 
@@ -699,7 +704,7 @@ public sealed class TrayPopupForm : Form
         AutoEllipsis = true,
         AutoSize = false,
         Dock = DockStyle.Fill,
-        Font = GetDesignFont("Segoe UI", 8.5F),
+        Font = GetDesignFont(FontFamilyName, 8.5F),
         ForeColor = SubtleTextColor,
         Margin = S(new Padding(12, 0, 10, 0)),
         Text = DeviceSupportService.GenericModelName,

@@ -38,7 +38,7 @@ internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWi
         if (BatteryDetailsText.ChargeParts(battery) is var (stored, outOf))
         {
             var percent = BatteryDetailsText.ChargePercent(battery);
-            cards.Add(new BentoCardSpec("Charge", stored, outOf, Wide: true, Bar: percent / 100.0, BarColor: RazerGreen));
+            cards.Add(new BentoCardSpec("Charge", outOf is null ? stored : $"{stored} {outOf}", null, Wide: true, Bar: percent / 100.0, BarColor: RazerGreen));
         }
 
         if (BatteryDetailsText.HealthPercent(battery) is { } health)
@@ -59,7 +59,12 @@ internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWi
         var chemistry = BatteryDetailsText.ChemistryName(battery.Chemistry);
 
         if (name.Length > 0 || chemistry is not null)
-            cards.Add(new BentoCardSpec("Battery", name.Length > 0 ? name : chemistry!, name.Length > 0 ? chemistry : null));
+            cards.Add(new BentoCardSpec("Battery", (name.Length, chemistry) switch
+            {
+                (> 0, not null) => $"{name} ({chemistry})",
+                (> 0, null) => name,
+                _ => chemistry!
+            }, null));
 
         if (battery.CycleCount is { } cycles)
             cards.Add(new BentoCardSpec("Cycles", cycles.ToString(), null));

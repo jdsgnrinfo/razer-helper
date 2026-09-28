@@ -22,11 +22,10 @@ namespace RazerHelper.UI.Sections;
 /// </remarks>
 internal sealed class LightingSection : SectionPanel
 {
-    private static int HeaderHeight => S(28);
-    private static int BottomGap => S(8);
+    private static int LineGap => S(6);
 
-    /// <summary>The header, the two stacks, and the gap that separates this section from the next.</summary>
-    public static int RowHeight => HeaderHeight + 2 * Line.Height + BottomGap;
+    /// <summary>The header and the two stacks, the logo's a little below the keyboard's.</summary>
+    public static int ContentHeight => SectionHeaderHeight + 2 * Line.Height + LineGap;
 
     // The effects offered, in the list's order. Wave only where the keyboard
     // has zones to move across (see RazerLaptopModel.HasWaveEffect).
@@ -118,15 +117,16 @@ internal sealed class LightingSection : SectionPanel
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
-            RowCount = 3
+            RowCount = 4
         };
 
         lines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
+        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, LineGap));
         lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
         lines.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Takes the spare height, so the two stacks keep their size.
         lines.Controls.Add(_keyboard.Panel, 0, 0);
-        lines.Controls.Add(_logo.Panel, 0, 1);
+        lines.Controls.Add(_logo.Panel, 0, 2);
 
         // Dock order: the header docks first, and the stacks fill what is left.
         Controls.Add(lines);
@@ -293,9 +293,9 @@ internal sealed class LightingSection : SectionPanel
     /// </summary>
     private sealed class Line
     {
-        private static int NameHeight => S(22);
-        private static int ChoiceHeight => S(34);
-        private static int SliderHeight => S(30);
+        private static int NameHeight => S(16 + 6);
+        private static int ChoiceHeight => S(36 + 6);
+        private static int SliderHeight => S(20);
 
         /// <summary>The whole stack's height.</summary>
         public static int Height => NameHeight + ChoiceHeight + SliderHeight;
@@ -307,28 +307,28 @@ internal sealed class LightingSection : SectionPanel
             Effect = new DropdownButton(effects.ToArray())
             {
                 Dock = DockStyle.Fill,
-                Margin = S(new Padding(4, 3, 4, 3))
+                Margin = new Padding(0, 0, companion is null ? 0 : ButtonGap / 2, S(6))
             };
 
-            Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 5, showLabels: false)
+            Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 5)
             {
                 Dock = DockStyle.Fill,
-                Margin = S(new Padding(4, 0, 0, 0))
+                Margin = Padding.Empty
             };
 
             _percent = new Label
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Font = GetDesignFont("Segoe UI", 9.5F),
-                ForeColor = Color.Silver,
+                Font = DesignFont(12, FontStyle.Bold),
+                ForeColor = Color.White,
                 Margin = Padding.Empty,
                 Text = "--",
                 TextAlign = ContentAlignment.MiddleRight
             };
 
             // The percentage follows the slider while it is dragged, before anything is sent.
-            Brightness.ValueChanged += (_, _) => _percent.Text = $"{Brightness.Value}%";
+            Brightness.ValueChanged += (_, _) => _percent.Text = $"{Brightness.Value} %";
 
             // The effect and its companion share the row half and half, so
             // the effect list keeps its width whether the companion shows.
@@ -350,8 +350,13 @@ internal sealed class LightingSection : SectionPanel
             if (companion is not null)
             {
                 companion.Dock = DockStyle.Fill;
-                companion.Margin = S(new Padding(4, 3, 4, 3));
+                companion.Margin = new Padding(ButtonGap / 2, 0, 0, S(6));
                 choices.Controls.Add(companion, 1, 0);
+            }
+            else
+            {
+                // Nothing beside it (the logo): the list takes the whole row.
+                choices.SetColumnSpan(Effect, 2);
             }
 
             var slider = new TableLayoutPanel
@@ -365,7 +370,7 @@ internal sealed class LightingSection : SectionPanel
             };
 
             slider.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(48)));
+            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(56)));
             slider.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             slider.Controls.Add(Brightness, 0, 0);
             slider.Controls.Add(_percent, 1, 0);
@@ -388,11 +393,11 @@ internal sealed class LightingSection : SectionPanel
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Font = GetDesignFont("Segoe UI", 9.5F),
-                ForeColor = Color.Silver,
-                Margin = S(new Padding(4, 0, 0, 0)),
+                Font = DesignFont(11, FontStyle.Bold),
+                ForeColor = Color.White,
+                Margin = new Padding(0, 0, 0, S(6)),
                 Text = L.T(name),
-                TextAlign = ContentAlignment.BottomLeft
+                TextAlign = ContentAlignment.MiddleLeft
             }, 0, 0);
             Panel.Controls.Add(choices, 0, 1);
             Panel.Controls.Add(slider, 0, 2);

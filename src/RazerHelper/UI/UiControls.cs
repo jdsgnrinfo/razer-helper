@@ -23,36 +23,71 @@ internal static class UiControls
         return layout;
     }
 
+    /// <summary>A section's title row: the 16px icon and 12px title, then the 8px gap before what the section shows.</summary>
+    public static int SectionHeaderHeight => S(19 + 8);
+
+    /// <summary>The space between two buttons side by side.</summary>
+    public static int ButtonGap => S(8);
+
+    /// <summary>A title row, <see cref="SectionHeaderHeight"/> tall and docked to the top, with room below for its gap.</summary>
+    public static TableLayoutPanel CreateHeaderLayout(float leftWidth = 60F, float rightWidth = 40F)
+    {
+        var header = CreateTwoColumnLayout(leftWidth, rightWidth);
+        header.Dock = DockStyle.Top;
+        header.Height = SectionHeaderHeight;
+        header.Padding = new Padding(0, 0, 0, S(8));
+        return header;
+    }
+
     public static Control CreateSectionHeader(string title, string detail, Glyph? icon = null)
     {
-        var header = CreateTwoColumnLayout(60F, 40F);
-        header.Dock = DockStyle.Top;
-        header.Height = S(28);
+        var header = CreateHeaderLayout();
 
         header.Controls.Add(CreateSectionLabel(title, icon), 0, 0);
 
         if (!string.IsNullOrWhiteSpace(detail))
         {
-            header.Controls.Add(new Label
-            {
-                AutoSize = true,
-                Dock = DockStyle.Right,
-                Font = GetDesignFont("Segoe UI", 9.5F),
-                ForeColor = Color.Silver,
-                Text = L.T(detail),
-                TextAlign = ContentAlignment.MiddleRight
-            }, 1, 0);
+            var label = CreateHeaderValueLabel();
+            label.Text = L.T(detail);
+            header.Controls.Add(label, 1, 0);
         }
 
         return header;
+    }
+
+    /// <summary>A value at the right of a title row, such as the display's mode: bold white, like the title.</summary>
+    public static Label CreateHeaderValueLabel() => new()
+    {
+        AutoSize = true,
+        BackColor = CardColor,
+        Dock = DockStyle.Right,
+        Font = DesignFont(12, FontStyle.Bold),
+        ForeColor = Color.White,
+        Margin = Padding.Empty,
+        TextAlign = ContentAlignment.MiddleRight
+    };
+
+    /// <summary>A small button sized to its text, such as "More info" or the footer's: 10px bold with 8px around it.</summary>
+    public static Button CreateSmallButton(string text)
+    {
+        var button = CreateActionButton(text);
+        var font = button.Font = DesignFont(10, FontStyle.Bold);
+        var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
+
+        button.Dock = DockStyle.None;
+        button.Margin = Padding.Empty;
+        button.Size = new Size(textSize.Width + S(2 * 8), Math.Max(textSize.Height, S(12)) + S(2 * 6) + S(2));
+        return button;
     }
 
     /// <param name="inset">Space before the icon (or the text, without one), for titles that line up with an indented row.</param>
     public static Label CreateSectionLabel(string text, Glyph? icon = null, int inset = 0) => new SectionLabel(icon, inset)
     {
         AutoSize = true,
+        BackColor = CardColor,
         Dock = DockStyle.Left,
-        Font = GetDesignFont("Segoe UI", 10F, FontStyle.Bold),
+        Font = DesignFont(12, FontStyle.Bold),
+        Margin = Padding.Empty,
         ForeColor = Color.White,
         Text = L.T(text),
         TextAlign = ContentAlignment.MiddleLeft
@@ -108,6 +143,11 @@ internal static class UiControls
 
             var name = buttonNames[index];
             var button = CreateActionButton(name);
+
+            // ButtonGap between neighbours and none at the outer edges, split so
+            // every button comes out the same width.
+            var count = buttonNames.Count;
+            button.Margin = new Padding(ButtonGap * index / count, 0, ButtonGap * (count - 1 - index) / count, 0);
             button.Name = $"{name}{nameSuffix}";
             button.Tag = name;
             grid.Controls.Add(button, index, 0);
@@ -124,7 +164,7 @@ internal static class UiControls
             var isSelected = ReferenceEquals(button, selected);
 
             button.BackColor = isSelected ? RazerGreen : ButtonColor;
-            button.ForeColor = isSelected ? BackgroundColor : Color.White;
+            button.ForeColor = isSelected ? OnGreenTextColor : Color.White;
         }
     }
 
@@ -137,34 +177,12 @@ internal static class UiControls
     public static void SetAvailability(Button button, bool available, ToolTip toolTip, string reasonWhenUnavailable)
     {
         // A selected button is green with dark text; the rest are dark with light text.
-        var normalText = button.BackColor == RazerGreen ? BackgroundColor : Color.White;
+        var normalText = button.BackColor == RazerGreen ? OnGreenTextColor : Color.White;
 
         button.ForeColor = available ? normalText : SystemColors.GrayText;
         button.Cursor = available ? Cursors.Hand : Cursors.Default;
         button.TabStop = available;
         toolTip.SetToolTip(button, available ? string.Empty : L.T(reasonWhenUnavailable));
-    }
-
-    /// <summary>
-    /// A quiet text link, as in the footer: silver, turning Razer green and
-    /// underlined under the pointer.
-    /// </summary>
-    public static LinkLabel CreateLink(string text)
-    {
-        var link = new LinkLabel
-        {
-            ActiveLinkColor = RazerGreen,
-            AutoSize = true,
-            Cursor = Cursors.Hand,
-            Font = GetDesignFont("Segoe UI", 8.5F),
-            LinkBehavior = LinkBehavior.HoverUnderline,
-            LinkColor = Color.Silver,
-            Text = L.T(text)
-        };
-
-        link.MouseEnter += (_, _) => link.LinkColor = RazerGreen;
-        link.MouseLeave += (_, _) => link.LinkColor = Color.Silver;
-        return link;
     }
 
     public static Button CreateActionButton(string text)
@@ -174,9 +192,9 @@ internal static class UiControls
             BackColor = ButtonColor,
             Cursor = Cursors.Hand,
             Dock = DockStyle.Fill,
-            Font = GetDesignFont("Segoe UI", 9.5F),
+            Font = DesignFont(11, FontStyle.Bold),
             ForeColor = Color.White,
-            Margin = S(new Padding(4)),
+            Margin = Padding.Empty,
             Text = L.T(text)
         };
     }

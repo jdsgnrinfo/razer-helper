@@ -15,7 +15,7 @@ internal abstract class DetailsWindow : Form
 {
     private const int RefreshIntervalMilliseconds = 2_000;
 
-    protected static int ContentWidth => S(340);
+    protected static int ContentWidth => S(400);
 
     private readonly IconHeader _header;
     private readonly BentoGrid _cards = new(ContentWidth);
@@ -32,7 +32,7 @@ internal abstract class DetailsWindow : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
         ForeColor = Color.White;
-        Font = GetDesignFont("Segoe UI", 9F);
+        Font = GetDesignFont(FontFamilyName, 9F);
         FormBorderStyle = FormBorderStyle.None;
         KeyPreview = true;
         ShowInTaskbar = false;
@@ -46,7 +46,7 @@ internal abstract class DetailsWindow : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(16, 14, 16, 16)),
+            Padding = S(new Padding(20)),
             WrapContents = false
         };
 
@@ -103,11 +103,28 @@ internal abstract class DetailsWindow : Form
         Refresh();
         _refreshTimer.Start();
 
+        // The size is only final once the layout has run.
+        PerformLayout();
+        PlaceBesideAnchor();
+    }
+
+    // Cards can come and go after opening (figures read in the background,
+    // a battery that starts reporting), so the window is placed again
+    // whenever its size changes, keeping it beside the popup and on screen
+    // rather than growing past the bottom of it.
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+
+        if (IsHandleCreated)
+            PlaceBesideAnchor();
+    }
+
+    private void PlaceBesideAnchor()
+    {
         if (_anchor is null)
             return;
 
-        // The size is only final once the layout has run.
-        PerformLayout();
         var workingArea = Screen.FromRectangle(_anchor.Bounds).WorkingArea;
         Location = WindowPlacement.Beside(_anchor.Bounds, Size, workingArea);
     }
@@ -144,8 +161,8 @@ internal abstract class DetailsWindow : Form
         {
             BackColor = BackgroundColor,
             ColumnCount = 2,
-            Height = S(34),
-            Margin = S(new Padding(0, 0, 0, 12)),
+            Height = S(24),
+            Margin = Padding.Empty,
             Padding = Padding.Empty,
             RowCount = 1,
             Width = ContentWidth
@@ -165,7 +182,7 @@ internal abstract class DetailsWindow : Form
             Anchor = AnchorStyles.Right,
             BackColor = BackgroundColor,
             Margin = Padding.Empty,
-            Size = S(new Size(28, 28))
+            Size = S(new Size(24, 24))
         };
 
         close.Click += (_, _) => Close();
@@ -176,7 +193,7 @@ internal abstract class DetailsWindow : Form
     /// <summary>The header: an icon, then one line of bold text in one color.</summary>
     private sealed class IconHeader : Control
     {
-        private static readonly Font HeaderFont = GetDesignFont("Segoe UI", 13F, FontStyle.Bold);
+        private static readonly Font HeaderFont = DesignFont(13, FontStyle.Bold);
 
         private readonly Glyph _icon;
         private string _text = string.Empty;
@@ -202,10 +219,10 @@ internal abstract class DetailsWindow : Form
             var graphics = e.Graphics;
             graphics.Clear(Parent?.BackColor ?? BackgroundColor);
 
-            var iconSize = S(22);
+            var iconSize = S(16);
             Glyphs.Draw(graphics, _icon, new RectangleF(0, (Height - iconSize) / 2f, iconSize, iconSize), Color.White);
 
-            var x = iconSize + S(10);
+            var x = iconSize + S(6);
             TextRenderer.DrawText(graphics, _text, HeaderFont, new Rectangle(x, 0, Width - x, Height), Color.White,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
         }

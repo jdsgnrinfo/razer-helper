@@ -30,7 +30,7 @@ public class BatteryDetailsTextTests
     public void Health_IsTheFullChargeCapacityOverTheDesignCapacity()
     {
         Assert.Equal(85, BatteryDetailsText.HealthPercent(Charging));
-        Assert.Equal("65.0 Wh when new", BatteryDetailsText.HealthCaption(Charging));
+        Assert.Equal("55.4 Wh of 65.0 Wh (factory)", BatteryDetailsText.HealthCaption(Charging));
     }
 
     [Fact]

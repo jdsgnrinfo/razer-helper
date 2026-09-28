@@ -19,9 +19,8 @@ namespace RazerHelper.UI.Sections;
 /// </summary>
 internal sealed class ServicesSection : SectionPanel
 {
-    // The count and button, the one-line note, the card's padding, and the
-    // gap above the footer.
-    public static int RowHeight => S(61) + CardPadding.Vertical + GapBelow;
+    // The count and button, the one-line note, and the gap above the footer.
+    public static int RowHeight => S(42 + 24) + GapBelow;
 
     private static readonly TimeSpan HoverRefreshInterval = TimeSpan.FromSeconds(2);
 
@@ -54,8 +53,9 @@ internal sealed class ServicesSection : SectionPanel
         _countLabel = new Label
         {
             Dock = DockStyle.Fill,
-            Font = GetDesignFont("Segoe UI", 9.5F),
-            ForeColor = Color.Silver,
+            Font = DesignFont(12),
+            ForeColor = Color.White,
+            Margin = Padding.Empty,
             Text = L.T("Razer Software Running: --"),
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -78,7 +78,7 @@ internal sealed class ServicesSection : SectionPanel
         };
 
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(96F)));
+        row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(100F)));
         row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         row.Controls.Add(_countLabel, 0, 0);
         row.Controls.Add(_actionButton, 1, 0);
@@ -88,10 +88,10 @@ internal sealed class ServicesSection : SectionPanel
         var note = new Label
         {
             Dock = DockStyle.Bottom,
-            Font = GetDesignFont("Segoe UI", 8F),
+            Font = DesignFont(10),
             ForeColor = SubtleTextColor,
-            Height = S(20),
-            Padding = S(new Padding(4, 0, 0, 0)),
+            Height = S(24),
+            Padding = Padding.Empty,
             Text = L.T("Tip: uninstall Razer Synapse for the cleanest experience."),
             TextAlign = ContentAlignment.MiddleLeft
         };

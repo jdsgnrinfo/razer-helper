@@ -1,19 +1,20 @@
 using RazerHelper.Helpers;
+using static RazerHelper.UI.UiControls;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
 /// <summary>
 /// The very bottom of the popup: the app version on the left, then the
-/// "Free up GPU" and Settings links on the right. It only reports clicks;
-/// the popup decides what they do.
+/// "System info", "Free up GPU" and Settings buttons on the right. It only
+/// reports clicks; the popup decides what they do.
 /// </summary>
 internal sealed class AppFooter : TableLayoutPanel
 {
     public AppFooter()
     {
         BackColor = BackgroundColor;
-        ColumnCount = 3;
+        ColumnCount = 4;
         Dock = DockStyle.Fill;
         Margin = Padding.Empty;
         Padding = Padding.Empty;
@@ -22,38 +23,41 @@ internal sealed class AppFooter : TableLayoutPanel
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         Controls.Add(new Label
         {
             AutoSize = false,
             Dock = DockStyle.Fill,
-            Font = GetDesignFont("Segoe UI", 8F),
-            ForeColor = SubtleTextColor,
+            Font = DesignFont(12),
+            ForeColor = Color.White,
             Margin = Padding.Empty,
             Text = $"RazerHelper {AppVersion.Current}",
-            TextAlign = ContentAlignment.BottomLeft
+            TextAlign = ContentAlignment.MiddleLeft
         }, 0, 0);
 
-        var freeUpLink = CreateLink("Free up GPU", S(new Padding(0, 0, 14, 0)));
-        freeUpLink.LinkClicked += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(freeUpLink, 1, 0);
+        var systemInfoButton = CreateSmallButton("System info");
+        systemInfoButton.Anchor = AnchorStyles.Right;
+        systemInfoButton.Margin = new Padding(0, 0, ButtonGap, 0);
+        systemInfoButton.Click += (_, _) => SystemInfoRequested?.Invoke(this, EventArgs.Empty);
+        Controls.Add(systemInfoButton, 1, 0);
 
-        var settingsLink = CreateLink("Settings", Padding.Empty);
-        settingsLink.LinkClicked += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(settingsLink, 2, 0);
+        var freeUpButton = CreateSmallButton("Free up GPU");
+        freeUpButton.Anchor = AnchorStyles.Right;
+        freeUpButton.Margin = new Padding(0, 0, ButtonGap, 0);
+        freeUpButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
+        Controls.Add(freeUpButton, 2, 0);
+
+        var settingsButton = CreateSmallButton("Settings");
+        settingsButton.Anchor = AnchorStyles.Right;
+        settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+        Controls.Add(settingsButton, 3, 0);
     }
+
+    public event EventHandler? SystemInfoRequested;
 
     public event EventHandler? FreeUpGpuRequested;
 
     public event EventHandler? SettingsRequested;
-
-    private static LinkLabel CreateLink(string text, Padding margin)
-    {
-        var link = UiControls.CreateLink(text);
-        link.Dock = DockStyle.Fill;
-        link.Margin = margin;
-        link.TextAlign = ContentAlignment.BottomRight;
-        return link;
-    }
 }

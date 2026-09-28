@@ -5,9 +5,8 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// A dark, flat slider that snaps to fixed steps and labels each one. The
-/// stock TrackBar ignores the theme, so this draws the track, thumb and tick
-/// labels itself.
+/// A dark, flat slider that snaps to fixed steps. The stock TrackBar ignores
+/// the theme, so this draws the track and thumb itself.
 /// </summary>
 /// <remarks>
 /// <see cref="ValueChanged"/> fires on every step while dragging;
@@ -16,39 +15,28 @@ namespace RazerHelper.UI;
 /// </remarks>
 internal sealed class ThemedSlider : Control
 {
-    private static int ThumbRadius => S(9);
-    private static int TrackHeight => S(4);
-    private static int LabelTop => S(32);
+    private static int ThumbRadius => S(8);
+    private static int TrackHeight => S(5);
 
-    private static readonly Color TrackColor = Color.FromArgb(70, 70, 70);
     private static readonly Color DisabledColor = Color.FromArgb(100, 100, 100);
-    private static readonly Font LabelFont = GetDesignFont("Segoe UI", 8.5F);
 
     // Drawing objects shared by every slider and reused on every repaint. A
-    // slider repaints on each mouse move while dragging, so building (and, for
-    // the format, leaking) these each time was steady garbage for nothing.
+    // slider repaints on each mouse move while dragging, so building these each
+    // time was steady garbage for nothing.
     private static readonly SolidBrush TrackBrush = new(TrackColor);
     private static readonly SolidBrush AccentBrush = new(RazerGreen);
     private static readonly SolidBrush DisabledBrush = new(DisabledColor);
-    private static readonly SolidBrush LabelBrush = new(Color.Silver);
-    private static readonly SolidBrush SelectedLabelBrush = new(Color.White);
     private static readonly Pen FocusRingPen = new(Color.White, 2);
-    private static readonly StringFormat CenteredFormat = new() { Alignment = StringAlignment.Center };
-    private static readonly StringFormat NearFormat = new() { Alignment = StringAlignment.Near };
-    private static readonly StringFormat FarFormat = new() { Alignment = StringAlignment.Far };
 
     private readonly int _minimum;
     private readonly int _maximum;
     private readonly int _step;
-    private readonly bool _showLabels;
-    private readonly string[] _stepLabels;
 
     private int _value;
     private bool _dragging;
     private bool _keyMovedValue;
 
-    /// <param name="showLabels">Labels every step under the track (the default). Off gives a slim slider for tight rows.</param>
-    public ThemedSlider(int minimum, int maximum, int step, bool showLabels = true)
+    public ThemedSlider(int minimum, int maximum, int step)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(minimum, maximum);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(step, 0);
@@ -56,13 +44,7 @@ internal sealed class ThemedSlider : Control
         _minimum = minimum;
         _maximum = maximum;
         _step = step;
-        _showLabels = showLabels;
         _value = minimum;
-
-        // The text of every step, worked out once rather than on every paint.
-        _stepLabels = showLabels
-            ? [.. Enumerable.Range(0, (maximum - minimum) / step + 1).Select(index => (minimum + index * step).ToString())]
-            : [];
 
         SetStyle(
             ControlStyles.UserPaint |
@@ -74,7 +56,7 @@ internal sealed class ThemedSlider : Control
             true);
         TabStop = true;
         BackColor = CardColor;
-        Height = showLabels ? S(50) : S(24);
+        Height = S(20);
     }
 
     public event EventHandler? ValueChanged;
@@ -225,42 +207,12 @@ internal sealed class ThemedSlider : Control
         var accent = IsLive ? AccentBrush : DisabledBrush;
         var thumbX = XAt(_value);
 
-        // Track, then the filled part up to the thumb.
-        var track = new Rectangle(XAt(_minimum), TrackY - TrackHeight / 2, TrackWidth, TrackHeight);
-        graphics.FillRectangle(TrackBrush, track);
-        graphics.FillRectangle(accent, track.Left, track.Top, thumbX - track.Left, track.Height);
+        // Track, the full width with round ends, then the filled part up to the thumb.
+        var top = TrackY - TrackHeight / 2f;
+        FillPill(graphics, TrackBrush, new RectangleF(0, top, Width - 1, TrackHeight));
+        FillPill(graphics, accent, new RectangleF(0, top, thumbX, TrackHeight));
 
-        // One label per step, the selected one brighter. The end labels line up
-        // with the thumb's outer edge instead of centering on their step, so
-        // they never spill past the slider (and the window's margins).
-        if (_showLabels)
-        {
-            var normal = IsLive ? LabelBrush : DisabledBrush;
-            var selected = IsLive ? SelectedLabelBrush : DisabledBrush;
-            var last = _stepLabels.Length - 1;
-
-            for (var index = 0; index <= last; index++)
-            {
-                var step = _minimum + index * _step;
-
-                var (x, format) = index switch
-                {
-                    0 => (XAt(step) - ThumbRadius, NearFormat),
-                    _ when index == last => (XAt(step) + ThumbRadius, FarFormat),
-                    _ => (XAt(step), CenteredFormat)
-                };
-
-                graphics.DrawString(
-                    _stepLabels[index],
-                    LabelFont,
-                    step == _value ? selected : normal,
-                    x,
-                    LabelTop,
-                    format);
-            }
-        }
-
-        // Thumb, with a ring when the keyboard has focus.
+        // Thumb: a green dot, with a white ring when the keyboard has focus.
         var thumb = new Rectangle(thumbX - ThumbRadius, TrackY - ThumbRadius, ThumbRadius * 2, ThumbRadius * 2);
 
         graphics.FillEllipse(accent, thumb);
@@ -269,8 +221,17 @@ internal sealed class ThemedSlider : Control
             graphics.DrawEllipse(FocusRingPen, thumb);
     }
 
-    // With labels the track sits near the top; without them it is centered.
-    private int TrackY => _showLabels ? S(16) : Height / 2;
+    // A bar with fully rounded ends.
+    private static void FillPill(Graphics graphics, Brush brush, RectangleF bounds)
+    {
+        if (bounds.Width <= 0)
+            return;
+
+        using var path = RoundedButton.RoundedPath(bounds, bounds.Height / 2);
+        graphics.FillPath(brush, path);
+    }
+
+    private int TrackY => Height / 2;
 
     private int TrackWidth => Math.Max(1, Width - ThumbRadius * 2 - 1);
 

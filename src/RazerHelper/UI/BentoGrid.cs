@@ -14,15 +14,13 @@ internal sealed record BentoCardSpec(
     Color? BarColor = null);
 
 /// <summary>
-/// Bento cards two to a row. A wide card takes a row of its own, and a narrow
+/// Figures two to a row. A wide card takes a row of its own, and a narrow
 /// card left without a partner is widened so no gap is left. Showing the same
 /// cards again (the usual refresh) only updates their figures, so nothing
 /// flickers.
 /// </summary>
 internal sealed class BentoGrid : TableLayoutPanel
 {
-    private static int CardGap => S(8);
-
     private string _layoutKey = string.Empty;
 
     public BentoGrid(int width)
@@ -88,12 +86,8 @@ internal sealed class BentoGrid : TableLayoutPanel
             var card = new BentoCard
             {
                 Dock = DockStyle.Fill,
-                Height = spec.Bar is null ? S(76) : S(90),
-                Margin = new Padding(
-                    column == 1 ? CardGap / 2 : 0,
-                    row == 0 ? 0 : CardGap / 2,
-                    spec.Wide || column == 1 ? 0 : CardGap / 2,
-                    CardGap / 2)
+                Height = BentoCard.HeightFor(spec),
+                Margin = Padding.Empty
             };
 
             card.Show(spec);
@@ -124,13 +118,20 @@ internal sealed class BentoGrid : TableLayoutPanel
         ResumeLayout();
     }
 
-    /// <summary>One card: the caption, the figure in bold, a note under it, and an optional bar.</summary>
+    /// <summary>
+    /// One figure, flat on the window: the caption in bold, then the figure
+    /// (a wide card's note at the right of it, a narrow card's under it), and
+    /// an optional bar.
+    /// </summary>
     private sealed class BentoCard : Control
     {
-        private static readonly Font CaptionFont = GetDesignFont("Segoe UI", 8.5F);
-        private static readonly Font ValueFont = GetDesignFont("Segoe UI", 13F, FontStyle.Bold);
-        private static readonly Font DetailFont = GetDesignFont("Segoe UI", 8.5F);
-        private static readonly Color TrackColor = Color.FromArgb(34, 34, 34);
+        private static readonly Font CaptionFont = DesignFont(12, FontStyle.Bold);
+        private static readonly Font ValueFont = DesignFont(16, FontStyle.Bold);
+        private static readonly Font DetailFont = DesignFont(12);
+
+        /// <summary>How tall a card is: the gap above, the caption, the figure, and the bar or the space below.</summary>
+        public static int HeightFor(BentoCardSpec spec) =>
+            S(16 + 23 + 23) + (spec.Bar is null ? S(16) : S(8 + 6)) + (!spec.Wide && spec.Detail is not null ? S(20) : 0);
 
         private BentoCardSpec? _spec;
 
@@ -155,35 +156,36 @@ internal sealed class BentoGrid : TableLayoutPanel
             graphics.Clear(Parent?.BackColor ?? BackgroundColor);
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // The same corner radius as the buttons, so every rounded shape matches.
-            using (var fill = new SolidBrush(CardColor))
-            using (var shape = RoundedButton.RoundedPath(new RectangleF(0, 0, Width - 0.5f, Height - 0.5f), S(RoundedButton.CornerRadius)))
-                graphics.FillPath(fill, shape);
-
             if (_spec is not { } spec)
                 return;
 
-            var inset = S(12);
-            var width = Width - inset * 2;
-            var y = S(10);
+            const TextFormatFlags Line = TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine;
 
-            TextRenderer.DrawText(graphics, L.T(spec.Caption).ToUpper(System.Globalization.CultureInfo.CurrentCulture), CaptionFont, new Rectangle(inset, y, width, S(16)), SubtleTextColor,
-                TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-            y += S(17);
+            var width = Width - S(8); // Keeps a narrow card's text off its neighbour.
+            var y = S(16);
 
-            TextRenderer.DrawText(graphics, spec.Value, ValueFont, new Rectangle(inset, y, width, S(26)), Color.White,
-                TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-            y += S(25);
+            TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(0, y, width, S(19)), Color.White, Line);
+            y += S(23);
+
+            var valueRow = new Rectangle(0, y, Width, S(23));
+            TextRenderer.DrawText(graphics, spec.Value, ValueFont, valueRow, Color.White, Line);
 
             if (spec.Detail is { } detail)
             {
-                TextRenderer.DrawText(graphics, detail, DetailFont, new Rectangle(inset, y, width, S(16)), SubtleTextColor,
-                    TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
+                if (spec.Wide)
+                {
+                    TextRenderer.DrawText(graphics, detail, ValueFont, valueRow, Color.White, Line | TextFormatFlags.Right);
+                }
+                else
+                {
+                    y += S(23);
+                    TextRenderer.DrawText(graphics, detail, DetailFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
+                }
             }
 
             if (spec.Bar is { } fraction)
             {
-                var bar = new RectangleF(inset, Height - S(16), width, S(6));
+                var bar = new RectangleF(0, Height - S(6), Width, S(6));
 
                 using (var track = new SolidBrush(TrackColor))
                 using (var trackShape = RoundedButton.RoundedPath(bar, S(3)))

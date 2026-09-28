@@ -22,7 +22,9 @@ internal enum Glyph
     Cpu,
     Gpu,
 
-    // Window.
+    // Windows.
+    SystemInfo,
+    Settings,
     Close
 }
 
@@ -51,37 +53,43 @@ internal static class Glyphs
             switch (icon)
             {
                 case Glyph.Performance:
-                    DrawRocket(graphics, pen);
+                    FillSetIcon(graphics, IconSet.Rocket, brush);
                     break;
                 case Glyph.Fans:
-                    DrawFan(graphics, pen, brush);
+                    FillSetIcon(graphics, IconSet.Fan, brush);
                     break;
                 case Glyph.Battery:
-                    DrawBattery(graphics, pen, brush);
+                    FillSetIcon(graphics, IconSet.BatteryCharging, brush);
                     break;
                 case Glyph.Lighting:
-                    DrawBulb(graphics, pen);
+                    FillSetIcon(graphics, IconSet.Twilight, brush);
                     break;
                 case Glyph.Display:
-                    DrawMonitor(graphics, pen);
+                    FillSetIcon(graphics, IconSet.Display, brush);
                     break;
                 case Glyph.Balanced:
                     DrawGauge(graphics, pen, brush);
                     break;
                 case Glyph.Silent:
-                    DrawLeaf(graphics, pen);
+                    FillSetIcon(graphics, IconSet.Leaf, brush);
                     break;
                 case Glyph.Gaming:
-                    DrawBolt(graphics, brush);
+                    FillSetIcon(graphics, IconSet.GameController, brush);
                     break;
                 case Glyph.Custom:
-                    DrawSliders(graphics, pen, brush);
+                    FillSetIcon(graphics, IconSet.Widget, brush);
                     break;
                 case Glyph.Cpu:
                     DrawChip(graphics, pen, brush);
                     break;
                 case Glyph.Gpu:
                     DrawGraphicsCard(graphics, pen);
+                    break;
+                case Glyph.SystemInfo:
+                    FillSetIcon(graphics, IconSet.Laptop, brush);
+                    break;
+                case Glyph.Settings:
+                    FillSetIcon(graphics, IconSet.Cog, brush);
                     break;
                 case Glyph.Close:
                     // An X, in the same stroke as the outlined icons.
@@ -96,115 +104,72 @@ internal static class Glyphs
         }
     }
 
+    // Icons taken from icon sets, as react-icons ships them, each drawn on its
+    // own grid and scaled onto ours.
+    private static void FillSetIcon(Graphics graphics, SetIcon icon, Brush brush)
+    {
+        var state = graphics.Save();
+        graphics.ScaleTransform(Grid / icon.Grid, Grid / icon.Grid);
+        graphics.FillPath(brush, icon.Path);
+        graphics.Restore(state);
+    }
+
+    private sealed record SetIcon(float Grid, GraphicsPath Path)
+    {
+        public SetIcon(float grid, string pathData) : this(grid, SvgPath.Parse(pathData))
+        {
+        }
+    }
+
+    private static class IconSet
+    {
+        // Performance (the section): BiSolidRocket (Boxicons).
+        public static readonly SetIcon Rocket = new(24f,
+            "M15.78 15.84S18.64 13 19.61 12c3.07-3 1.54-9.18 1.54-9.18S15 1.29 12 4.36C9.66 6.64 8.14 8.22 8.14 8.22S4.3 7.42 2 9.72L14.25 22c2.3-2.33 1.53-6.16 1.53-6.16zm-1.5-9a2 2 0 0 1 2.83 0 2 2 0 1 1-2.83 0zM3 21a7.81 7.81 0 0 0 5-2l-3-3c-2 1-2 5-2 5z");
+
+        // Fans: PiFanFill (Phosphor).
+        public static readonly SetIcon Fan = new(256f,
+            "M233,135a60,60,0,0,0-89.62-35.45l16.39-65.44a8,8,0,0,0-3.45-8.68A60,60,0,1,0,95.69,128.91L30.82,147.44a8,8,0,0,0-5.8,7.32,60,60,0,0,0,44.42,60.66,60.52,60.52,0,0,0,15.62,2.07,60.07,60.07,0,0,0,59.88-62l48.48,46.92a8,8,0,0,0,9.25,1.35A60,60,0,0,0,233,135ZM130.44,147.85a20,20,0,1,1,17.41-22.29A20,20,0,0,1,130.44,147.85Z");
+
+        // Battery charge limit: PiBatteryChargingFill (Phosphor).
+        public static readonly SetIcon BatteryCharging = new(256f,
+            "M256,96v64a8,8,0,0,1-16,0V96a8,8,0,0,1,16,0ZM224,80v96a24,24,0,0,1-24,24H32A24,24,0,0,1,8,176V80A24,24,0,0,1,32,56H200A24,24,0,0,1,224,80Zm-85.19,43.79A8,8,0,0,0,132,120H112.94l10.22-20.42a8,8,0,1,0-14.32-7.16l-16,32A8,8,0,0,0,100,136h19.06l-10.22,20.42a8,8,0,0,0,14.32,7.16l16-32A8,8,0,0,0,138.81,123.79Z");
+
+        // Lighting: MdOutlineWbTwilight (Material Icons, outlined).
+        public static readonly SetIcon Twilight = new(24f,
+            "m16.955 8.662 2.12-2.122 1.416 1.414-2.121 2.122zM2 18h20v2H2zm9-14h2v3h-2zM3.543 7.925 4.957 6.51l2.121 2.12-1.414 1.415zM5 16h14c0-3.87-3.13-7-7-7s-7 3.13-7 7z");
+
+        // Display: BsDisplayFill (Bootstrap Icons).
+        public static readonly SetIcon Display = new(16f,
+            "M6 12q0 1-.25 1.5H5a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-.75Q10 13 10 12h4c2 0 2-2 2-2V4c0-2-2-2-2-2H2C0 2 0 4 0 4v6c0 2 2 2 2 2z");
+
+        // Silent: BiSolidLeaf (Boxicons).
+        public static readonly SetIcon Leaf = new(24f,
+            "m22 3.41-.12-1.26-1.2.4a13.84 13.84 0 0 1-6.41.64 11.87 11.87 0 0 0-6.68.9A7.23 7.23 0 0 0 3.3 9.5a9 9 0 0 0 .39 4.58 16.6 16.6 0 0 1 1.18-2.2 9.85 9.85 0 0 1 4.07-3.43 11.16 11.16 0 0 1 5.06-1A12.08 12.08 0 0 0 9.34 9.2a9.48 9.48 0 0 0-1.86 1.53 11.38 11.38 0 0 0-1.39 1.91 16.39 16.39 0 0 0-1.57 4.54A26.42 26.42 0 0 0 4 22h2a30.69 30.69 0 0 1 .59-4.32 9.25 9.25 0 0 0 4.52 1.11 11 11 0 0 0 4.28-.87C23 14.67 22 3.86 22 3.41z");
+
+        // Gaming: IoGameController (Ionicons 5).
+        public static readonly SetIcon GameController = new(512f,
+            "M483.13 245.38C461.92 149.49 430 98.31 382.65 84.33A107.13 107.13 0 00352 80c-13.71 0-25.65 3.34-38.28 6.88C298.5 91.15 281.21 96 256 96s-42.51-4.84-57.76-9.11C185.6 83.34 173.67 80 160 80a115.74 115.74 0 00-31.73 4.32c-47.1 13.92-79 65.08-100.52 161C4.61 348.54 16 413.71 59.69 428.83a56.62 56.62 0 0018.64 3.22c29.93 0 53.93-24.93 70.33-45.34 18.53-23.1 40.22-34.82 107.34-34.82 59.95 0 84.76 8.13 106.19 34.82 13.47 16.78 26.2 28.52 38.9 35.91 16.89 9.82 33.77 12 50.16 6.37 25.82-8.81 40.62-32.1 44-69.24 2.57-28.48-1.39-65.89-12.12-114.37zM208 240h-32v32a16 16 0 01-32 0v-32h-32a16 16 0 010-32h32v-32a16 16 0 0132 0v32h32a16 16 0 010 32zm84 4a20 20 0 1120-20 20 20 0 01-20 20zm44 44a20 20 0 1120-19.95A20 20 0 01336 288zm0-88a20 20 0 1120-20 20 20 0 01-20 20zm44 44a20 20 0 1120-20 20 20 0 01-20 20z");
+
+        // Custom: BiSolidWidget (Boxicons).
+        public static readonly SetIcon Widget = new(24f,
+            "M4 11h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm0 10h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm10 0h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm7.293-14.707-3.586-3.586a.999.999 0 0 0-1.414 0l-3.586 3.586a.999.999 0 0 0 0 1.414l3.586 3.586a.999.999 0 0 0 1.414 0l3.586-3.586a.999.999 0 0 0 0-1.414z");
+
+        // System information: PiLaptopFill (Phosphor).
+        public static readonly SetIcon Laptop = new(256f,
+            "M232,168h-8V72a24,24,0,0,0-24-24H56A24,24,0,0,0,32,72v96H24a8,8,0,0,0-8,8v16a24,24,0,0,0,24,24H216a24,24,0,0,0,24-24V176A8,8,0,0,0,232,168ZM112,72h32a8,8,0,0,1,0,16H112a8,8,0,0,1,0-16ZM224,192a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8v-8H224Z");
+
+        // Settings: BiSolidCog (Boxicons).
+        public static readonly SetIcon Cog = new(24f,
+            "m2.344 15.271 2 3.46a1 1 0 0 0 1.366.365l1.396-.806c.58.457 1.221.832 1.895 1.112V21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.598a8.094 8.094 0 0 0 1.895-1.112l1.396.806c.477.275 1.091.11 1.366-.365l2-3.46a1.004 1.004 0 0 0-.365-1.366l-1.372-.793a7.683 7.683 0 0 0-.002-2.224l1.372-.793c.476-.275.641-.89.365-1.366l-2-3.46a1 1 0 0 0-1.366-.365l-1.396.806A8.034 8.034 0 0 0 15 4.598V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v1.598A8.094 8.094 0 0 0 7.105 5.71L5.71 4.904a.999.999 0 0 0-1.366.365l-2 3.46a1.004 1.004 0 0 0 .365 1.366l1.372.793a7.683 7.683 0 0 0 0 2.224l-1.372.793c-.476.275-.641.89-.365 1.366zM12 8c2.206 0 4 1.794 4 4s-1.794 4-4 4-4-1.794-4-4 1.794-4 4-4z");
+    }
+
     // Balanced: a speedometer, an open dial with its needle part way up.
     private static void DrawGauge(Graphics graphics, Pen pen, Brush brush)
     {
         graphics.DrawArc(pen, 1.5f, 2.5f, 13f, 13f, 150, 240);
         graphics.DrawLine(pen, 8f, 9f, 11.6f, 5.4f);
         graphics.FillEllipse(brush, 6.6f, 7.6f, 2.8f, 2.8f);
-    }
-
-    // Three curved blades around a hub.
-    private static void DrawFan(Graphics graphics, Pen pen, Brush brush)
-    {
-        for (var blade = 0; blade < 3; blade++)
-        {
-            var state = graphics.Save();
-            graphics.TranslateTransform(8f, 8f);
-            graphics.RotateTransform(blade * 120f);
-
-            using var path = new GraphicsPath();
-            path.AddBezier(0f, -1.5f, 1.5f, -4.5f, 4.5f, -6.5f, 3f, -7f);
-            path.AddBezier(3f, -7f, 0.5f, -7.5f, -2f, -5f, -1.2f, -1.2f);
-            path.CloseFigure();
-            graphics.FillPath(brush, path);
-
-            graphics.Restore(state);
-        }
-
-        graphics.FillEllipse(brush, 6.3f, 6.3f, 3.4f, 3.4f);
-    }
-
-    // A battery on its side, two thirds full.
-    private static void DrawBattery(Graphics graphics, Pen pen, Brush brush)
-    {
-        using (var body = RoundedButton.RoundedPath(new RectangleF(1f, 4.5f, 12.5f, 7f), 1.5f))
-            graphics.DrawPath(pen, body);
-
-        graphics.FillRectangle(brush, 14.3f, 6.5f, 1.4f, 3f);
-        graphics.FillRectangle(brush, 3f, 6.5f, 6.5f, 3f);
-    }
-
-    // A monitor on its stand.
-    private static void DrawMonitor(Graphics graphics, Pen pen)
-    {
-        using (var screen = RoundedButton.RoundedPath(new RectangleF(1.5f, 2f, 13f, 9f), 1.5f))
-            graphics.DrawPath(pen, screen);
-
-        graphics.DrawLine(pen, 8f, 11f, 8f, 14f);
-        graphics.DrawLine(pen, 5f, 14f, 11f, 14f);
-    }
-
-    // Performance (the section): a rocket going up, with its window, two fins
-    // and a short exhaust.
-    private static void DrawRocket(Graphics graphics, Pen pen)
-    {
-        using (var body = new GraphicsPath())
-        {
-            body.AddBezier(8f, 1f, 10.8f, 3.2f, 11f, 7f, 10.6f, 11f);
-            body.AddLine(10.6f, 11f, 5.4f, 11f);
-            body.AddBezier(5.4f, 11f, 5f, 7f, 5.2f, 3.2f, 8f, 1f);
-            body.CloseFigure();
-            graphics.DrawPath(pen, body);
-        }
-
-        graphics.DrawEllipse(pen, 6.7f, 4.6f, 2.6f, 2.6f);
-
-        graphics.DrawLines(pen, [new PointF(5.3f, 7.8f), new PointF(2.8f, 10.4f), new PointF(2.8f, 12.4f), new PointF(5.4f, 11f)]);
-        graphics.DrawLines(pen, [new PointF(10.7f, 7.8f), new PointF(13.2f, 10.4f), new PointF(13.2f, 12.4f), new PointF(10.6f, 11f)]);
-
-        graphics.DrawLine(pen, 8f, 13f, 8f, 15f);
-    }
-
-    // Silent: a leaf, for going easy, with its midrib and stem.
-    private static void DrawLeaf(Graphics graphics, Pen pen)
-    {
-        using (var leaf = new GraphicsPath())
-        {
-            leaf.AddBezier(3.5f, 12.5f, 2.8f, 6.2f, 7f, 2.5f, 14f, 2f);
-            leaf.AddBezier(14f, 2f, 13.8f, 9f, 10f, 13.2f, 3.5f, 12.5f);
-            leaf.CloseFigure();
-            graphics.DrawPath(pen, leaf);
-        }
-
-        graphics.DrawLine(pen, 3.5f, 12.5f, 10.5f, 5.5f);
-        graphics.DrawLine(pen, 3.5f, 12.5f, 1.5f, 14.5f);
-    }
-
-    // Gaming: a lightning bolt, for the extra power.
-    private static void DrawBolt(Graphics graphics, Brush brush)
-    {
-        graphics.FillPolygon(brush,
-        [
-            new PointF(9.8f, 1f),
-            new PointF(3.2f, 9.2f),
-            new PointF(7.4f, 9.2f),
-            new PointF(6.2f, 15f),
-            new PointF(12.8f, 6.8f),
-            new PointF(8.6f, 6.8f)
-        ]);
-    }
-
-    // Custom: three sliders, each set differently.
-    private static void DrawSliders(Graphics graphics, Pen pen, Brush brush)
-    {
-        (float Y, float Knob)[] sliders = [(3.5f, 10.5f), (8f, 5f), (12.5f, 11.5f)];
-
-        foreach (var (y, knob) in sliders)
-        {
-            graphics.DrawLine(pen, 2f, y, 14f, y);
-            graphics.FillEllipse(brush, knob - 2f, y - 2f, 4f, 4f);
-        }
     }
 
     // CPU: a chip, its die in the middle and three pins on every side.
@@ -236,19 +201,5 @@ internal static class Glyphs
         graphics.DrawLine(pen, 12.3f, 5.8f, 12.3f, 9.2f);
 
         graphics.DrawLines(pen, [new PointF(4f, 11.5f), new PointF(4f, 13.8f), new PointF(10f, 13.8f), new PointF(10f, 11.5f)]);
-    }
-
-    // A light bulb with its screw base.
-    private static void DrawBulb(Graphics graphics, Pen pen)
-    {
-        using var glass = new GraphicsPath();
-        glass.AddArc(3f, 1f, 10f, 10f, 140, 260);
-        glass.AddLine(11.8f, 9.4f, 10.2f, 11.5f);
-        glass.AddLine(5.8f, 11.5f, 4.2f, 9.4f);
-        glass.CloseFigure();
-        graphics.DrawPath(pen, glass);
-
-        graphics.DrawLine(pen, 6f, 13.2f, 10f, 13.2f);
-        graphics.DrawLine(pen, 6.8f, 15f, 9.2f, 15f);
     }
 }

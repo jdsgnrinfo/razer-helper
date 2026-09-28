@@ -19,10 +19,6 @@ internal sealed class FanSection : SectionPanel
 {
     private const int PollIntervalMilliseconds = 2_000;
 
-    // Each button plus its margins.
-    private static int ModeButtonCellWidth => S(140);
-
-
     private readonly FanTelemetryService _telemetryService;
     private readonly ICpuTemperatureSource _cpuTemperature;
     private readonly IGpuTemperatureSource _gpuTemperature;
@@ -66,7 +62,7 @@ internal sealed class FanSection : SectionPanel
         var readings = _readings = new TableLayoutPanel
         {
             BackColor = CardColor,
-            ColumnCount = 3,
+            ColumnCount = 2,
             Dock = DockStyle.Top,
             Height = ReadingsHeight,
             Margin = Padding.Empty,
@@ -74,9 +70,8 @@ internal sealed class FanSection : SectionPanel
             RowCount = 1
         };
 
-        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, ModeButtonCellWidth));
-        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, ModeButtonCellWidth));
-        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
         readings.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         readings.Controls.Add(_cpuFanLabel, 0, 0);
         readings.Controls.Add(_gpuFanLabel, 1, 0);
@@ -87,10 +82,6 @@ internal sealed class FanSection : SectionPanel
         _modeButtons = modeGrid.Controls.OfType<Button>().ToArray();
         _autoButton = _modeButtons[0];
         _maxButton = _modeButtons[1];
-
-        // Compact rather than full width, and left-aligned like the readout above.
-        modeGrid.Dock = DockStyle.Left;
-        modeGrid.Width = ModeButtonCellWidth * _modeButtons.Length;
 
         _autoButton.Click += (_, _) => RequestMaxFan(false);
         _maxButton.Click += (_, _) => RequestMaxFan(true);
@@ -307,9 +298,9 @@ internal sealed class FanSection : SectionPanel
     {
         AutoSize = false,
         Dock = DockStyle.Fill,
-        Font = GetDesignFont("Segoe UI", 9.5F),
-        ForeColor = Color.Silver,
-        Margin = S(new Padding(4, 0, 0, 0)), // Same 4px inset as the buttons below.
+        Font = DesignFont(12),
+        ForeColor = Color.White,
+        Margin = Padding.Empty,
         Text = text,
         TextAlign = ContentAlignment.MiddleLeft
     };

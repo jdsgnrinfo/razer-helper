@@ -10,7 +10,7 @@ public class TemperatureTextTests
 
     [Fact]
     public void BothReadings_AreShownSideBySide() =>
-        Assert.Equal("CPU: 71\u00B0C  \u00B7  GPU: 62\u00B0C", TemperatureText.Format(71.0, 62.4));
+        Assert.Equal("CPU: 71\u00B0C | GPU: 62\u00B0C", TemperatureText.Format(71.0, 62.4));
 
     [Fact]
     public void OnlyTheCpu_IsShownAlone() =>
@@ -32,5 +32,5 @@ public class TemperatureCombinedTextTests
 {
     [Fact]
     public void TheCombinedText_ForBothTemperatures_MatchesWhatTheHeaderShows() =>
-        Assert.Equal("CPU: 55°C  ·  GPU: 41°C", TemperatureText.Format(55.2, 41.4));
+        Assert.Equal("CPU: 55°C | GPU: 41°C", TemperatureText.Format(55.2, 41.4));
 }

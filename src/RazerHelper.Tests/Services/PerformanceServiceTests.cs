@@ -445,7 +445,7 @@ public class PerformanceServiceTests
     [Fact]
     public void ManualMaxFan_SendsTheBytesCheckedOnTheLaptop()
     {
-        // Balanced, both fans manual at 7000 RPM, above their ceiling so they
+        // Balanced, both fans manual at 10000 RPM (0x64), above their ceiling so they
         // run at full power (5000 already made a Blade 15 Base (2020) audibly
         // spin up). The mode itself is left alone.
         var (ec, service) = CreateManual(Balanced);
@@ -453,7 +453,7 @@ public class PerformanceServiceTests
         var state = service.SetMaxFan(true);
 
         Assert.Equal(
-            ["0D02:01010001", "0D01:010146", "0D02:01020001", "0D01:010246"],
+            ["0D02:01010001", "0D01:010164", "0D02:01020001", "0D01:010264"],
             ec.Writes.Select(Describe));
         Assert.True(state.MaxFan);
         Assert.Equal(PerformanceMode.Balanced, state.Mode);

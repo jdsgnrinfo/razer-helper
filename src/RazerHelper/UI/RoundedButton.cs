@@ -13,7 +13,7 @@ namespace RazerHelper.UI;
 internal class RoundedButton : Button
 {
     // Base-design pixels, scaled like everything else.
-    internal const int CornerRadius = 4;
+    internal const int CornerRadius = 2;
 
     private bool _hovered;
     private bool _pressed;
@@ -68,12 +68,13 @@ internal class RoundedButton : Button
                 using var inner = RoundedPath(new RectangleF(0.75f, 0.75f, Width - 2f, Height - 2f), S(CornerRadius) - 0.75f);
                 graphics.DrawPath(outline, inner);
             }
-            // Otherwise no outline; only keyboard focus (Tab) shows a ring, so
-            // it is never lost without the old border.
-            else if (Focused && ShowFocusCues)
+            // Otherwise a quiet 1px outline on an unselected button (a green
+            // one has none), silver while it has keyboard focus (Tab) so focus
+            // is never lost.
+            else if (!IsGreen || (Focused && ShowFocusCues))
             {
-                using var ring = new Pen(Color.Silver);
-                using var inner = RoundedPath(new RectangleF(1, 1, Width - 2.5f, Height - 2.5f), S(CornerRadius) - 1);
+                using var ring = new Pen(Focused && ShowFocusCues ? Color.Silver : ButtonBorderColor);
+                using var inner = RoundedPath(new RectangleF(0.5f, 0.5f, Width - 1.5f, Height - 1.5f), S(CornerRadius));
                 graphics.DrawPath(ring, inner);
             }
         }
@@ -160,8 +161,8 @@ internal class RoundedButton : Button
 
     private bool _glyphAbove;
 
-    private static int StackedGlyphSize => S(18);
-    private static int StackedGlyphGap => S(5);
+    private static int StackedGlyphSize => S(24);
+    private static int StackedGlyphGap => S(6);
 
     private static int GlyphSize => S(16);
     private static int GlyphGap => S(6);

@@ -29,7 +29,7 @@ internal sealed class GpuAppsConfirmForm : Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
         ForeColor = Color.White;
-        Font = GetDesignFont("Segoe UI", 9F);
+        Font = GetDesignFont(FontFamilyName, 9F);
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = true;
         StartPosition = FormStartPosition.CenterScreen;
@@ -50,7 +50,7 @@ internal sealed class GpuAppsConfirmForm : Form
         layout.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 12F, FontStyle.Bold),
+            Font = GetDesignFont(FontFamilyName, 12F, FontStyle.Bold),
             ForeColor = RazerGreen,
             Margin = S(new Padding(0, 0, 0, 8)),
             Text = L.T("Save battery?")
@@ -59,7 +59,7 @@ internal sealed class GpuAppsConfirmForm : Form
         layout.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = GetDesignFont("Segoe UI", 9.5F),
+            Font = GetDesignFont(FontFamilyName, 9.5F),
             ForeColor = Color.White,
             MaximumSize = new Size(ContentWidth, 0),
             Text = DgpuText.BuildConfirmation(apps)

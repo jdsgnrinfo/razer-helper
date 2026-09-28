@@ -25,8 +25,8 @@ internal sealed class PerformanceSection : SectionPanel
     private readonly PerformanceService _performanceService;
     private readonly IPowerSource _powerSource;
     private readonly Dictionary<PerformanceMode, Button> _buttons = [];
-    private readonly CustomBoostRow _customRow = new();
-    private readonly Label _temperatureLabel;
+    private readonly CustomBoostSelectors _customRow = new();
+    private readonly Label _temperatureLabel = CreateHeaderValueLabel();
     private readonly ThemedToolTip _toolTip = new();
 
     // Keyed by "plugged in".
@@ -93,29 +93,11 @@ internal sealed class PerformanceSection : SectionPanel
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
         _customRow.GpuSelected += async (_, level) => await SelectGpuAsync(level);
 
-        _temperatureLabel = CreateHeaderValueLabel();
-
-        // The temperatures sit on the right. (The power source is shown in the
-        // Battery section.) The temperature is empty (and takes no room)
-        // until a reading arrives, and for good when the GPU reports none.
-        var headerValues = new FlowLayoutPanel
-        {
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            Dock = DockStyle.Right,
-            FlowDirection = FlowDirection.LeftToRight,
-            Margin = Padding.Empty,
-            Padding = Padding.Empty,
-            WrapContents = false
-        };
-
-        headerValues.Controls.Add(_temperatureLabel);
-
-        var header = CreateTwoColumnLayout(50F, 50F);
-        header.Dock = DockStyle.Top;
-        header.Height = S(28);
+        // The title, and the temperatures on the right: empty (and taking no
+        // room) until a reading arrives.
+        var header = CreateHeaderLayout();
         header.Controls.Add(CreateSectionLabel("Performance Mode", Glyph.Performance), 0, 0);
-        header.Controls.Add(headerValues, 1, 0);
+        header.Controls.Add(_temperatureLabel, 1, 0);
 
         // Dock order: the header docks first, and the mode buttons fill whatever is left.
         Controls.Add(grid);
@@ -143,7 +125,7 @@ internal sealed class PerformanceSection : SectionPanel
     /// whether or not they are shown; the Custom window borrows them while it
     /// is open and hands them back when it closes.
     /// </summary>
-    public CustomBoostRow BoostSelectors => _customRow;
+    public CustomBoostSelectors BoostSelectors => _customRow;
 
     /// <summary>
     /// Whether plugging or unplugging the charger switches to the profile for
@@ -168,19 +150,16 @@ internal sealed class PerformanceSection : SectionPanel
     }
 
     /// <summary>
-    /// Shows the temperatures left of the power source, or nothing when there
-    /// is no reading. Polled every couple of seconds, so it does no work at
-    /// all (no repaint, no layout) when the shown text has not changed.
+    /// Shows the temperatures in the header, or nothing when there is no
+    /// reading. Polled every couple of seconds, so it does no work at all when
+    /// the shown text has not changed.
     /// </summary>
     public void ShowTemperatures(TemperatureReading reading)
     {
         var text = TemperatureText.Format(reading.CpuCelsius, reading.GpuCelsius);
 
-        if (text == _temperatureLabel.Text)
-            return;
-
-        _temperatureLabel.Text = text;
-        _temperatureLabel.Margin = Padding.Empty;
+        if (text != _temperatureLabel.Text)
+            _temperatureLabel.Text = text;
     }
 
     /// <summary>Applies the profile for the current power source, e.g. at startup.</summary>
@@ -434,15 +413,6 @@ internal sealed class PerformanceSection : SectionPanel
 
         StateChanged?.Invoke(this, state);
     }
-
-    private static Label CreateHeaderValueLabel() => new()
-    {
-        AutoSize = true,
-        Font = GetDesignFont("Segoe UI", 9.5F),
-        ForeColor = Color.Silver,
-        Margin = Padding.Empty,
-        TextAlign = ContentAlignment.MiddleRight
-    };
 
     private void UpdateButtonStates()
     {

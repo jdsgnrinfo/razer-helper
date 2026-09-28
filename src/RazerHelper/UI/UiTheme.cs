@@ -28,17 +28,47 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(14, 14, 14);
-    public static readonly Color ButtonColor = Color.FromArgb(38, 38, 38);
+    public static readonly Color BackgroundColor = Color.FromArgb(0x14, 0x14, 0x14);
+    public static readonly Color ButtonColor = Color.FromArgb(0x1F, 0x1F, 0x1F);
 
-    /// <summary>A card: just lighter than the background, so it groups without standing out.</summary>
-    public static readonly Color CardColor = Color.FromArgb(22, 22, 22);
+    /// <summary>The 1px outline of an unselected button or drop-down.</summary>
+    public static readonly Color ButtonBorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
 
-    public static readonly Color BorderColor = Color.FromArgb(80, 80, 80);
-    public static readonly Color RazerGreen = Color.FromArgb(68, 214, 44);
+    /// <summary>
+    /// What sections and rows sit on. The design has no cards any more, so
+    /// this is the window's own color; kept as its own name so a card look
+    /// can come back in one place.
+    /// </summary>
+    public static readonly Color CardColor = BackgroundColor;
+
+    /// <summary>The window outline Windows draws.</summary>
+    public static readonly Color BorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
+    public static readonly Color RazerGreen = Color.FromArgb(0x46, 0xD7, 0x2E);
+
+    /// <summary>The text on a green (selected) button.</summary>
+    public static readonly Color OnGreenTextColor = Color.FromArgb(0x1E, 0x1E, 0x1E);
+
+    /// <summary>The unfilled part of a slider or a bar.</summary>
+    public static readonly Color TrackColor = Color.FromArgb(0x33, 0x33, 0x33);
 
     /// <summary>Quiet secondary text: the model name, hints and notes.</summary>
     public static readonly Color SubtleTextColor = Color.FromArgb(145, 145, 145);
+
+    /// <summary>
+    /// The design's typeface, Inter, when it is installed; otherwise Segoe
+    /// UI, Windows' own, which is close in shape and always there.
+    /// </summary>
+    public static readonly string FontFamilyName = IsInstalled("Inter") ? "Inter" : "Segoe UI";
+
+    /// <summary>A font of the design's sizes, which are in pixels: 14px is 10.5pt.</summary>
+    public static Font DesignFont(float pixels, FontStyle style = FontStyle.Regular) =>
+        GetDesignFont(FontFamilyName, pixels * 0.75F, style);
+
+    private static bool IsInstalled(string family)
+    {
+        using var fonts = new System.Drawing.Text.InstalledFontCollection();
+        return fonts.Families.Any(installed => string.Equals(installed.Name, family, StringComparison.OrdinalIgnoreCase));
+    }
 
     // The app only ever uses a handful of distinct fonts, and controls never
     // dispose a font they are handed, so each look is created once and shared.

@@ -51,9 +51,11 @@ internal static class BatteryDetailsText
             ? (WattHours(now), battery.FullChargeMilliwattHours is { } full and > 0 ? L.F("of {0}", WattHours(full)) : null)
             : null;
 
-    /// <summary>The Health card's caption: the capacity when new. Null without it.</summary>
+    /// <summary>The Health card's caption: what a full charge holds now against the capacity when new. Null without both.</summary>
     public static string? HealthCaption(BatteryDetails battery) =>
-        battery.DesignMilliwattHours is { } design ? L.F("{0} when new", WattHours(design)) : null;
+        battery is { FullChargeMilliwattHours: { } full, DesignMilliwattHours: { } design }
+            ? L.F("{0} of {1} (factory)", WattHours(full), WattHours(design))
+            : null;
 
     /// <summary>The header's short status: "Charging", "On battery" or "Plugged in".</summary>
     public static string HeaderStatus(BatteryDetails battery) =>

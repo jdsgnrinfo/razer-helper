@@ -6,7 +6,7 @@ namespace RazerHelper.UI;
 
 /// <summary>
 /// An on/off switch as Windows 11 Settings draws it: a pill with a knob that
-/// sits right when on. On is Razer green with a dark knob; off is a quiet
+/// sits right when on. On is Razer green with a black knob; off is a quiet
 /// outline with a light one. A change slides the knob across and fades the
 /// colors rather than jumping. Everything else (Checked, events, Space to
 /// toggle) is the ordinary CheckBox.
@@ -15,9 +15,11 @@ internal sealed class ToggleSwitch : CheckBox
 {
     private const double AnimationMilliseconds = 160;
 
-    private static int TrackWidth => S(40);
-    private static int TrackHeight => S(20);
-    private static int KnobInset => S(4);
+    private static int TrackWidth => S(48);
+    private static int TrackHeight => S(24);
+    private static int KnobInset => S(2);
+
+    private static readonly Color OffTrackColor = Color.FromArgb(0x68, 0x68, 0x68);
 
     private readonly System.Windows.Forms.Timer _animation = new() { Interval = 15 };
     private readonly Stopwatch _clock = new();
@@ -25,7 +27,6 @@ internal sealed class ToggleSwitch : CheckBox
     // 0 is fully off, 1 fully on; in between while the knob slides.
     private float _position;
     private float _from;
-    private bool _hovered;
 
     public ToggleSwitch()
     {
@@ -44,7 +45,7 @@ internal sealed class ToggleSwitch : CheckBox
     }
 
     public override Size GetPreferredSize(Size proposedSize) =>
-        new(TrackWidth + S(6) + Padding.Horizontal, TrackHeight + S(8) + Padding.Vertical);
+        new(TrackWidth + S(4) + Padding.Horizontal, TrackHeight + S(4) + Padding.Vertical);
 
     protected override void OnCheckedChanged(EventArgs e)
     {
@@ -100,15 +101,9 @@ internal sealed class ToggleSwitch : CheckBox
 
         using (var path = RoundedButton.RoundedPath(track, radius))
         {
-            // The outline fades out as the green fades in.
-            using var outline = new Pen(Blend(_hovered && Enabled ? Color.White : Color.Silver, on, _position), S(1.5f));
-            graphics.DrawPath(outline, path);
-
-            if (_position > 0)
-            {
-                using var fill = new SolidBrush(Color.FromArgb((int)(255 * _position), on));
-                graphics.FillPath(fill, path);
-            }
+            // A grey track turning green.
+            using var fill = new SolidBrush(Blend(OffTrackColor, on, _position));
+            graphics.FillPath(fill, path);
 
             // Only keyboard focus (Tab) shows a ring, as on the buttons.
             if (Focused && ShowFocusCues)
@@ -119,14 +114,13 @@ internal sealed class ToggleSwitch : CheckBox
             }
         }
 
-        // The knob slides from left to right, light turning dark, and is a
-        // little larger under the pointer, as in Windows.
-        var knob = TrackHeight - 2 * KnobInset + (_hovered && Enabled ? S(2) : 0);
-        var left = track.Left + KnobInset - (_hovered ? S(1) : 0);
-        var right = track.Right - KnobInset - knob + (_hovered ? S(1) : 0);
+        // The knob slides from left to right, always black.
+        var knob = TrackHeight - 2 * KnobInset;
+        var left = track.Left + KnobInset;
+        var right = track.Right - KnobInset - knob;
         var knobBounds = new RectangleF(left + (right - left) * _position, track.Top + (track.Height - knob) / 2f, knob, knob);
 
-        using var knobFill = new SolidBrush(Blend(Enabled ? Color.Silver : SystemColors.GrayText, BackgroundColor, _position));
+        using var knobFill = new SolidBrush(Color.Black);
         graphics.FillEllipse(knobFill, knobBounds);
     }
 
@@ -134,20 +128,6 @@ internal sealed class ToggleSwitch : CheckBox
         (int)(from.R + (to.R - from.R) * amount),
         (int)(from.G + (to.G - from.G) * amount),
         (int)(from.B + (to.B - from.B) * amount));
-
-    protected override void OnMouseEnter(EventArgs eventargs)
-    {
-        _hovered = true;
-        Invalidate();
-        base.OnMouseEnter(eventargs);
-    }
-
-    protected override void OnMouseLeave(EventArgs eventargs)
-    {
-        _hovered = false;
-        Invalidate();
-        base.OnMouseLeave(eventargs);
-    }
 
     protected override void Dispose(bool disposing)
     {
