@@ -8,7 +8,7 @@ A lightweight, open-source replacement for Razer Synapse on Razer Blade laptops.
 
 It lives in the system tray, talks to the laptop's controller directly, and needs no account, no cloud and no background services of its own.
 
-> **This is a fork.** RazerHelper was created by **Paul Rodriguez**: the original project is [Paulrod20/razer-helper](https://github.com/Paulrod20/razer-helper), and all credit for the app and its design goes to him. This fork adapts it to the **Razer Blade 15 Base (2020)** and adds a Spanish translation, a redesigned interface and a few new windows; see [What this fork changes](#what-this-fork-changes), the [CHANGELOG](CHANGELOG.md), or every change side by side in the [comparison with the original](https://github.com/Paulrod20/razer-helper/compare/main...jdsgnrinfo:razer-helper:blade15-2020).
+> **This is a fork.** RazerHelper was created by **Paul Rodriguez**: the original project is [Paulrod20/razer-helper](https://github.com/Paulrod20/razer-helper), and all credit for the app and its design goes to him. This fork, **Razer-Helper-New-UI**, adapts it to the **Razer Blade 15 Base (2020)** and adds a Spanish translation, a redesigned interface and a few new windows; see [What this fork changes](#what-this-fork-changes), the [CHANGELOG](CHANGELOG.md), or every change side by side in the [comparison with the original](https://github.com/Paulrod20/razer-helper/compare/main...jdsgnrinfo:razer-helper:main).
 
 > **Status: v1.0.** Built and tested on a **Razer Blade 16 (2023)** running Windows 11. A few other Blade models are recognized from their product ID and will run the same commands, but are not independently verified; see [Requirements](#requirements). This project is not affiliated with Razer.
 
@@ -108,7 +108,7 @@ The installer and the app are not code-signed, so Windows SmartScreen may say "W
 To run from source:
 
 ```
-git clone -b blade15-2020 https://github.com/jdsgnrinfo/razer-helper.git
+git clone https://github.com/jdsgnrinfo/razer-helper.git
 cd razer-helper/src/RazerHelper
 dotnet run
 ```

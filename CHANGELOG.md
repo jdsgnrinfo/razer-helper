@@ -2,7 +2,7 @@
 
 ## Fork 1.1.0
 
-Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top of Paul Rodriguez's [RazerHelper](https://github.com/Paulrod20/razer-helper) 1.0.0. Tested on a **Razer Blade 15 Base (2020)**. Every change can be seen line by line in the [comparison with the original](https://github.com/Paulrod20/razer-helper/compare/main...jdsgnrinfo:razer-helper:blade15-2020).
+Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top of Paul Rodriguez's [RazerHelper](https://github.com/Paulrod20/razer-helper) 1.0.0. Tested on a **Razer Blade 15 Base (2020)**. Every change can be seen line by line in the [comparison with the original](https://github.com/Paulrod20/razer-helper/compare/main...jdsgnrinfo:razer-helper:main).
 
 ### Razer Blade 15 Base (2020)
 
