@@ -130,6 +130,8 @@ internal static class L
         ["High"] = "Alto",
         ["Boost"] = "Turbo",
         ["Needs to be plugged in"] = "Requiere el cargador conectado",
+        ["Not supported on this laptop"] = "No compatible con este portátil",
+        ["This laptop does not support that mode."] = "Este portátil no admite ese modo.",
         ["Could not change max fan speed."] = "No se pudo cambiar la velocidad máxima del ventilador.",
         ["Could not apply the power profile."] = "No se pudo aplicar el perfil de energía.",
         ["Could not change the performance mode."] = "No se pudo cambiar el modo de rendimiento.",

@@ -39,7 +39,6 @@ internal static class RazerLaptopModels
             Verified: false,
             HasChargeLimit: false,
             MaxFan: MaxFanMethod.ManualFan,
-            HasGamingMode: true,
             HasKeyboardColor: true,
             HasFanSpeeds: false,
             HasWaveEffect: false),

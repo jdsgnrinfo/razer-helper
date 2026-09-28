@@ -18,6 +18,7 @@ Everything the original does still works the same way; on top of it:
 
 - **Razer Blade 15 Base (2020) support**, tested on the laptop itself: its Gaming mode, Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
 - **Spanish translation**, chosen in Settings (English stays the default).
+- **All four performance modes on every model:** Gaming is offered everywhere, not only on the Blade 15 Base (2020); where the firmware does not take it, the button is marked as not supported.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
 - **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
 - **Battery details window** (More info): power in or out, time left, charge, health, voltage.
@@ -27,7 +28,7 @@ Everything the original does still works the same way; on top of it:
 
 ## What it does today
 
-- **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom. On the Blade 15 Base (2020) also Gaming, its high-performance mode.
+- **Performance modes:** Balanced, Silent, Gaming and Custom, with CPU and GPU boost levels in Custom, on every model. Gaming is the 2020 Blades' high-performance mode; on a laptop whose firmware does not take it, the button says so after the first try.
 - **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** 60%, 80% or 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.

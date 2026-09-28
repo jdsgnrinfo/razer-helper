@@ -21,10 +21,6 @@ namespace RazerHelper.Core.Hardware;
 /// <paramref name="HasChargeLimit"/>: where it is only echoed, the older
 /// manual fan method may work instead.
 /// </param>
-/// <param name="HasGamingMode">
-/// Offer the Gaming performance mode (wire byte 1). Checked on the model by
-/// writing it and reading it back.
-/// </param>
 /// <param name="HasKeyboardColor">
 /// A static keyboard color of the user's choice, through the standard matrix
 /// effect (<see cref="RazerCommands.SetStandardEffect"/>). Checked on the model
@@ -45,7 +41,6 @@ internal sealed record RazerLaptopModel(
     bool Verified,
     bool HasChargeLimit = true,
     MaxFanMethod MaxFan = MaxFanMethod.ControllerFlag,
-    bool HasGamingMode = false,
     bool HasKeyboardColor = false,
     bool HasFanSpeeds = true,
     bool HasWaveEffect = true);

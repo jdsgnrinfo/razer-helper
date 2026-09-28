@@ -145,7 +145,6 @@ public sealed class TrayPopupForm : Form
             _powerSource,
             _settings.PluggedInProfile,
             _settings.OnBatteryProfile,
-            offerGaming: _model?.HasGamingMode == true,
             maxFanMethod: maxFanMethod);
         _performanceSection.ProfileChanged += PerformanceSection_ProfileChanged;
         _performanceSection.CustomBoostRequested += (_, _) => ShowCustomBoost();

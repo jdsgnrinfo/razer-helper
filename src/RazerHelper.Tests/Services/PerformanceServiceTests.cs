@@ -61,6 +61,20 @@ public class PerformanceServiceTests
     }
 
     [Fact]
+    public void ApplyProfile_AModeTheFirmwareDoesNotTake_ReportsTheModeItStayedIn()
+    {
+        // Gaming is offered on every model; one whose firmware echoes the
+        // write without acting on it must come back as still in Balanced, so
+        // the Performance section can mark Gaming as not supported.
+        var (ec, service) = Create(Balanced);
+        ec.IgnoreModeWrites = true;
+
+        var state = service.ApplyProfile(new PowerProfile(PerformanceMode.Gaming));
+
+        Assert.Equal(PerformanceMode.Balanced, state.Mode);
+    }
+
+    [Fact]
     public void ReadState_InCustom_AlsoReadsTheBoostLevels()
     {
         var (_, service) = Create(Custom, cpu: 2, gpu: 1);

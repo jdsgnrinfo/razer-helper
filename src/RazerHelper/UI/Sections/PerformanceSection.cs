@@ -29,6 +29,10 @@ internal sealed class PerformanceSection : SectionPanel
     private readonly Label _temperatureLabel = CreateHeaderValueLabel();
     private readonly ThemedToolTip _toolTip = new();
 
+    // Modes this laptop's firmware was asked for and reported another mode
+    // back, so it does not have them. Only known once tried; kept until exit.
+    private readonly HashSet<PerformanceMode> _unsupportedModes = [];
+
     // Keyed by "plugged in".
     private readonly Dictionary<bool, PowerProfile> _profiles;
 
@@ -44,7 +48,6 @@ internal sealed class PerformanceSection : SectionPanel
         IPowerSource powerSource,
         PowerProfile? pluggedInProfile,
         PowerProfile? onBatteryProfile,
-        bool offerGaming = false,
         MaxFanMethod maxFanMethod = MaxFanMethod.ControllerFlag)
     {
         _maxFanMethod = maxFanMethod;
@@ -57,10 +60,10 @@ internal sealed class PerformanceSection : SectionPanel
             [false] = PowerProfileRules.Sanitize(onBatteryProfile ?? PowerProfile.DefaultOnBattery, pluggedIn: false)
         };
 
-        // Synapse's order. Enum.GetValues would sort by wire byte instead.
-        PerformanceMode[] modes = offerGaming
-            ? [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Gaming, PerformanceMode.Custom]
-            : [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Custom];
+        // Every mode on every model, in Synapse's order (Enum.GetValues would
+        // sort by wire byte instead). A mode the firmware turns out not to
+        // take is marked as such the first time it is tried.
+        PerformanceMode[] modes = [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Gaming, PerformanceMode.Custom];
         var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton");
 
         foreach (var button in grid.Controls.OfType<Button>())
@@ -304,8 +307,8 @@ internal sealed class PerformanceSection : SectionPanel
     }
 
     private Task SelectModeAsync(PerformanceMode mode) =>
-        mode == _state.Mode || !PowerProfileRules.IsModeAllowed(mode, IsPluggedIn)
-            ? Task.CompletedTask // Already there, or not offered on this power source.
+        mode == _state.Mode || !PowerProfileRules.IsModeAllowed(mode, IsPluggedIn) || _unsupportedModes.Contains(mode)
+            ? Task.CompletedTask // Already there, not offered on this power source, or not on this laptop.
             : ChangeProfileAsync(profile => profile with { Mode = mode }, L.T("Could not change the performance mode."));
 
     private Task SelectCpuAsync(CpuBoost level) =>
@@ -331,6 +334,16 @@ internal sealed class PerformanceSection : SectionPanel
             failureMessage,
             state =>
             {
+                // Asked for a mode and the firmware settled on another: this
+                // laptop does not have it. Remember that rather than offer it again.
+                if (edited.Mode is PerformanceMode asked && state.Mode is not null && state.Mode != asked)
+                {
+                    _unsupportedModes.Add(asked);
+                    AppLog.Error($"The EC was asked for {asked} but stayed in {state.Mode}; {asked} is marked as not supported.");
+                    StatusChanged?.Invoke(this, new SectionStatus(L.T("This laptop does not support that mode."), IsError: true));
+                    UpdateButtonStates();
+                }
+
                 var saved = PowerProfileRules.Remember(edited, state);
 
                 _profiles[source] = saved;
@@ -366,9 +379,11 @@ internal sealed class PerformanceSection : SectionPanel
             if (result is not null)
             {
                 ShowState(result);
-                onSuccess(result);
                 AppLog.Info($"Performance state is now {result.Mode} (CPU {result.Cpu}, GPU {result.Gpu}, max fan {result.MaxFan?.ToString() ?? "n/a"}).");
                 StatusChanged?.Invoke(this, new SectionStatus(L.T("Performance profile applied.")));
+
+                // After the status, so what it finds (a mode the laptop refused) can replace it.
+                onSuccess(result);
             }
             else
             {
@@ -424,11 +439,11 @@ internal sealed class PerformanceSection : SectionPanel
             // offered on this power source stays clickable underneath (the click
             // handler refuses it) so hovering it can explain why.
             button.Enabled = !_busy;
-            SetAvailability(
-                button,
-                PowerProfileRules.IsModeAllowed(mode, pluggedIn),
-                _toolTip,
-                "Needs to be plugged in");
+
+            if (_unsupportedModes.Contains(mode))
+                SetAvailability(button, false, _toolTip, "Not supported on this laptop");
+            else
+                SetAvailability(button, PowerProfileRules.IsModeAllowed(mode, pluggedIn), _toolTip, "Needs to be plugged in");
         }
 
         _customRow.Enabled = !_busy && PowerProfileRules.CanChangeBoost(_state, pluggedIn);

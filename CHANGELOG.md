@@ -11,6 +11,10 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Keyboard color:** Static and Breathing in a chosen color. Wave is not offered (single-zone keyboard).
 - The charge limit and the max fan flag are shown as unavailable: this firmware only echoes those commands without acting on them.
 
+### Performance modes
+
+- **Balanced, Silent, Gaming and Custom on every model.** Gaming used to be offered only on the Blade 15 Base (2020). A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
+
 ### Language
 
 - Full **Spanish translation**, chosen in Settings; the app restarts in the chosen language. English stays the default.
