@@ -18,6 +18,7 @@ Everything the original does still works the same way; on top of it:
 
 - **Razer Blade 15 Base (2020) support**, tested on the laptop itself: its Gaming mode, Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
 - **Spanish translation**, chosen in Settings (English stays the default).
+- **Performance mode shortcuts:** Ctrl+Shift+F1/F2/F3 switch to Balanced, Silent and Gaming from any program, with a small notice at the top right.
 - **All four performance modes on every model:** Gaming is offered everywhere, not only on the Blade 15 Base (2020); where the firmware does not take it, the button is marked as not supported.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
 - **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
@@ -43,6 +44,18 @@ Everything the original does still works the same way; on top of it:
 ## Open it from anywhere
 
 Press **Fn+Del** in any program, even a game, to bring the window to the front, and press it again to hide it. On the Blade, Fn+Del sends the Insert key, so that is what the app listens for; it is always on and needs no setting.
+
+## Switch performance mode from anywhere
+
+In any program, even a game:
+
+| Shortcut | Mode |
+| --- | --- |
+| **Ctrl+Shift+F1** | Balanced |
+| **Ctrl+Shift+F2** | Silent |
+| **Ctrl+Shift+F3** | Gaming |
+
+A small notice at the top right of the screen shows the mode's icon, its name and how it went ("Active", or why not, such as "Needs to be plugged in"). It never takes the focus from the game, and fades out after two seconds. Fn+1/2/3 cannot be used: the Blade's Fn key never reaches Windows, so Fn+1 looks exactly like 1.
 
 - It costs nothing when unused: Windows hands the key press to the app, so nothing watches the keyboard.
 - While RazerHelper runs, Insert no longer toggles overwrite mode in editors. If another program already uses the key, the window says so at the top.

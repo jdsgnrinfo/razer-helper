@@ -68,6 +68,8 @@ public sealed class TrayPopupForm : Form
     private Label _titleLabel = null!;
     private readonly ThemedToolTip _toolTip = new();
     private readonly GlobalHotkey _hotkey = new();
+    private readonly ProfileShortcuts _profileShortcuts = new();
+    private readonly ProfileToast _profileToast = new();
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
 
@@ -228,7 +230,9 @@ public sealed class TrayPopupForm : Form
 
         TopMost = _settings.AlwaysOnTop;
         _hotkey.Pressed += (_, _) => ToggleFromShortcut();
+        _profileShortcuts.Pressed += async (_, mode) => await SwitchModeFromShortcutAsync(mode);
         StartShortcut();
+        StartProfileShortcuts();
         _fadeTimer.Tick += OnFadeTick;
     }
 
@@ -332,6 +336,32 @@ public sealed class TrayPopupForm : Form
 
         AppLog.Error($"Shortcut {GlobalHotkey.Text} could not be registered; another program uses it.");
         ShowStatus(new SectionStatus(L.F("{0} shortcut is used by another program.", GlobalHotkey.Text), IsError: true));
+    }
+
+    // Ctrl+Shift+F1/F2/F3 switch performance mode. One another program owns
+    // is logged and said in the header, and the others still work.
+    private void StartProfileShortcuts()
+    {
+        var taken = _profileShortcuts.TryRegister();
+
+        if (taken.Count == 0)
+        {
+            AppLog.Info("Performance mode shortcuts are on.");
+            return;
+        }
+
+        AppLog.Error($"Shortcuts {string.Join(", ", taken)} could not be registered; another program uses them.");
+        ShowStatus(new SectionStatus(L.F("{0} shortcut is used by another program.", string.Join(", ", taken)), IsError: true));
+    }
+
+    // A mode shortcut was pressed, possibly in a game: switch as the button
+    // would, then say how it went at the top right without taking the focus.
+    private async Task SwitchModeFromShortcutAsync(PerformanceMode mode)
+    {
+        var (applied, status) = await _performanceSection.SelectFromShortcutAsync(mode);
+
+        AppLog.Info($"Mode shortcut for {mode}: {status}");
+        _profileToast.ShowNotice(PerformanceSection.GlyphFor(mode), L.T(mode.ToString()), status, applied);
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -885,6 +915,8 @@ public sealed class TrayPopupForm : Form
         {
             _toolTip.Dispose();
             _hotkey.Dispose();
+            _profileShortcuts.Dispose();
+            _profileToast.Dispose();
             _displayWatcher.Dispose();
             _fadeTimer.Dispose();
             _dgpuCoordinator.Dispose();

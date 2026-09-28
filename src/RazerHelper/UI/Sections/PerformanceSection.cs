@@ -83,13 +83,7 @@ internal sealed class PerformanceSection : SectionPanel
             if (button is RoundedButton rounded)
             {
                 rounded.GlyphAbove = true;
-                rounded.Glyph = mode switch
-                {
-                    PerformanceMode.Balanced => Glyph.Balanced,
-                    PerformanceMode.Silent => Glyph.Silent,
-                    PerformanceMode.Gaming => Glyph.Gaming,
-                    _ => Glyph.Custom
-                };
+                rounded.Glyph = GlyphFor(mode);
             }
         }
 
@@ -163,6 +157,44 @@ internal sealed class PerformanceSection : SectionPanel
 
         if (text != _temperatureLabel.Text)
             _temperatureLabel.Text = text;
+    }
+
+    /// <summary>The icon a mode's button shows, which the shortcut notice shows too.</summary>
+    public static Glyph GlyphFor(PerformanceMode mode) => mode switch
+    {
+        PerformanceMode.Balanced => Glyph.Balanced,
+        PerformanceMode.Silent => Glyph.Silent,
+        PerformanceMode.Gaming => Glyph.Gaming,
+        _ => Glyph.Custom
+    };
+
+    /// <summary>
+    /// Switches mode from a keyboard shortcut, as a click on its button would,
+    /// and says how it went for the notice: whether the mode is on, and a
+    /// short status ("Active", "Needs to be plugged in"...).
+    /// </summary>
+    public async Task<(bool Applied, string Status)> SelectFromShortcutAsync(PerformanceMode mode)
+    {
+        if (_unsupportedModes.Contains(mode))
+            return (false, L.T("Not supported on this laptop"));
+
+        if (!PowerProfileRules.IsModeAllowed(mode, IsPluggedIn))
+            return (false, L.T("Needs to be plugged in"));
+
+        if (_state.Mode == mode)
+            return (true, L.T("Active"));
+
+        if (_busy)
+            return (false, L.T("Busy, try again in a moment"));
+
+        await SelectModeAsync(mode);
+
+        if (_state.Mode == mode)
+            return (true, L.T("Active"));
+
+        return (false, _unsupportedModes.Contains(mode)
+            ? L.T("Not supported on this laptop")
+            : L.T("Could not change the performance mode."));
     }
 
     /// <summary>Applies the profile for the current power source, e.g. at startup.</summary>
