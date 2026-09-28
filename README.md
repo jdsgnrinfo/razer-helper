@@ -113,7 +113,7 @@ The window is drawn a little larger on high-resolution screens so it stays easy 
   | Razer Blade 14 (2023) Mercury | `0x029D` | No — community-reported ID only |
   | Razer Blade 16 (2024) | `0x02B7` | No — community-reported ID only |
   | Razer Blade 16 (2025) | `0x02C6` | No — community-reported ID only |
-  | Razer Blade 15 Base (2020) | `0x0255` | Yes, on the UI designer's own unit: performance modes (Gaming included), Custom boost and lighting work; no battery charge limit or fan RPM on this model; max fan speed works except in Silent |
+  | Razer Blade 15 Base (2020) | `0x0255` | Yes, on the UI designer own unit |
 
   An unverified model runs the exact commands documented in [Credits](#credits); one the firmware does not support simply fails instead of doing something unexpected. If you have one of these and something looks wrong, please [open an issue](https://github.com/jdsgnrinfo/razer-helper/issues) — the log (Settings > "Logs") says which model was detected.
 - The [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (choose ".NET Desktop Runtime" for x64). The installer checks for it and will not install without it.
