@@ -37,29 +37,38 @@ Everything the original does still works the same way; on top of it:
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
-- **Settings** (link at the bottom right): start at login, switch profile automatically when you plug in or unplug, hide the window when you click away, keep it always on top, close apps using the dedicated GPU when you unplug (see below), shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
+- **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2 / F3** switch to Balanced, Silent and Gaming with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
+- **Settings** (button at the bottom right): start at login, switch profile automatically when you plug in or unplug, hide the window when you click away, keep it always on top, close apps using the dedicated GPU when you unplug (see below), shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
 
 **Reset to defaults** (in Settings) puts the app back the way it was the first time you opened it, if something ever seems stuck. After you confirm, it clears your saved settings, turns off Start at login, sets the laptop to Balanced mode with no battery charge limit, and restarts. It does not touch Razer's background services (the record of what they were set to is kept, so Start can still restore them) or anything else on your PC.
 
-## Open it from anywhere
+## Keyboard shortcuts
+
+They work in any program, even a game, and are always on: no setting needed.
+
+| Shortcut | What it does |
+| --- | --- |
+| **Fn+Del** | Shows the window, or hides it if it is in front |
+| **Ctrl+Shift+F1** | Switches to **Balanced** |
+| **Ctrl+Shift+F2** | Switches to **Silent** |
+| **Ctrl+Shift+F3** | Switches to **Gaming** (needs the charger) |
+
+### Open it from anywhere
 
 Press **Fn+Del** in any program, even a game, to bring the window to the front, and press it again to hide it. On the Blade, Fn+Del sends the Insert key, so that is what the app listens for; it is always on and needs no setting.
-
-## Switch performance mode from anywhere
-
-In any program, even a game:
-
-| Shortcut | Mode |
-| --- | --- |
-| **Ctrl+Shift+F1** | Balanced |
-| **Ctrl+Shift+F2** | Silent |
-| **Ctrl+Shift+F3** | Gaming |
-
-A small notice at the top right of the screen shows the mode's icon, its name and how it went ("Active", or why not, such as "Needs to be plugged in"). It never takes the focus from the game, and fades out after two seconds. Fn+1/2/3 cannot be used: the Blade's Fn key never reaches Windows, so Fn+1 looks exactly like 1.
 
 - It costs nothing when unused: Windows hands the key press to the app, so nothing watches the keyboard.
 - While RazerHelper runs, Insert no longer toggles overwrite mode in editors. If another program already uses the key, the window says so at the top.
 - **Always on top** (in Settings) keeps the window above other windows, including games in a borderless window. A game in true exclusive fullscreen can still cover it, and opening the window may make such a game minimize, because the window takes focus. That is how Windows treats exclusive fullscreen; borderless and windowed games are not affected.
+
+### Switch performance mode from anywhere
+
+**Ctrl+Shift+F1**, **F2** and **F3** switch to Balanced, Silent and Gaming, as clicking their buttons would, without opening the window.
+
+- A small notice at the top right of the screen shows the mode's icon, its name and how it went: "Active" (green icon), or why not (grey icon), such as "Needs to be plugged in" or "Not supported on this laptop".
+- It never takes the focus from the game or program in front, and fades out after two seconds. In a game in exclusive fullscreen Windows draws nothing over it, so the mode still changes but the notice is not seen; in windowed or borderless fullscreen it shows.
+- Like Fn+Del, they cost nothing when unused. If another program already uses one, the window says so at the top and the others still work.
+- Why not Fn+1/2/3: the Blade's Fn key never reaches Windows, so Fn+1 looks exactly like 1, and every typed number would switch mode.
 
 ## Light on resources
 
