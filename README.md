@@ -19,7 +19,7 @@ Everything the original does still works the same way; on top of it:
 - **Razer Blade 15 Base (2020) support**, tested on the laptop itself: its Gaming mode, Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
 - **Spanish translation**, chosen in Settings (English stays the default).
 - **Performance mode shortcuts:** Ctrl+Shift+F1/F2/F3 switch to Balanced, Silent and Gaming from any program, with a small notice at the top right.
-- **Tray icon in the mode's color:** green for Balanced, blue for Silent, red for Gaming, purple for Custom, and "RazerHelper (Gaming)" on hover.
+- **Tray icon in the mode's color:** green for Balanced, blue for Silent, orange-red for Gaming, purple for Custom, and "RazerHelper (Gaming)" on hover.
 - **All four performance modes on every model:** Gaming is offered everywhere, not only on the Blade 15 Base (2020); where the firmware does not take it, the button is marked as not supported.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
 - **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
@@ -38,7 +38,7 @@ Everything the original does still works the same way; on top of it:
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
-- **Tray icon:** its disc takes the color of the current mode (green Balanced, blue Silent, red Gaming, purple Custom), and hovering it names the mode, as in "RazerHelper (Gaming)". A mode changed outside the app (the laptop's own keys, Synapse) shows once the window is next opened.
+- **Tray icon:** its disc takes the color of the current mode (green Balanced, blue Silent, orange-red Gaming, purple Custom), and hovering it names the mode, as in "RazerHelper (Gaming)". A mode changed outside the app (the laptop's own keys, Synapse) shows once the window is next opened.
 - **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2 / F3** switch to Balanced, Silent and Gaming with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Settings** (button at the bottom right): start at login, switch profile automatically when you plug in or unplug, hide the window when you click away, keep it always on top, close apps using the dedicated GPU when you unplug (see below), shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
 

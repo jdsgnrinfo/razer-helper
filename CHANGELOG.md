@@ -13,7 +13,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Performance modes
 
-- **Tray icon in the mode's color:** green for Balanced, blue for Silent, red for Gaming, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Gaming)".
+- **Tray icon in the mode's color:** green for Balanced, blue for Silent, orange-red for Gaming, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Gaming)".
 - **Shortcuts:** Ctrl+Shift+F1, F2 and F3 switch to Balanced, Silent and Gaming from any program, even a game. A small notice at the top right shows the mode's icon, name and status without taking the focus, then fades out.
 - **Balanced, Silent, Gaming and Custom on every model.** Gaming used to be offered only on the Blade 15 Base (2020). A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
 
