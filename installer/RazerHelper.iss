@@ -6,7 +6,7 @@
 ; later, only for the one action that needs it (stopping Razer's services).
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.1.0"
 #endif
 
 ; The oldest .NET major version the app runs on. Newer ones are accepted too.
@@ -23,8 +23,8 @@
 AppId={{CE01BA03-F232-44FD-B752-AF65F2ECA437}
 AppName=RazerHelper
 AppVersion={#AppVersion}
-AppPublisher=Paul Rodriguez
-AppPublisherURL=https://github.com/Paulrod20/razer-helper
+AppPublisher=jdsgnrinfo (fork of Paul Rodriguez's RazerHelper)
+AppPublisherURL=https://github.com/jdsgnrinfo/razer-helper
 DefaultDirName={autopf}\RazerHelper
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest

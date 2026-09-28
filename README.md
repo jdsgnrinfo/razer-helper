@@ -92,13 +92,13 @@ The window is drawn a little larger on high-resolution screens so it stays easy 
   | Razer Blade 16 (2025) | `0x02C6` | No — community-reported ID only |
   | Razer Blade 15 Base (2020) | `0x0255` | Partly, by a user: performance modes (Gaming included), Custom boost and lighting work; no battery charge limit or fan RPM on this model; max fan speed works except in Silent |
 
-  An unverified model runs the exact commands documented in [Credits](#credits); one the firmware does not support simply fails instead of doing something unexpected. If you have one of these and something looks wrong, please [open an issue](https://github.com/Paulrod20/razer-helper/issues) — the log (Settings > "Open log folder") says which model was detected.
+  An unverified model runs the exact commands documented in [Credits](#credits); one the firmware does not support simply fails instead of doing something unexpected. If you have one of these and something looks wrong, please [open an issue](https://github.com/jdsgnrinfo/razer-helper/issues) — the log (Settings > "Logs") says which model was detected.
 - The [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (choose ".NET Desktop Runtime" for x64). The installer checks for it and will not install without it.
 
 ## Install
 
 1. Install the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) if you do not have it.
-2. Download `RazerHelper-Setup-<version>.exe` from the [Releases page](https://github.com/Paulrod20/razer-helper/releases) and run it. It installs for your user only and does not ask for administrator rights.
+2. Download `RazerHelper-Setup-<version>.exe` from the [Releases page](https://github.com/jdsgnrinfo/razer-helper/releases) and run it. It installs for your user only and does not ask for administrator rights.
 3. Start RazerHelper from the Start menu. It lives in the tray; click the icon, or press **Fn+Del** from any program, to open it.
 
 The installer and the app are not code-signed, so Windows SmartScreen may say "Windows protected your PC" (click **More info**, then **Run anyway**), and Windows will show "Unknown publisher" when the app asks for administrator approval. To remove RazerHelper, uninstall it from Windows Settings > Apps; that also removes its start-at-login entry. Your settings stay in `%LOCALAPPDATA%\RazerHelper` until you delete that folder.
@@ -108,7 +108,7 @@ The installer and the app are not code-signed, so Windows SmartScreen may say "W
 To run from source:
 
 ```
-git clone https://github.com/Paulrod20/razer-helper.git
+git clone -b blade15-2020 https://github.com/jdsgnrinfo/razer-helper.git
 cd razer-helper/src/RazerHelper
 dotnet run
 ```

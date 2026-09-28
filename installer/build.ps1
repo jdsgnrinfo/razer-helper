@@ -1,6 +1,6 @@
 # Builds the installer: publishes the app, then packages it with Inno Setup.
 # Needs the .NET 10 SDK and Inno Setup 6 (https://jrsoftware.org/isinfo.php).
-param([string]$Version = "1.0.0")
+param([string]$Version = "1.1.0")
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
