@@ -8,7 +8,22 @@ A lightweight, open-source replacement for Razer Synapse on Razer Blade laptops.
 
 It lives in the system tray, talks to the laptop's controller directly, and needs no account, no cloud and no background services of its own.
 
+> **This is a fork.** RazerHelper was created by **Paul Rodriguez**: the original project is [Paulrod20/razer-helper](https://github.com/Paulrod20/razer-helper), and all credit for the app and its design goes to him. This fork adapts it to the **Razer Blade 15 Base (2020)** and adds a Spanish translation, a redesigned interface and a few new windows; see [What this fork changes](#what-this-fork-changes), the [CHANGELOG](CHANGELOG.md), or every change side by side in the [comparison with the original](https://github.com/Paulrod20/razer-helper/compare/main...Jotadsgnr:razer-helper:blade15-2020).
+
 > **Status: v1.0.** Built and tested on a **Razer Blade 16 (2023)** running Windows 11. A few other Blade models are recognized from their product ID and will run the same commands, but are not independently verified; see [Requirements](#requirements). This project is not affiliated with Razer.
+
+## What this fork changes
+
+Everything the original does still works the same way; on top of it:
+
+- **Razer Blade 15 Base (2020) support**, tested on the laptop itself: its Gaming mode, Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
+- **Spanish translation**, chosen in Settings (English stays the default).
+- **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
+- **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
+- **Battery details window** (More info): power in or out, time left, charge, health, voltage.
+- **System information window** (System info, in the footer): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
+- **Keyboard off with the screen** (optional, in Settings).
+- **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## What it does today
 
@@ -139,10 +154,17 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 
 ## Credits
 
+- **RazerHelper** was created by [Paul Rodriguez](https://github.com/Paulrod20) ([original project](https://github.com/Paulrod20/razer-helper)). This fork, by [Jotadsgnr](https://github.com/Jotadsgnr), builds on his work.
 - [razer-ctl](https://github.com/tdakhran/razer-ctl) by tdakhran, and its actively maintained continuation [sqmagellan/razer-ctl](https://github.com/sqmagellan/razer-ctl) (MIT): the documented Blade command set this project builds on.
 - [OpenRazer](https://github.com/openrazer/openrazer): the USB protocol reverse-engineering work behind all of the above.
 - [G-Helper](https://github.com/seerge/g-helper): inspiration for the approach to power profiles and service handling. No G-Helper code is used.
 - App icon and logo by [jdsgnrinfo](https://github.com/jdsgnrinfo).
+- Interface icons (this fork), drawn from their published SVG paths:
+  - [Boxicons](https://boxicons.com) (MIT): rocket, leaf, widget and cog.
+  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, battery charging and laptop.
+  - [Ionicons](https://ionic.io/ionicons) (MIT): game controller.
+  - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): twilight.
+  - [Bootstrap Icons](https://icons.getbootstrap.com) (MIT): display.
 
 ## Disclaimer
 
