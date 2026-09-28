@@ -12,6 +12,18 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 
 > **Status: v1.0.** Built and tested on a **Razer Blade 16 (2023)** running Windows 11. A few other Blade models are recognized from their product ID and will run the same commands, but are not independently verified; see [Requirements](#requirements). This project is not affiliated with Razer.
 
+## Preview
+
+<p align="center">
+  <img src="docs/images/main-window.png" width="500" alt="The RazerHelper window: performance modes (Balanced selected), fans, display refresh rate, battery charge limit, lighting with keyboard and logo, and the footer buttons">
+</p>
+
+The tray icon takes the color of the current performance mode, and hovering it names the mode, as in "RazerHelper (Gaming)":
+
+<p align="center">
+  <img src="docs/images/tray-icons.png" width="600" alt="The tray icon in four colors: green for Balanced, blue for Silent, orange-red for Gaming and purple for Custom">
+</p>
+
 ## What this fork changes
 
 Everything the original does still works the same way; on top of it:
