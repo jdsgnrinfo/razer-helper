@@ -161,10 +161,9 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 - App icon and logo by [jdsgnrinfo](https://github.com/jdsgnrinfo).
 - Interface icons (this fork), drawn from their published SVG paths:
   - [Boxicons](https://boxicons.com) (MIT): rocket, leaf, widget and cog.
-  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, battery charging and laptop.
+  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, battery charging, frame corners and laptop.
   - [Ionicons](https://ionic.io/ionicons) (MIT): game controller.
   - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): twilight.
-  - [Bootstrap Icons](https://icons.getbootstrap.com) (MIT): display.
 
 ## Disclaimer
 

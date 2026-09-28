@@ -139,9 +139,9 @@ internal static class Glyphs
         public static readonly SetIcon Twilight = new(24f,
             "m16.955 8.662 2.12-2.122 1.416 1.414-2.121 2.122zM2 18h20v2H2zm9-14h2v3h-2zM3.543 7.925 4.957 6.51l2.121 2.12-1.414 1.415zM5 16h14c0-3.87-3.13-7-7-7s-7 3.13-7 7z");
 
-        // Display: BsDisplayFill (Bootstrap Icons).
-        public static readonly SetIcon Display = new(16f,
-            "M6 12q0 1-.25 1.5H5a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1h-.75Q10 13 10 12h4c2 0 2-2 2-2V4c0-2-2-2-2-2H2C0 2 0 4 0 4v6c0 2 2 2 2 2z");
+        // Display: PiFrameCornersFill (Phosphor).
+        public static readonly SetIcon Display = new(256f,
+            "M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM88,192H56a8,8,0,0,1-8-8V152a8,8,0,0,1,16,0v24H88a8,8,0,0,1,0,16Zm120-88a8,8,0,0,1-16,0V80H168a8,8,0,0,1,0-16h32a8,8,0,0,1,8,8Z");
 
         // Silent: BiSolidLeaf (Boxicons).
         public static readonly SetIcon Leaf = new(24f,
