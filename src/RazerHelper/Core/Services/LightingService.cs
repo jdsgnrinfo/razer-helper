@@ -166,6 +166,9 @@ internal sealed class LightingService(IRazerTransport transport, bool offersColo
 
     internal void SetKeyboardBrightness(int percent) => SetBrightness(KeyboardLed, percent, "keyboard brightness");
 
+    /// <summary>The keyboard's brightness, 0 to 100.</summary>
+    internal int ReadKeyboardBrightness() => LightingBrightness.ToPercent(ReadBrightness(KeyboardLed));
+
     internal void SetLogoBrightness(int percent) => SetBrightness(LogoLed, percent, "logo brightness");
 
     private void SetBrightness(byte led, int percent, string description) =>

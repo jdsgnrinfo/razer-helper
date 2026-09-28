@@ -5,9 +5,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// CPU and GPU boost selectors shown while the Custom performance mode is
-/// active, the GPU's under the CPU's. Stacked rather than side by side so
-/// every label ("Medium" included) fits a narrow window.
+/// CPU and GPU boost selectors for the Custom performance mode, the GPU's
+/// under the CPU's, shown in the Custom window. Stacked rather than side by
+/// side so every label ("Medium" included) fits.
 /// </summary>
 internal sealed class CustomBoostRow : TableLayoutPanel
 {
@@ -21,14 +21,12 @@ internal sealed class CustomBoostRow : TableLayoutPanel
 
     public CustomBoostRow()
     {
-        BackColor = BackgroundColor;
+        BackColor = CardColor;
         ColumnCount = 1;
-        Dock = DockStyle.Bottom;
         Height = RowHeight;
         Margin = Padding.Empty;
         Padding = Padding.Empty;
         RowCount = 2;
-        Visible = false;
 
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         RowStyles.Add(new RowStyle(SizeType.Absolute, SelectorHeight));
@@ -59,7 +57,7 @@ internal sealed class CustomBoostRow : TableLayoutPanel
     {
         var panel = new Panel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty

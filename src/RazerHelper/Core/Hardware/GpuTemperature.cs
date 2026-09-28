@@ -33,7 +33,7 @@ internal sealed class D3dkmtGpuTemperature : IGpuTemperatureSource
             if (_adapterLuid is not { } luid)
                 return null;
 
-            var raw = QueryTemperature(luid);
+            var raw = QueryPerfData(luid)?.Temperature;
 
             // A failed query may mean the adapter changed (a driver reset), so look it up again next time.
             if (raw is null)
@@ -67,7 +67,12 @@ internal sealed class D3dkmtGpuTemperature : IGpuTemperatureSource
         return celsius is > 0 and < 150 ? celsius : null;
     }
 
-    private static uint? QueryTemperature(long luid)
+    /// <summary>
+    /// The adapter's performance figures (temperature, memory clock), as Task
+    /// Manager reads them, or null when the query fails. Asking does not wake
+    /// a sleeping GPU; it then reports zeros.
+    /// </summary>
+    internal static AdapterPerfData? QueryPerfData(long luid)
     {
         var open = new OpenAdapterFromLuid
         {
@@ -95,7 +100,7 @@ internal sealed class D3dkmtGpuTemperature : IGpuTemperatureSource
             if (D3DKMTQueryAdapterInfo(ref query) != 0)
                 return null;
 
-            return Marshal.PtrToStructure<AdapterPerfData>(buffer).Temperature;
+            return Marshal.PtrToStructure<AdapterPerfData>(buffer);
         }
         finally
         {

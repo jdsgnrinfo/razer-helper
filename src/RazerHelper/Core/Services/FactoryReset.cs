@@ -1,4 +1,5 @@
 using RazerHelper.Core.Diagnostics;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 
 namespace RazerHelper.Core.Services;
@@ -38,7 +39,7 @@ internal sealed class FactoryReset(
         var problems = new List<string>();
 
         if (!settingsService.Save(DefaultsKeepingServiceRecord(current)))
-            problems.Add("Your saved settings could not be cleared.");
+            problems.Add(L.T("Your saved settings could not be cleared."));
 
         try
         {
@@ -47,7 +48,7 @@ internal sealed class FactoryReset(
         catch (Exception exception)
         {
             AppLog.Error("Reset: could not turn off Start at login.", exception);
-            problems.Add("Start at login could not be turned off.");
+            problems.Add(L.T("Start at login could not be turned off."));
         }
 
         // Both are attempted even if the first fails: they are independent.
@@ -58,7 +59,7 @@ internal sealed class FactoryReset(
         catch (Exception exception)
         {
             AppLog.Error("Reset: could not set Balanced mode.", exception);
-            problems.Add("The laptop could not be set to Balanced mode.");
+            problems.Add(L.T("The laptop could not be set to Balanced mode."));
         }
 
         try
@@ -68,7 +69,7 @@ internal sealed class FactoryReset(
         catch (Exception exception)
         {
             AppLog.Error("Reset: could not remove the battery charge limit.", exception);
-            problems.Add("The battery charge limit could not be removed.");
+            problems.Add(L.T("The battery charge limit could not be removed."));
         }
 
         AppLog.Info(problems.Count == 0

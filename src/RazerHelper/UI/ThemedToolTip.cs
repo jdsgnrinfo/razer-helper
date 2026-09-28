@@ -1,18 +1,22 @@
+using System.Runtime.InteropServices;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
 /// <summary>
-/// A small tooltip in the app's dark theme. Windows' stock tooltip is a pale
-/// yellow box in the system font, which clashes with the popup and cannot be
-/// made smaller, so this one draws itself.
+/// A tooltip in the app's dark theme, styled like the drop-down lists: the
+/// same background, the same 9.5pt text, no outline and 4px rounded corners.
+/// Windows' stock tooltip is a pale yellow box in the system font, which
+/// clashes with the popup, so this one draws itself.
 /// </summary>
 internal sealed class ThemedToolTip : ToolTip
 {
-    private static readonly Font TipFont = GetDesignFont("Segoe UI", 8F);
-    private static readonly Padding TextPadding = new(S(7), S(3), S(7), S(3));
+    private static readonly Font TipFont = GetDesignFont("Segoe UI", 9.5F);
+    private static readonly Padding TextPadding = new(S(10), S(6), S(10), S(6));
     private static readonly SolidBrush BackgroundBrush = new(ButtonColor);
-    private static readonly Pen BorderPen = new(BorderColor);
+
+    // The tooltip's own window, once it has been given its rounded corners.
+    private IntPtr _roundedWindow;
 
     public ThemedToolTip()
     {
@@ -38,8 +42,10 @@ internal sealed class ThemedToolTip : ToolTip
 
     private void ThemedToolTip_Draw(object? sender, DrawToolTipEventArgs e)
     {
+        RoundTheWindow(e.Graphics);
+
+        // No outline: Windows 11 rounds the corners (see RoundedWindow).
         e.Graphics.FillRectangle(BackgroundBrush, e.Bounds);
-        e.Graphics.DrawRectangle(BorderPen, 0, 0, e.Bounds.Width - 1, e.Bounds.Height - 1);
 
         // A short message reads best centered; a list of lines reads best from the left.
         var alignment = e.ToolTipText?.Contains('\n') == true ? TextFormatFlags.Left : TextFormatFlags.HorizontalCenter;
@@ -53,7 +59,34 @@ internal sealed class ThemedToolTip : ToolTip
                 e.Bounds.Y,
                 e.Bounds.Width - TextPadding.Horizontal,
                 e.Bounds.Height),
-            Color.Gainsboro,
+            Color.White,
             alignment | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
     }
+
+    // The ToolTip component does not expose its window, but the window being
+    // painted is the one behind the drawing surface. Windows 11 then rounds it
+    // (4px) and drops its outline, as it does for the drop-down lists; once
+    // per window, since the tooltip reuses it.
+    private void RoundTheWindow(Graphics graphics)
+    {
+        var hdc = graphics.GetHdc();
+
+        try
+        {
+            var window = WindowFromDC(hdc);
+
+            if (window == IntPtr.Zero || window == _roundedWindow)
+                return;
+
+            RoundedWindow.Apply(window);
+            _roundedWindow = window;
+        }
+        finally
+        {
+            graphics.ReleaseHdc(hdc);
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr WindowFromDC(IntPtr hdc);
 }

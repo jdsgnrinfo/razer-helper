@@ -1,3 +1,4 @@
+using RazerHelper.Core.Localization;
 namespace RazerHelper.Core.Diagnostics;
 
 /// <summary>
@@ -30,8 +31,7 @@ internal sealed class UnhandledExceptionHandler(
         if (Interlocked.Exchange(ref _recoverableErrorShown, 1) == 0)
         {
             Notify(
-                "RazerHelper hit an unexpected error but is still running.\n\n" +
-                "If something stops working, restart it. Details were saved to:\n" +
+                L.T("RazerHelper hit an unexpected error but is still running.\n\nIf something stops working, restart it. Details were saved to:\n") +
                 logLocation);
         }
     }
@@ -42,8 +42,7 @@ internal sealed class UnhandledExceptionHandler(
         log("A fatal unhandled exception is ending the app.", exception);
 
         Notify(
-            "RazerHelper hit an unexpected error and has to close.\n\n" +
-            "Details were saved to:\n" +
+            L.T("RazerHelper hit an unexpected error and has to close.\n\nDetails were saved to:\n") +
             logLocation);
     }
 

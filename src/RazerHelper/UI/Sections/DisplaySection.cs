@@ -1,3 +1,4 @@
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiControls;
@@ -54,7 +55,7 @@ internal sealed class DisplaySection : SectionPanel
             Dock = DockStyle.Right,
             Font = GetDesignFont("Segoe UI", 9.5F),
             ForeColor = Color.Silver,
-            Text = "Current: -- Hz",
+            Text = L.T("Current: -- Hz"),
             TextAlign = ContentAlignment.MiddleRight
         };
 
@@ -180,7 +181,7 @@ internal sealed class DisplaySection : SectionPanel
 
         if (isPluggedIn is null)
         {
-            _statusLabel.Text = "Auto: power source unavailable.";
+            _statusLabel.Text = L.T("Auto: power source unavailable.");
             return;
         }
 
@@ -188,7 +189,7 @@ internal sealed class DisplaySection : SectionPanel
         // make it flicker or drop out. Hold the change, and try again until it is gone.
         if (!_fullscreenGuard.CanApplyNow())
         {
-            _statusLabel.Text = "Auto: waiting for the game";
+            _statusLabel.Text = L.T("Auto: waiting for the game");
             _retryTimer.Start();
             return;
         }
@@ -219,7 +220,7 @@ internal sealed class DisplaySection : SectionPanel
 
         // Just the facts beside the "Display" title: "1920x1080 | 120 Hz".
         _statusLabel.Text = displayInfo is null
-            ? "Not available"
+            ? L.T("Not available")
             : $"{displayInfo.Width}x{displayInfo.Height} | {displayInfo.RefreshRateHz} Hz";
     }
 }

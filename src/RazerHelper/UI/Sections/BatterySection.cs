@@ -1,4 +1,5 @@
 using RazerHelper.Core.Diagnostics;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiControls;
@@ -46,7 +47,7 @@ internal sealed class BatterySection : SectionPanel
 
         var header = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = 2,
             Dock = DockStyle.Top,
             Height = S(28),
@@ -79,7 +80,7 @@ internal sealed class BatterySection : SectionPanel
             Font = GetDesignFont("Segoe UI", 9.5F),
             ForeColor = Color.Silver,
             Margin = Padding.Empty,
-            Text = "Limit:",
+            Text = L.T("Limit:"),
             TextAlign = ContentAlignment.MiddleLeft
         };
 
@@ -96,7 +97,7 @@ internal sealed class BatterySection : SectionPanel
 
         var limitLine = _limitLine = new FlowLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             Dock = DockStyle.Top,
             FlowDirection = FlowDirection.LeftToRight,
             Height = LimitLineHeight,
@@ -118,7 +119,7 @@ internal sealed class BatterySection : SectionPanel
         // the slider's ends line up with theirs.
         var sliderRow = new Panel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             Dock = DockStyle.Top,
             Height = _slider.Height,
             Margin = Padding.Empty,
@@ -132,21 +133,23 @@ internal sealed class BatterySection : SectionPanel
 
         var spacer = new Panel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             Dock = DockStyle.Top,
             Height = S(5)
         };
 
         // Opens the Battery details window (power in or out, time left, health).
-        var details = UiControls.CreateActionButton("More info");
+        // A link like the footer's Settings, not a button: it opens a window
+        // and changes nothing.
+        var details = UiControls.CreateLink("More info");
         details.Dock = DockStyle.Left;
         details.Margin = Padding.Empty;
-        details.Width = S(120);
-        details.Click += (_, _) => DetailsRequested?.Invoke(this, EventArgs.Empty);
+        details.TextAlign = ContentAlignment.MiddleLeft;
+        details.LinkClicked += (_, _) => DetailsRequested?.Invoke(this, EventArgs.Empty);
 
         var detailsRow = new Panel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             Dock = DockStyle.Top,
             Height = DetailsRowHeight,
             Margin = Padding.Empty,
@@ -193,8 +196,8 @@ internal sealed class BatterySection : SectionPanel
     {
         var source = _powerSource.IsPluggedIn switch
         {
-            true => "Plugged in",
-            false => "On battery",
+            true => L.T("Plugged in"),
+            false => L.T("On battery"),
             null => string.Empty
         };
 
@@ -233,7 +236,7 @@ internal sealed class BatterySection : SectionPanel
         // (WinForms shows none on a disabled control), as on Max.
         _slider.Available = false;
         _slider.Cursor = Cursors.Default;
-        _toolTip.SetToolTip(_slider, "This laptop does not support a battery charge limit");
+        _toolTip.SetToolTip(_slider, L.T("This laptop does not support a battery charge limit"));
 
         LimitLineHidden?.Invoke(this, EventArgs.Empty);
     }
@@ -251,7 +254,7 @@ internal sealed class BatterySection : SectionPanel
         catch (Exception exception)
         {
             AppLog.Error(
-                $"Could not restore the saved battery charge limit ({savedLimit}%).",
+                L.F("Could not restore the saved battery charge limit ({0}%).", savedLimit),
                 exception);
         }
     }
@@ -281,19 +284,19 @@ internal sealed class BatterySection : SectionPanel
             ChargeLimitApplied?.Invoke(this, requestedLimit);
 
             StatusChanged?.Invoke(this, new SectionStatus(requestedLimit == BatteryLimitRange.NoLimit
-                ? "Battery charge limit disabled. Charging is allowed to 100%."
-                : $"Battery charge limit set to {requestedLimit}%."));
+                ? L.T("Battery charge limit disabled. Charging is allowed to 100%.")
+                : L.F("Battery charge limit set to {0}%.", requestedLimit)));
         }
         catch (Exception exception)
         {
             AppLog.Error(
-                $"Battery charge-limit change to {requestedLimit}% failed.",
+                L.F("Battery charge-limit change to {0}% failed.", requestedLimit),
                 exception);
 
             _slider.Value = BatteryLimitRange.Normalize(previousLimit ?? BatteryLimitRange.NoLimit);
 
             StatusChanged?.Invoke(this, new SectionStatus(
-                "Could not change the battery charge limit.",
+                L.T("Could not change the battery charge limit."),
                 IsError: true));
         }
         finally

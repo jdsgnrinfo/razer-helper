@@ -18,67 +18,74 @@ public class BatteryDetailsTextTests
     };
 
     [Fact]
+    public void Header_ShowsTheChargePercentAndAShortStatus()
+    {
+        Assert.Equal(52, BatteryDetailsText.ChargePercent(Charging));
+        Assert.Equal("Charging", BatteryDetailsText.HeaderStatus(Charging));
+        Assert.Equal("On battery", BatteryDetailsText.HeaderStatus(Discharging));
+        Assert.Equal("Plugged in", BatteryDetailsText.HeaderStatus(Charging with { Charging = false }));
+    }
+
+    [Fact]
     public void Health_IsTheFullChargeCapacityOverTheDesignCapacity()
     {
         Assert.Equal(85, BatteryDetailsText.HealthPercent(Charging));
-        Assert.Equal("85% (55.4 Wh of 65.0 Wh when new)", BatteryDetailsText.Health(Charging));
+        Assert.Equal("65.0 Wh when new", BatteryDetailsText.HealthCaption(Charging));
     }
 
     [Fact]
     public void Health_IsLeftOutWithoutADesignCapacity()
     {
-        Assert.Null(BatteryDetailsText.Health(Charging with { DesignMilliwattHours = null }));
+        var noDesign = Charging with { DesignMilliwattHours = null };
+
+        Assert.Null(BatteryDetailsText.HealthPercent(noDesign));
+        Assert.Null(BatteryDetailsText.HealthCaption(noDesign));
     }
 
     [Fact]
     public void Charging_ShowsTheRateInAndTheTimeToFull()
     {
-        Assert.Equal("Charging", BatteryDetailsText.Status(Charging));
-        Assert.Equal("Charging at 45.0 W", BatteryDetailsText.Power(Charging));
-        Assert.Equal("About 35 min to full", BatteryDetailsText.Time(Charging)); // 26.5 Wh at 45 W
+        Assert.Equal(("45.0 W", "Charging"), BatteryDetailsText.PowerParts(Charging));
+        Assert.Equal(("35 min", "to full"), BatteryDetailsText.TimeParts(Charging)); // 26.5 Wh at 45 W
     }
 
     [Fact]
     public void OnBattery_ShowsTheDrawAndTheTimeLeft()
     {
-        Assert.Equal("On battery", BatteryDetailsText.Status(Discharging));
-        Assert.Equal("Using 18.2 W", BatteryDetailsText.Power(Discharging));
-        Assert.Equal("About 1 h 35 min left", BatteryDetailsText.Time(Discharging)); // 28.9 Wh at 18.2 W
+        Assert.Equal(("18.2 W", "Using"), BatteryDetailsText.PowerParts(Discharging));
+        Assert.Equal(("1 h 35 min", "left"), BatteryDetailsText.TimeParts(Discharging)); // 28.9 Wh at 18.2 W
     }
 
     [Fact]
     public void OnBattery_PrefersWindowsOwnEstimate()
     {
-        Assert.Equal("About 2 h 0 min left", BatteryDetailsText.Time(Discharging with { EstimatedSecondsLeft = 7200 }));
+        Assert.Equal(("2 h 0 min", "left"), BatteryDetailsText.TimeParts(Discharging with { EstimatedSecondsLeft = 7200 }));
     }
 
     [Fact]
-    public void PluggedInButNotCharging_SaysSoAndShowsNoRateOrTime()
+    public void PluggedInButNotCharging_ShowsNoRateOrTime()
     {
         var full = Charging with { Charging = false, RateMilliwatts = 0 };
 
-        Assert.Equal("Plugged in, not charging", BatteryDetailsText.Status(full));
-        Assert.Null(BatteryDetailsText.Power(full));
-        Assert.Null(BatteryDetailsText.Time(full));
+        Assert.Null(BatteryDetailsText.PowerParts(full));
+        Assert.Null(BatteryDetailsText.TimeParts(full));
     }
 
     [Fact]
-    public void Charge_ShowsWattHoursAndPercent()
+    public void Charge_ShowsTheWattHoursStoredAndOutOfHowMany()
     {
-        Assert.Equal("28.9 Wh of 55.4 Wh (52%)", BatteryDetailsText.Charge(Charging));
+        Assert.Equal(("28.9 Wh", "of 55.4 Wh"), BatteryDetailsText.ChargeParts(Charging));
+    }
+
+    [Fact]
+    public void Voltage_IsInVoltsWithTwoDecimals()
+    {
+        Assert.Equal("16.44 V", BatteryDetailsText.Voltage(Charging));
     }
 
     [Fact]
     public void Identity_NamesTheBatteryAndSpellsOutAShortChemistryCode()
     {
         Assert.Equal("Razer Blade · Lithium-ion", BatteryDetailsText.Identity(Charging));
-    }
-
-    [Fact]
-    public void Rows_LeaveOutWhatTheBatteryDoesNotReport()
-    {
-        var labels = BatteryDetailsText.Rows(Charging).Select(row => row.Label).ToArray();
-
-        Assert.Equal(["Status", "Power", "Time", "Charge", "Health", "Voltage", "Battery"], labels);
     }
 }

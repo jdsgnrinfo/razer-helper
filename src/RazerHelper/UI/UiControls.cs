@@ -1,3 +1,4 @@
+using RazerHelper.Core.Localization;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
@@ -8,7 +9,7 @@ internal static class UiControls
     {
         var layout = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = 2,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
@@ -38,7 +39,7 @@ internal static class UiControls
                 Dock = DockStyle.Right,
                 Font = GetDesignFont("Segoe UI", 9.5F),
                 ForeColor = Color.Silver,
-                Text = detail,
+                Text = L.T(detail),
                 TextAlign = ContentAlignment.MiddleRight
             }, 1, 0);
         }
@@ -53,7 +54,7 @@ internal static class UiControls
         Dock = DockStyle.Left,
         Font = GetDesignFont("Segoe UI", 10F, FontStyle.Bold),
         ForeColor = Color.White,
-        Text = text,
+        Text = L.T(text),
         TextAlign = ContentAlignment.MiddleLeft
     };
 
@@ -91,7 +92,7 @@ internal static class UiControls
     {
         var grid = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = buttonNames.Count,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
@@ -141,7 +142,29 @@ internal static class UiControls
         button.ForeColor = available ? normalText : SystemColors.GrayText;
         button.Cursor = available ? Cursors.Hand : Cursors.Default;
         button.TabStop = available;
-        toolTip.SetToolTip(button, available ? string.Empty : reasonWhenUnavailable);
+        toolTip.SetToolTip(button, available ? string.Empty : L.T(reasonWhenUnavailable));
+    }
+
+    /// <summary>
+    /// A quiet text link, as in the footer: silver, turning Razer green and
+    /// underlined under the pointer.
+    /// </summary>
+    public static LinkLabel CreateLink(string text)
+    {
+        var link = new LinkLabel
+        {
+            ActiveLinkColor = RazerGreen,
+            AutoSize = true,
+            Cursor = Cursors.Hand,
+            Font = GetDesignFont("Segoe UI", 8.5F),
+            LinkBehavior = LinkBehavior.HoverUnderline,
+            LinkColor = Color.Silver,
+            Text = L.T(text)
+        };
+
+        link.MouseEnter += (_, _) => link.LinkColor = RazerGreen;
+        link.MouseLeave += (_, _) => link.LinkColor = Color.Silver;
+        return link;
     }
 
     public static Button CreateActionButton(string text)
@@ -154,7 +177,7 @@ internal static class UiControls
             Font = GetDesignFont("Segoe UI", 9.5F),
             ForeColor = Color.White,
             Margin = S(new Padding(4)),
-            Text = text
+            Text = L.T(text)
         };
     }
 }

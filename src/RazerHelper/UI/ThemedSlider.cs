@@ -73,7 +73,7 @@ internal sealed class ThemedSlider : Control
             ControlStyles.StandardClick,
             true);
         TabStop = true;
-        BackColor = BackgroundColor;
+        BackColor = CardColor;
         Height = showLabels ? S(50) : S(24);
     }
 

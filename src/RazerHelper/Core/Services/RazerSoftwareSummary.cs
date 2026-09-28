@@ -1,4 +1,5 @@
 using System.Text;
+using RazerHelper.Core.Localization;
 
 namespace RazerHelper.Core.Services;
 
@@ -13,22 +14,22 @@ internal static class RazerSoftwareSummary
     {
         var text = new StringBuilder();
 
-        text.AppendLine($"{status.Running} running = {status.Services.Running} services + {status.RunningApps.Count} Razer programs");
+        text.AppendLine(L.F("{0} running = {1} services + {2} Razer programs", status.Running, status.Services.Running, status.RunningApps.Count));
         text.AppendLine();
-        text.AppendLine($"Services: {status.Services.Running} of {status.Services.Total} running");
+        text.AppendLine(L.F("Services: {0} of {1} running", status.Services.Running, status.Services.Total));
 
         var notDisabled = status.ServicesToStop.Count;
 
         if (notDisabled > 0 && status.Services.Running == 0)
-            text.AppendLine($"  ({notDisabled} not yet disabled)");
+            text.AppendLine(L.F("  ({0} not yet disabled)", notDisabled));
 
         if (status.RunningApps.Count == 0)
         {
-            text.AppendLine("Programs: none running");
+            text.AppendLine(L.T("Programs: none running"));
         }
         else
         {
-            text.AppendLine("Programs running:");
+            text.AppendLine(L.T("Programs running:"));
 
             foreach (var name in status.RunningApps)
                 text.AppendLine($"  {name}");
@@ -36,7 +37,7 @@ internal static class RazerSoftwareSummary
 
         text.AppendLine(LoginLine(status));
         text.AppendLine();
-        text.Append($"Checked at {checkedAt:HH:mm:ss}");
+        text.Append(L.F("Checked at {0}", checkedAt.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)));
 
         return text.ToString();
     }
@@ -44,12 +45,12 @@ internal static class RazerSoftwareSummary
     private static string LoginLine(RazerSoftwareStatus status)
     {
         if (status.LoginEntries.Count == 0)
-            return "Start at login: no Razer entry found";
+            return L.T("Start at login: no Razer entry found");
 
         var enabled = status.LoginEntries.Where(entry => entry.IsEnabled).Select(entry => entry.Name).ToList();
 
         return enabled.Count > 0
-            ? $"Start at login: ON ({string.Join(", ", enabled)})"
-            : "Start at login: off";
+            ? L.F("Start at login: ON ({0})", string.Join(", ", enabled))
+            : L.T("Start at login: off");
     }
 }

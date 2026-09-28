@@ -48,16 +48,12 @@ internal sealed class AppFooter : TableLayoutPanel
 
     public event EventHandler? SettingsRequested;
 
-    private static LinkLabel CreateLink(string text, Padding margin) => new()
+    private static LinkLabel CreateLink(string text, Padding margin)
     {
-        ActiveLinkColor = Color.White,
-        AutoSize = true,
-        Dock = DockStyle.Fill,
-        Font = GetDesignFont("Segoe UI", 8.5F),
-        LinkBehavior = LinkBehavior.HoverUnderline,
-        LinkColor = Color.Silver,
-        Margin = margin,
-        Text = text,
-        TextAlign = ContentAlignment.BottomRight
-    };
+        var link = UiControls.CreateLink(text);
+        link.Dock = DockStyle.Fill;
+        link.Margin = margin;
+        link.TextAlign = ContentAlignment.BottomRight;
+        return link;
+    }
 }

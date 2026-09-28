@@ -1,0 +1,275 @@
+using System.Globalization;
+
+namespace RazerHelper.Core.Localization;
+
+/// <summary>The languages the interface is written in.</summary>
+internal enum AppLanguage
+{
+    English,
+    Spanish
+}
+
+/// <summary>
+/// Translates the interface. Every on-screen text is written in English in the
+/// code and passed through <see cref="T"/> (or <see cref="F"/> when it carries
+/// values); in Spanish the English text is looked up in <see cref="Spanish"/>.
+/// A text without a translation shows in English rather than not at all.
+/// The language is chosen once at startup: changing it restarts the app.
+/// </summary>
+internal static class L
+{
+    /// <summary>The language on screen. English until startup picks one, which keeps the tests in English.</summary>
+    public static AppLanguage Current { get; set; } = AppLanguage.English;
+
+    /// <summary>The setting's value for each language, as stored in settings.json.</summary>
+    public static string Code(AppLanguage language) => language == AppLanguage.Spanish ? "es" : "en";
+
+    /// <summary>
+    /// The language for a stored setting: "es" or "en", or, with none stored,
+    /// the Windows display language (Spanish for any Spanish, English otherwise).
+    /// </summary>
+    public static AppLanguage Resolve(string? code, CultureInfo windowsCulture) => code?.ToLowerInvariant() switch
+    {
+        "es" => AppLanguage.Spanish,
+        "en" => AppLanguage.English,
+        _ => windowsCulture.TwoLetterISOLanguageName == "es" ? AppLanguage.Spanish : AppLanguage.English
+    };
+
+    /// <summary>The text in the current language.</summary>
+    public static string T(string english) =>
+        Current == AppLanguage.Spanish && Spanish.TryGetValue(english, out var spanish) ? spanish : english;
+
+    /// <summary>A text with values: <paramref name="englishFormat"/> uses {0}, {1}... as string.Format does.</summary>
+    public static string F(string englishFormat, params object?[] values) =>
+        string.Format(CultureInfo.InvariantCulture, T(englishFormat), values);
+
+    internal static readonly IReadOnlyDictionary<string, string> Spanish = new Dictionary<string, string>
+    {
+        // Footer, tray icon and window titles.
+        ["Free up GPU"] = "Liberar GPU",
+        ["Settings"] = "Ajustes",
+        ["Open RazerHelper"] = "Abrir RazerHelper",
+        ["Exit"] = "Salir",
+        ["Close"] = "Cerrar",
+        ["Close (RazerHelper keeps running in the tray)"] = "Cerrar (RazerHelper sigue en la bandeja)",
+        ["RazerHelper Settings"] = "Ajustes de RazerHelper",
+        ["{0} shortcut is used by another program."] = "Otro programa ya usa el atajo {0}.",
+        ["{0} control interface found."] = "Control de {0} encontrado.",
+        ["{0} control interface found (community-reported product id, not verified on this model)."] =
+            "Control de {0} encontrado (identificador aportado por la comunidad, sin verificar en este modelo).",
+        ["No supported Razer laptop detected; fan and battery controls unavailable."] =
+            "No se detectó un portátil Razer compatible; los controles de ventilador y batería no están disponibles.",
+
+        // Settings window.
+        ["Language"] = "Idioma",
+        ["RazerHelper restarts to change the language."] = "RazerHelper se reinicia para cambiar el idioma.",
+        ["Start at login"] = "Iniciar con Windows",
+        ["Opens in the tray when you sign in."] = "Se abre en la bandeja al iniciar sesión.",
+        ["Switch profile with the charger"] = "Cambiar de perfil con el cargador",
+        ["Changes mode when you plug in or unplug."] = "Cambia de modo al conectar o desconectar.",
+        ["Hide when clicking away"] = "Ocultar al hacer clic fuera",
+        ["Off, it stays open until you click the tray icon."] = "Si no, sigue abierta hasta pulsar el icono de la bandeja.",
+        ["Always on top"] = "Siempre visible",
+        ["Stays above other windows and games. {0} shows or hides it."] = "Queda sobre otras ventanas y juegos. {0} la muestra u oculta.",
+        ["Free up GPU when unplugged"] = "Liberar GPU sin cargador",
+        ["Offers to close apps using the dedicated GPU, to save battery."] = "Ofrece cerrar las apps que usan la GPU dedicada, para ahorrar batería.",
+        ["Keyboard off with the screen"] = "Teclado apagado con la pantalla",
+        ["Turns the lighting off and back on with the screen."] = "Apaga y vuelve a encender la luz junto con la pantalla.",
+        ["Razer drivers and support"] = "Drivers y soporte de Razer",
+        ["Open log folder"] = "Abrir carpeta de registros",
+        ["Reset to defaults..."] = "Restablecer...",
+        ["Reset to defaults"] = "Restablecer valores",
+        ["Could not change Start at login."] = "No se pudo cambiar Iniciar con Windows.",
+        ["Reset RazerHelper to how it was the first time you opened it?\r\n\r\nThis will:\r\n  - clear your saved settings, including the options in this window and your never-close list\r\n  - turn off Start at login\r\n  - set the laptop to Balanced mode with no battery charge limit\r\n\r\nIt will not change Razer's background services or anything else on your PC. RazerHelper will restart."] =
+            "¿Dejar RazerHelper como estaba la primera vez que lo abriste?\r\n\r\nEsto:\r\n  - borra tus ajustes guardados, incluidas las opciones de esta ventana y tu lista de apps que nunca se cierran\r\n  - desactiva Iniciar con Windows\r\n  - pone el portátil en modo Equilibrado sin límite de carga\r\n\r\nNo cambia los servicios de Razer ni nada más de tu PC. RazerHelper se reiniciará.",
+        ["Most of the reset worked, but not everything:"] = "Casi todo se restableció, pero no todo:",
+        ["RazerHelper will restart now. Details are in the log."] = "RazerHelper se reiniciará ahora. Los detalles están en el registro.",
+        ["The reset is done, but RazerHelper could not restart itself. Please close it from the tray icon and open it again."] =
+            "Se restableció, pero RazerHelper no pudo reiniciarse solo. Ciérralo desde el icono de la bandeja y vuelve a abrirlo.",
+        ["RazerHelper could not restart itself. Please close it from the tray icon and open it again."] =
+            "RazerHelper no pudo reiniciarse solo. Ciérralo desde el icono de la bandeja y vuelve a abrirlo.",
+        ["Your saved settings could not be cleared."] = "No se pudieron borrar tus ajustes guardados.",
+        ["Start at login could not be turned off."] = "No se pudo desactivar Iniciar con Windows.",
+        ["The laptop could not be set to Balanced mode."] = "No se pudo poner el portátil en modo Equilibrado.",
+        ["The battery charge limit could not be removed."] = "No se pudo quitar el límite de carga.",
+
+        // Free up GPU.
+        ["Save battery?"] = "¿Ahorrar batería?",
+        ["Ask them to close"] = "Pedir que se cierren",
+        ["Not now"] = "Ahora no",
+        ["These apps are keeping the dedicated GPU awake, which drains the battery:"] =
+            "Estas apps mantienen despierta la GPU dedicada y gastan batería:",
+        ["Ask them to close? Each one can still ask you to save your work first."] =
+            "¿Pedirles que se cierren? Cada una puede pedirte antes que guardes tu trabajo.",
+        ["{0} instances, "] = "{0} instancias, ",
+        ["No dedicated GPU was found, so there is nothing to free up."] = "No se encontró GPU dedicada, así que no hay nada que liberar.",
+        ["An external display is connected (or Windows could not say). It is driven by the dedicated GPU, so the GPU stays on whatever is closed. Disconnect it and try again."] =
+            "Hay una pantalla externa conectada (o Windows no pudo confirmarlo). La mueve la GPU dedicada, así que la GPU sigue encendida aunque se cierre todo. Desconéctala y vuelve a intentarlo.",
+        ["No apps that can be closed are using the dedicated GPU. Windows, drivers, terminals, editors and background helpers are left alone."] =
+            "Ninguna app que se pueda cerrar está usando la GPU dedicada. Windows, drivers, terminales, editores y procesos de fondo no se tocan.",
+        ["Things changed while you were deciding, so nothing was closed. Try again."] =
+            "Algo cambió mientras decidías, así que no se cerró nada. Vuelve a intentarlo.",
+        ["Already checking the dedicated GPU."] = "Ya se está revisando la GPU dedicada.",
+        ["Could not check the dedicated GPU. Details are in the log."] = "No se pudo revisar la GPU dedicada. Los detalles están en el registro.",
+
+        // Performance.
+        ["Performance Mode"] = "Modo de rendimiento",
+        ["Balanced"] = "Equilibrado",
+        ["Gaming"] = "Juego",
+        ["Custom"] = "Personalizado",
+        ["Boost levels apply right away and are saved in the current power profile."] = "Los niveles se aplican al instante y se guardan en el perfil de energía actual.",
+        ["Temperature"] = "Temperatura",
+        ["Usage"] = "Uso",
+        ["Speed"] = "Velocidad",
+        ["Core clock"] = "Reloj del núcleo",
+        ["Memory clock"] = "Frecuencia de memoria",
+        ["Asleep"] = "En reposo",
+        ["Silent"] = "Silencio",
+        ["Low"] = "Bajo",
+        ["Medium"] = "Medio",
+        ["High"] = "Alto",
+        ["Boost"] = "Turbo",
+        ["Needs to be plugged in"] = "Requiere el cargador conectado",
+        ["Could not change max fan speed."] = "No se pudo cambiar la velocidad máxima del ventilador.",
+        ["Could not apply the power profile."] = "No se pudo aplicar el perfil de energía.",
+        ["Could not change the performance mode."] = "No se pudo cambiar el modo de rendimiento.",
+        ["Could not change the boost level."] = "No se pudo cambiar el nivel de turbo.",
+        ["Performance profile applied."] = "Perfil de rendimiento aplicado.",
+
+        // Fans.
+        ["Fans"] = "Ventiladores",
+        ["CPU Fan"] = "Ventilador CPU",
+        ["GPU Fan"] = "Ventilador GPU",
+        ["Max"] = "Máx.",
+        ["Needs Custom mode, plugged in"] = "Requiere modo Personalizado y el cargador conectado",
+        ["Needs to be plugged in, and not in Silent mode"] = "Requiere el cargador conectado y no estar en modo Silencio",
+        ["This laptop does not support max fan speed"] = "Este portátil no permite la velocidad máxima del ventilador",
+
+        // Display.
+        ["Display"] = "Pantalla",
+        ["Current: -- Hz"] = "Actual: -- Hz",
+        ["Auto: power source unavailable."] = "Auto: no se sabe si está enchufado.",
+        ["Auto: waiting for the game"] = "Auto: esperando al juego",
+        ["Not available"] = "No disponible",
+        ["{0} Hz is not available for the current display mode."] = "{0} Hz no está disponible en el modo de pantalla actual.",
+        ["Windows could not apply {0} Hz. Error: {1}."] = "Windows no pudo aplicar {0} Hz. Error: {1}.",
+        ["Switched to {0} Hz."] = "Cambiado a {0} Hz.",
+        ["{0} Hz is not available."] = "{0} Hz no está disponible.",
+        ["{0} Hz is not available at {1}x{2}."] = "{0} Hz no está disponible a {1}x{2}.",
+
+        // Lighting.
+        ["Lighting"] = "Iluminación",
+        ["Keyboard"] = "Teclado",
+        ["Logo"] = "Logo",
+        ["Off"] = "Apagado",
+        ["On"] = "Encendido",
+        ["Static"] = "Fijo",
+        ["Static green"] = "Verde fijo",
+        ["Spectrum"] = "Espectro",
+        ["Breathing"] = "Respiración",
+        ["Wave"] = "Onda",
+        ["White"] = "Blanco",
+        ["Razer green"] = "Verde Razer",
+        ["Red"] = "Rojo",
+        ["Orange"] = "Naranja",
+        ["Yellow"] = "Amarillo",
+        ["Cyan"] = "Cian",
+        ["Blue"] = "Azul",
+        ["Purple"] = "Morado",
+        ["Pink"] = "Rosa",
+        ["Could not change the keyboard lighting."] = "No se pudo cambiar la luz del teclado.",
+        ["Could not change the keyboard brightness."] = "No se pudo cambiar el brillo del teclado.",
+        ["Could not change the logo lighting."] = "No se pudo cambiar la luz del logo.",
+        ["Could not change the logo brightness."] = "No se pudo cambiar el brillo del logo.",
+        ["Could not change the keyboard color."] = "No se pudo cambiar el color del teclado.",
+        ["Could not read the lighting state."] = "No se pudo leer el estado de la iluminación.",
+        ["Could not read the lighting state after a change."] = "No se pudo leer la iluminación después del cambio.",
+
+        // Battery.
+        ["Battery Charge Limit"] = "Límite de carga",
+        ["Limit:"] = "Límite:",
+        ["More info"] = "Más info",
+        ["Plugged in"] = "Enchufado",
+        ["On battery"] = "Con batería",
+        ["This laptop does not support a battery charge limit"] = "Este portátil no permite limitar la carga",
+        ["Could not restore the saved battery charge limit ({0}%)."] = "No se pudo recuperar el límite de carga guardado ({0} %).",
+        ["Battery charge limit disabled. Charging is allowed to 100%."] = "Límite de carga desactivado. Carga hasta el 100 %.",
+        ["Battery charge limit set to {0}%."] = "Límite de carga fijado en {0} %.",
+        ["Battery charge-limit change to {0}% failed."] = "Falló el cambio del límite de carga a {0} %.",
+        ["Could not change the battery charge limit."] = "No se pudo cambiar el límite de carga.",
+
+        // Battery window.
+        ["Battery"] = "Batería",
+        ["Unavailable"] = "No disponible",
+        ["No information"] = "Sin información",
+        ["Windows did not report the battery"] = "Windows no informó de la batería",
+        ["Windows did not report these figures"] = "Windows no informó de estos datos",
+        ["Power"] = "Potencia",
+        ["Time"] = "Tiempo",
+        ["Charge"] = "Carga",
+        ["Health"] = "Salud",
+        ["Voltage"] = "Voltaje",
+        ["Cycles"] = "Ciclos",
+        ["Charging"] = "Cargando",
+        ["Using"] = "Consumiendo",
+        ["left"] = "restante",
+        ["to full"] = "para cargar",
+        ["of {0}"] = "de {0}",
+        ["{0} when new"] = "{0} de fábrica",
+        ["Plugged in, not charging"] = "Enchufado, sin cargar",
+        ["Lithium-ion"] = "Ion de litio",
+        ["Lithium polymer"] = "Polímero de litio",
+        ["Nickel-metal hydride"] = "Níquel-metalhidruro",
+        ["Nickel-cadmium"] = "Níquel-cadmio",
+        ["Lead-acid"] = "Plomo-ácido",
+
+        // Razer software.
+        ["Razer Software Running: --"] = "Software Razer activo: --",
+        ["Razer Software Running: {0}"] = "Software Razer activo: {0}",
+        ["Razer Software Running: 0 (starts at login)"] = "Software Razer activo: 0 (arranca con Windows)",
+        ["Razer Software Running: 0"] = "Software Razer activo: 0",
+        ["Stop"] = "Detener",
+        ["Start"] = "Iniciar",
+        ["Tip: uninstall Razer Synapse for the cleanest experience."] = "Consejo: desinstala Razer Synapse para una experiencia más limpia.",
+        ["Could not change the Razer software."] = "No se pudo cambiar el software de Razer.",
+        ["Stop Razer software"] = "Detener software de Razer",
+        ["Stopping Razer software..."] = "Deteniendo software de Razer...",
+        ["Starting Razer software..."] = "Iniciando software de Razer...",
+        ["Administrator approval was declined. Nothing was changed."] = "Se rechazó el permiso de administrador. No se cambió nada.",
+        ["Some Razer services could not be stopped."] = "Algunos servicios de Razer no se pudieron detener.",
+        ["Razer's startup at login could not be turned off."] = "No se pudo desactivar el arranque de Razer con Windows.",
+        ["{0} See the log for details."] = "{0} Mira el registro para más detalles.",
+        ["Razer software stopped and kept off."] = "Software de Razer detenido y desactivado.",
+        ["Some Razer services could not be restored."] = "Algunos servicios de Razer no se pudieron restaurar.",
+        ["Razer's startup at login could not be restored."] = "No se pudo restaurar el arranque de Razer con Windows.",
+        ["Razer software restored."] = "Software de Razer restaurado.",
+        ["Stop Razer's background software?"] = "¿Detener el software de fondo de Razer?",
+        ["These {0} services will be stopped and kept off, including after a restart:"] =
+            "Estos {0} servicios se detendrán y seguirán apagados, también tras reiniciar:",
+        ["These Razer programs are running and will be asked to close (nothing is force-closed):"] =
+            "Estos programas de Razer están abiertos y se les pedirá que se cierren (nada se cierra a la fuerza):",
+        ["Razer will be stopped from starting when you sign in, the same as switching it off in Task Manager's Startup tab:"] =
+            "Razer dejará de arrancar al iniciar sesión, igual que al desactivarlo en la pestaña Inicio del Administrador de tareas:",
+        ["Razer devices connected now: {0}."] = "Dispositivos Razer conectados ahora: {0}.",
+        ["No other Razer devices are connected right now."] = "No hay otros dispositivos Razer conectados ahora.",
+        ["While the services are off, Razer-only features can't be configured on those devices (button remapping, macros, lighting effects, DPI stages). The devices still work as normal."] =
+            "Con los servicios apagados, las funciones exclusivas de Razer no se pueden configurar en esos dispositivos (reasignar botones, macros, efectos de luz, niveles de DPI). Los dispositivos siguen funcionando con normalidad.",
+        ["Press Start to bring everything back exactly as it was."] = "Pulsa Iniciar para dejarlo todo exactamente como estaba.",
+        ["Windows will ask for administrator approval."] = "Windows pedirá permiso de administrador.",
+        ["{0} running = {1} services + {2} Razer programs"] = "{0} activos = {1} servicios + {2} programas de Razer",
+        ["Services: {0} of {1} running"] = "Servicios: {0} de {1} activos",
+        ["  ({0} not yet disabled)"] = "  ({0} aún sin desactivar)",
+        ["Programs: none running"] = "Programas: ninguno abierto",
+        ["Programs running:"] = "Programas abiertos:",
+        ["Checked at {0}"] = "Revisado a las {0}",
+        ["Start at login: no Razer entry found"] = "Arranque con Windows: no hay entrada de Razer",
+        ["Start at login: ON ({0})"] = "Arranque con Windows: SÍ ({0})",
+        ["Start at login: off"] = "Arranque con Windows: no",
+
+        // Errors.
+        ["RazerHelper hit an unexpected error but is still running.\n\nIf something stops working, restart it. Details were saved to:\n"] =
+            "RazerHelper tuvo un error inesperado pero sigue funcionando.\n\nSi algo deja de funcionar, reinícialo. Los detalles se guardaron en:\n",
+        ["RazerHelper hit an unexpected error and has to close.\n\nDetails were saved to:\n"] =
+            "RazerHelper tuvo un error inesperado y tiene que cerrarse.\n\nLos detalles se guardaron en:\n",
+    };
+}

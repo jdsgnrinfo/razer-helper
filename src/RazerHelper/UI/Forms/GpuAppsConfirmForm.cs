@@ -1,3 +1,4 @@
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using RazerHelper.Helpers;
@@ -52,7 +53,7 @@ internal sealed class GpuAppsConfirmForm : Form
             Font = GetDesignFont("Segoe UI", 12F, FontStyle.Bold),
             ForeColor = RazerGreen,
             Margin = S(new Padding(0, 0, 0, 8)),
-            Text = "Save battery?"
+            Text = L.T("Save battery?")
         });
 
         layout.Controls.Add(new Label

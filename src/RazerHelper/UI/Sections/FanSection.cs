@@ -1,5 +1,6 @@
 using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Hardware;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiControls;
@@ -56,15 +57,15 @@ internal sealed class FanSection : SectionPanel
         _cpuTemperature = cpuTemperature;
         _gpuTemperature = gpuTemperature;
 
-        _cpuFanLabel = CreateReadingLabel("CPU Fan: -- RPM");
-        _gpuFanLabel = CreateReadingLabel("GPU Fan: -- RPM");
+        _cpuFanLabel = CreateReadingLabel($"{L.T("CPU Fan")}: -- RPM");
+        _gpuFanLabel = CreateReadingLabel($"{L.T("GPU Fan")}: -- RPM");
 
         // Each reading sits above its own button: CPU over Auto, GPU over Max,
         // side by side. The columns are the same width as the button cells
         // below, so the text lines up with the left edge of each button.
         var readings = _readings = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = 3,
             Dock = DockStyle.Top,
             Height = ReadingsHeight,
@@ -198,9 +199,9 @@ internal sealed class FanSection : SectionPanel
             _toolTip,
             _maxFanMethod switch
             {
-                MaxFanMethod.ControllerFlag => "Needs Custom mode, plugged in",
-                MaxFanMethod.ManualFan => "Needs to be plugged in, and not in Silent mode",
-                _ => "This laptop does not support max fan speed"
+                MaxFanMethod.ControllerFlag => L.T("Needs Custom mode, plugged in"),
+                MaxFanMethod.ManualFan => L.T("Needs to be plugged in, and not in Silent mode"),
+                _ => L.T("This laptop does not support max fan speed")
             });
     }
 
@@ -300,7 +301,7 @@ internal sealed class FanSection : SectionPanel
     }
 
     private static void ShowReading(Label label, string name, int? rpm) =>
-        label.Text = rpm is null ? $"{name}: -- RPM" : $"{name}: {rpm} RPM";
+        label.Text = rpm is null ? $"{L.T(name)}: -- RPM" : $"{L.T(name)}: {rpm} RPM";
 
     private static Label CreateReadingLabel(string text) => new()
     {

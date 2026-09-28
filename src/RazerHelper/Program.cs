@@ -1,4 +1,5 @@
 using RazerHelper.Core.Diagnostics;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Services;
 using RazerHelper.Helpers;
 using RazerHelper.UI;
@@ -43,8 +44,10 @@ namespace RazerHelper
 
             ApplicationConfiguration.Initialize();
 
-            // The window size has to be known before any window (or font) is made.
-            UiTheme.SetScale(UiScale.Resolve(new SettingsService().Load().WindowScale, UiTheme.WindowsScale));
+            // The size and the language have to be known before any window (or font) is made.
+            var settings = new SettingsService().Load();
+            UiTheme.SetScale(UiScale.Resolve(settings.WindowScale, UiTheme.WindowsScale));
+            L.Current = L.Resolve(settings.Language, System.Globalization.CultureInfo.CurrentUICulture);
 
             using var trayPopup = new TrayPopupForm();
             using var trayHost = new TrayIconHost(trayPopup);

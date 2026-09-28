@@ -1,3 +1,4 @@
+using RazerHelper.Core.Localization;
 ﻿using System.Runtime.InteropServices;
 using RazerHelper.Core.Hardware;
 using RazerHelper.Core.Models;
@@ -78,7 +79,7 @@ internal sealed class DisplayService
 
             if (testResult != ChangeSuccessful)
             {
-                message = $"{refreshRateHz} Hz is not available for the current display mode.";
+                message = L.F("{0} Hz is not available for the current display mode.", refreshRateHz);
                 return false;
             }
 
@@ -91,18 +92,18 @@ internal sealed class DisplayService
 
             if (applyResult != ChangeSuccessful)
             {
-                message = $"Windows could not apply {refreshRateHz} Hz. Error: {applyResult}.";
+                message = L.F("Windows could not apply {0} Hz. Error: {1}.", refreshRateHz, applyResult);
                 return false;
             }
 
-            message = $"Switched to {refreshRateHz} Hz.";
+            message = L.F("Switched to {0} Hz.", refreshRateHz);
             return true;
         }
 
         var current = GetInternalDisplayInfo();
         message = current is null
-            ? $"{refreshRateHz} Hz is not available."
-            : $"{refreshRateHz} Hz is not available at {current.Width}x{current.Height}.";
+            ? L.F("{0} Hz is not available.", refreshRateHz)
+            : L.F("{0} Hz is not available at {1}x{2}.", refreshRateHz, current.Width, current.Height);
         return false;
     }
 

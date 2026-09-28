@@ -1,6 +1,7 @@
 using System.ServiceProcess;
 using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Hardware;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Services;
 using RazerHelper.Helpers;
 using static RazerHelper.UI.UiControls;
@@ -18,8 +19,9 @@ namespace RazerHelper.UI.Sections;
 /// </summary>
 internal sealed class ServicesSection : SectionPanel
 {
-    // The rule, the spacing under it, the count and button, and the one-line note.
-    public static int RowHeight => S(70);
+    // The count and button, the one-line note, the card's padding, and the
+    // gap above the footer.
+    public static int RowHeight => S(61) + CardPadding.Vertical + GapBelow;
 
     private static readonly TimeSpan HoverRefreshInterval = TimeSpan.FromSeconds(2);
 
@@ -46,9 +48,7 @@ internal sealed class ServicesSection : SectionPanel
         _recordedModes = new Dictionary<string, ServiceStartMode>(recordedModes ?? new Dictionary<string, ServiceStartMode>());
         _recordedLogins = new Dictionary<string, string>(recordedLogins ?? new Dictionary<string, string>());
 
-        // Last row of the popup, so no gap below it. Hidden until we know
-        // Razer's software is installed.
-        Margin = Padding.Empty;
+        // Hidden until we know Razer's software is installed.
         Visible = false;
 
         _countLabel = new Label
@@ -56,7 +56,7 @@ internal sealed class ServicesSection : SectionPanel
             Dock = DockStyle.Fill,
             Font = GetDesignFont("Segoe UI", 9.5F),
             ForeColor = Color.Silver,
-            Text = "Razer Software Running: --",
+            Text = L.T("Razer Software Running: --"),
             TextAlign = ContentAlignment.MiddleLeft
         };
 
@@ -69,11 +69,11 @@ internal sealed class ServicesSection : SectionPanel
 
         var row = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = 2,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
-            Padding = S(new Padding(0, 8, 0, 0)), // Clear space below the rule.
+            Padding = Padding.Empty,
             RowCount = 1
         };
 
@@ -82,14 +82,6 @@ internal sealed class ServicesSection : SectionPanel
         row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         row.Controls.Add(_countLabel, 0, 0);
         row.Controls.Add(_actionButton, 1, 0);
-
-        // A thin rule separates this row from the controls above it.
-        var separator = new Panel
-        {
-            BackColor = BorderColor,
-            Dock = DockStyle.Top,
-            Height = 1
-        };
 
         // Stopping the services is the light-touch option. Removing Synapse
         // altogether is cleaner, and only the user can decide that.
@@ -100,14 +92,13 @@ internal sealed class ServicesSection : SectionPanel
             ForeColor = SubtleTextColor,
             Height = S(20),
             Padding = S(new Padding(4, 0, 0, 0)),
-            Text = "Tip: uninstall Razer Synapse for the cleanest experience.",
+            Text = L.T("Tip: uninstall Razer Synapse for the cleanest experience."),
             TextAlign = ContentAlignment.MiddleLeft
         };
 
         // Dock order: the rule and the note dock first, the row fills the rest.
         Controls.Add(row);
         Controls.Add(note);
-        Controls.Add(separator);
     }
 
     /// <summary>Raised when Razer's software appears or disappears, so the host can show or hide this row.</summary>
@@ -200,7 +191,7 @@ internal sealed class ServicesSection : SectionPanel
         catch (Exception exception)
         {
             AppLog.Error("Changing the Razer software failed.", exception);
-            StatusChanged?.Invoke(this, new SectionStatus("Could not change the Razer software.", IsError: true));
+            StatusChanged?.Invoke(this, new SectionStatus(L.T("Could not change the Razer software."), IsError: true));
         }
         finally
         {
@@ -223,7 +214,7 @@ internal sealed class ServicesSection : SectionPanel
         var answer = MessageBox.Show(
             FindForm(),
             BuildStopWarning(status, peripherals),
-            "Stop Razer software",
+            L.T("Stop Razer software"),
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2);
@@ -243,14 +234,14 @@ internal sealed class ServicesSection : SectionPanel
                 RazerServiceManager.RecordStartModes(status.Services, _recordedModes));
             StartModesRecorded?.Invoke(this, _recordedModes);
 
-            _countLabel.Text = "Stopping Razer software...";
+            _countLabel.Text = L.T("Stopping Razer software...");
             var result = await ElevatedRunner.RunAsync(RazerServiceCommand.StopArguments());
 
             if (result.UserDeclined)
-                return new SectionStatus("Administrator approval was declined. Nothing was changed.", IsError: true);
+                return new SectionStatus(L.T("Administrator approval was declined. Nothing was changed."), IsError: true);
 
             if (result.ExitCode != RazerServiceCommand.Success)
-                problems.Add("Some Razer services could not be stopped.");
+                problems.Add(L.T("Some Razer services could not be stopped."));
         }
 
         // The login entry is the user's own to change, so no prompt. Written
@@ -262,20 +253,20 @@ internal sealed class ServicesSection : SectionPanel
         });
 
         if (!change.IsSuccess)
-            problems.Add("Razer's startup at login could not be turned off.");
+            problems.Add(L.T("Razer's startup at login could not be turned off."));
 
         // Razer's own programs are asked to close, never force-closed. The wait
         // is off the UI thread. Synapse lives in the tray and may ignore this.
         await Task.Run(_manager.AskAppsToClose);
 
         return problems.Count > 0
-            ? new SectionStatus($"{string.Join(" ", problems)} See the log for details.", IsError: true)
-            : new SectionStatus("Razer software stopped and kept off.");
+            ? new SectionStatus(L.F("{0} See the log for details.", string.Join(" ", problems)), IsError: true)
+            : new SectionStatus(L.T("Razer software stopped and kept off."));
     }
 
     private async Task<SectionStatus?> StartAsync()
     {
-        _countLabel.Text = "Starting Razer software...";
+        _countLabel.Text = L.T("Starting Razer software...");
 
         var problems = new List<string>();
 
@@ -284,10 +275,10 @@ internal sealed class ServicesSection : SectionPanel
             var result = await ElevatedRunner.RunAsync(RazerServiceCommand.RestoreArguments(_recordedModes));
 
             if (result.UserDeclined)
-                return new SectionStatus("Administrator approval was declined. Nothing was changed.", IsError: true);
+                return new SectionStatus(L.T("Administrator approval was declined. Nothing was changed."), IsError: true);
 
             if (result.ExitCode != RazerServiceCommand.Success)
-                problems.Add("Some Razer services could not be restored.");
+                problems.Add(L.T("Some Razer services could not be restored."));
         }
 
         var failed = _manager.RestoreLoginEntries(_recordedLogins);
@@ -300,12 +291,12 @@ internal sealed class ServicesSection : SectionPanel
         }
         else
         {
-            problems.Add("Razer's startup at login could not be restored.");
+            problems.Add(L.T("Razer's startup at login could not be restored."));
         }
 
         return problems.Count > 0
-            ? new SectionStatus($"{string.Join(" ", problems)} See the log for details.", IsError: true)
-            : new SectionStatus("Razer software restored.");
+            ? new SectionStatus(L.F("{0} See the log for details.", string.Join(" ", problems)), IsError: true)
+            : new SectionStatus(L.T("Razer software restored."));
     }
 
     // At most once every couple of seconds, however much the pointer wanders over the label.
@@ -331,7 +322,7 @@ internal sealed class ServicesSection : SectionPanel
         _status = status;
         _countLabel.Text = DescribeCount(status);
         _toolTip.SetToolTip(_countLabel, RazerSoftwareSummary.Describe(status, DateTime.Now));
-        _actionButton.Text = status.NeedsStop ? "Stop" : "Start";
+        _actionButton.Text = L.T(status.NeedsStop ? "Stop" : "Start");
         _actionButton.Enabled = !_busy;
 
         var hasServices = status.IsInstalled;
@@ -346,49 +337,48 @@ internal sealed class ServicesSection : SectionPanel
 
     // Services and programs running now, and a hint when Razer would still start at login.
     private static string DescribeCount(RazerSoftwareStatus status) =>
-        status.Running > 0 ? $"Razer Software Running: {status.Running}"
-        : status.LoginEnabled ? "Razer Software Running: 0 (starts at login)"
-        : "Razer Software Running: 0";
+        status.Running > 0 ? L.F("Razer Software Running: {0}", status.Running)
+        : status.LoginEnabled ? L.T("Razer Software Running: 0 (starts at login)")
+        : L.T("Razer Software Running: 0");
 
     private static string BuildStopWarning(RazerSoftwareStatus status, IReadOnlyList<string> peripherals)
     {
-        var lines = new List<string> { "Stop Razer's background software?", string.Empty };
+        var lines = new List<string> { L.T("Stop Razer's background software?"), string.Empty };
 
         var services = status.ServicesToStop;
 
         if (services.Count > 0)
         {
-            lines.Add($"These {services.Count} services will be stopped and kept off, including after a restart:");
+            lines.Add(L.F("These {0} services will be stopped and kept off, including after a restart:", services.Count));
             lines.AddRange(services.Select(service => $"  \u2022 {service.DisplayName}"));
             lines.Add(string.Empty);
         }
 
         if (status.RunningApps.Count > 0)
         {
-            lines.Add("These Razer programs are running and will be asked to close (nothing is force-closed):");
+            lines.Add(L.T("These Razer programs are running and will be asked to close (nothing is force-closed):"));
             lines.AddRange(status.RunningApps.Select(name => $"  \u2022 {name}"));
             lines.Add(string.Empty);
         }
 
         if (status.LoginEnabled)
         {
-            lines.Add("Razer will be stopped from starting when you sign in, the same as switching it off in Task Manager's Startup tab:");
+            lines.Add(L.T("Razer will be stopped from starting when you sign in, the same as switching it off in Task Manager's Startup tab:"));
             lines.AddRange(status.LoginEntries.Where(entry => entry.IsEnabled).Select(entry => $"  \u2022 {entry.Name}"));
             lines.Add(string.Empty);
         }
 
         lines.Add(peripherals.Count > 0
-            ? $"Razer devices connected now: {string.Join(", ", peripherals)}."
-            : "No other Razer devices are connected right now.");
+            ? L.F("Razer devices connected now: {0}.", string.Join(", ", peripherals))
+            : L.T("No other Razer devices are connected right now."));
 
         lines.Add(
-            "While the services are off, Razer-only features can't be configured on those devices " +
-            "(button remapping, macros, lighting effects, DPI stages). The devices still work as normal.");
+            L.T("While the services are off, Razer-only features can't be configured on those devices (button remapping, macros, lighting effects, DPI stages). The devices still work as normal."));
         lines.Add(string.Empty);
-        lines.Add("Press Start to bring everything back exactly as it was.");
+        lines.Add(L.T("Press Start to bring everything back exactly as it was."));
 
         if (services.Count > 0)
-            lines.Add("Windows will ask for administrator approval.");
+            lines.Add(L.T("Windows will ask for administrator approval."));
 
         return string.Join(Environment.NewLine, lines);
     }

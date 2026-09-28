@@ -1,44 +1,69 @@
 using System.Globalization;
 using RazerHelper.Core.Hardware;
+using RazerHelper.Core.Localization;
 
 namespace RazerHelper.Core.Services;
 
 /// <summary>
-/// Turns the battery driver's raw figures into the lines of the Battery
-/// details window. Pure, so every line can be tested without a battery.
+/// Turns the battery driver's raw figures into the text of the Battery
+/// details window's header and cards. Pure, so all of it can be tested
+/// without a battery.
 /// </summary>
 internal static class BatteryDetailsText
 {
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
-    /// <summary>The window's rows, label and value, in order. Rows the battery gives no figure for are left out.</summary>
-    public static IReadOnlyList<(string Label, string Value)> Rows(BatteryDetails battery)
+    /// <summary>The charge as a percentage of a full charge, as the taskbar shows it; null without both figures.</summary>
+    public static int? ChargePercent(BatteryDetails battery) =>
+        battery is { RemainingMilliwattHours: { } now, FullChargeMilliwattHours: { } full } && full > 0
+            ? Math.Clamp((int)Math.Round(100.0 * now / full), 0, 100)
+            : null;
+
+    /// <summary>The Power card: the watts, and whether they are going in or out. Null without a matching rate.</summary>
+    public static (string Value, string Caption)? PowerParts(BatteryDetails battery) => battery.RateMilliwatts switch
     {
-        var rows = new List<(string, string)> { ("Status", Status(battery)) };
+        > 0 and var rate when battery.Charging => (Watts(rate), L.T("Charging")),
+        < 0 and var rate when battery.Discharging => (Watts(-rate), L.T("Using")),
+        _ => null
+    };
 
-        if (Power(battery) is { } power)
-            rows.Add(("Power", power));
+    /// <summary>The Time card: how long, and to what ("left" or "to full"). Null when there is nothing to count down.</summary>
+    public static (string Value, string Caption)? TimeParts(BatteryDetails battery)
+    {
+        if (battery.Discharging)
+        {
+            var seconds = battery.EstimatedSecondsLeft ??
+                (battery is { RemainingMilliwattHours: { } left, RateMilliwatts: < 0 and var rate }
+                    ? (int)(left * 3600.0 / -rate)
+                    : null);
 
-        if (Time(battery) is { } time)
-            rows.Add(("Time", time));
+            return seconds is { } s ? (Duration(s), L.T("left")) : null;
+        }
 
-        if (Charge(battery) is { } charge)
-            rows.Add(("Charge", charge));
-
-        if (Health(battery) is { } health)
-            rows.Add(("Health", health));
-
-        if (battery.CycleCount is { } cycles)
-            rows.Add(("Cycles", cycles.ToString(Invariant)));
-
-        if (battery.VoltageMillivolts is { } millivolts)
-            rows.Add(("Voltage", $"{(millivolts / 1000.0).ToString("0.00", Invariant)} V"));
-
-        if (Identity(battery) is { } identity)
-            rows.Add(("Battery", identity));
-
-        return rows;
+        return battery is { Charging: true, RemainingMilliwattHours: { } now, FullChargeMilliwattHours: { } full, RateMilliwatts: > 0 and var charging } && full > now
+            ? (Duration((int)((full - now) * 3600.0 / charging)), L.T("to full"))
+            : null;
     }
+
+    /// <summary>The Charge card: the energy stored now, and out of how much. Null without a reading.</summary>
+    public static (string Value, string? Caption)? ChargeParts(BatteryDetails battery) =>
+        battery.RemainingMilliwattHours is { } now
+            ? (WattHours(now), battery.FullChargeMilliwattHours is { } full and > 0 ? L.F("of {0}", WattHours(full)) : null)
+            : null;
+
+    /// <summary>The Health card's caption: the capacity when new. Null without it.</summary>
+    public static string? HealthCaption(BatteryDetails battery) =>
+        battery.DesignMilliwattHours is { } design ? L.F("{0} when new", WattHours(design)) : null;
+
+    /// <summary>The header's short status: "Charging", "On battery" or "Plugged in".</summary>
+    public static string HeaderStatus(BatteryDetails battery) =>
+        L.T(Status(battery) == "Plugged in, not charging" ? "Plugged in" : Status(battery));
+
+    /// <summary>The voltage as shown, for example "16.55 V". Null without a reading.</summary>
+    public static string? Voltage(BatteryDetails battery) =>
+        battery.VoltageMillivolts is { } millivolts
+            ? $"{(millivolts / 1000.0).ToString("0.00", Invariant)} V"
+            : null;
 
     /// <summary>Full-charge capacity as a percentage of the capacity when new, or null without both.</summary>
     public static int? HealthPercent(BatteryDetails battery) =>
@@ -53,50 +78,6 @@ internal static class BatteryDetailsText
         { PluggedIn: true } => "Plugged in, not charging",
         _ => "On battery"
     };
-
-    // Only a rate that matches what the battery is doing is shown.
-    internal static string? Power(BatteryDetails battery) => battery.RateMilliwatts switch
-    {
-        > 0 and var rate when battery.Charging => $"Charging at {Watts(rate)}",
-        < 0 and var rate when battery.Discharging => $"Using {Watts(-rate)}",
-        _ => null
-    };
-
-    // On battery: Windows' own estimate, or the charge left over the rate.
-    // Charging: the missing charge over the rate.
-    internal static string? Time(BatteryDetails battery)
-    {
-        if (battery.Discharging)
-        {
-            var seconds = battery.EstimatedSecondsLeft ??
-                (battery is { RemainingMilliwattHours: { } left, RateMilliwatts: < 0 and var rate }
-                    ? (int)(left * 3600.0 / -rate)
-                    : null);
-
-            return seconds is { } s ? $"About {Duration(s)} left" : null;
-        }
-
-        if (battery is { Charging: true, RemainingMilliwattHours: { } now, FullChargeMilliwattHours: { } full, RateMilliwatts: > 0 and var charging } && full > now)
-            return $"About {Duration((int)((full - now) * 3600.0 / charging))} to full";
-
-        return null;
-    }
-
-    internal static string? Charge(BatteryDetails battery)
-    {
-        if (battery.RemainingMilliwattHours is not { } now)
-            return null;
-
-        if (battery.FullChargeMilliwattHours is not { } full || full <= 0)
-            return WattHours(now);
-
-        return $"{WattHours(now)} of {WattHours(full)} ({(int)Math.Round(100.0 * now / full)}%)";
-    }
-
-    internal static string? Health(BatteryDetails battery) =>
-        HealthPercent(battery) is { } percent
-            ? $"{percent}% ({WattHours(battery.FullChargeMilliwattHours!.Value)} of {WattHours(battery.DesignMilliwattHours!.Value)} when new)"
-            : null;
 
     internal static string? Identity(BatteryDetails battery)
     {
@@ -113,7 +94,9 @@ internal static class BatteryDetailsText
     }
 
     // The driver gives four letters, sometimes cut short ("Li-I" for "Li-Ion").
-    internal static string? ChemistryName(string? code) => code?.Trim().ToUpperInvariant() switch
+    internal static string? ChemistryName(string? code) => ChemistryNameInEnglish(code) is { } name ? L.T(name) : null;
+
+    private static string? ChemistryNameInEnglish(string? code) => code?.Trim().ToUpperInvariant() switch
     {
         null or "" => null,
         "LION" or "LI-I" or "LI-ION" or "LIION" => "Lithium-ion",

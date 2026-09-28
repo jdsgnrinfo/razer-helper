@@ -1,7 +1,7 @@
-using System.Drawing.Drawing2D;
 using System.ServiceProcess;
 using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Hardware;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using RazerHelper.Helpers;
@@ -35,7 +35,7 @@ public sealed class TrayPopupForm : Form
     private static int FooterRowHeight => S(24);
 
     private static int PerformanceBaseRowHeight => S(124);
-    private static int FanRowHeight => S(108); // Header, the two readouts and the taller Auto / Max buttons.
+    private static int FanRowHeight => S(98); // Header, the two readouts and the Auto / Max buttons, as tall as the Display ones.
 
     // Set for real once CheckForSupportedDevice() runs; a generic label until then.
     private string _modelText = DeviceSupportService.GenericModelName;
@@ -43,8 +43,9 @@ public sealed class TrayPopupForm : Form
     private bool _allowClose;
     private bool _isResetting;
     private int _modalDepth;
-    private bool _customRowShown;
     private bool _servicesRowShown;
+    // The Custom window while it is open, so leaving Custom can close it.
+    private CustomBoostForm? _customBoostForm;
     private readonly SettingsService _settingsService;
     // One EC connection shared by every service that talks to the hardware.
     private readonly IRazerTransport _transport;
@@ -66,8 +67,10 @@ public sealed class TrayPopupForm : Form
     private readonly Label _headerStatusLabel = CreateHeaderStatusLabel();
     // Set in CreateAppHeader; the model name is appended to the title once known.
     private Label _titleLabel = null!;
-    private readonly ToolTip _toolTip = new();
+    private readonly ThemedToolTip _toolTip = new();
     private readonly GlobalHotkey _hotkey = new();
+    private readonly DisplayStateWatcher _displayWatcher = new();
+    private readonly KeyboardScreenOffService _keyboardScreenOff;
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -146,7 +149,7 @@ public sealed class TrayPopupForm : Form
             offerGaming: _model?.HasGamingMode == true,
             maxFanMethod: maxFanMethod);
         _performanceSection.ProfileChanged += PerformanceSection_ProfileChanged;
-        _performanceSection.CustomRowVisibilityChanged += PerformanceSection_CustomRowVisibilityChanged;
+        _performanceSection.CustomBoostRequested += (_, _) => ShowCustomBoost();
         _performanceSection.StatusChanged += Section_StatusChanged;
         _performanceSection.StateChanged += PerformanceSection_StateChanged;
         _performanceSection.AutoSwitchProfiles = _settings.AutoSwitchProfiles;
@@ -171,11 +174,17 @@ public sealed class TrayPopupForm : Form
         _batterySection.DetailsRequested += (_, _) => ShowBatteryDetails();
 
         var offersColor = _model?.HasKeyboardColor == true;
+        var lightingService = new LightingService(_transport, offersColor);
         _lightingSection = new LightingSection(
-            new LightingService(_transport, offersColor),
+            lightingService,
             offersColor,
             offersWave: _model?.HasWaveEffect ?? true);
         _lightingSection.StatusChanged += Section_StatusChanged;
+
+        // The keyboard goes dark with the screen, and comes back with it.
+        _keyboardScreenOff = new KeyboardScreenOffService(lightingService);
+        _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
+        _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
             new RazerSoftwareManager(
@@ -327,7 +336,7 @@ public sealed class TrayPopupForm : Form
         }
 
         AppLog.Error($"Shortcut {GlobalHotkey.Text} could not be registered; another program uses it.");
-        ShowStatus(new SectionStatus($"{GlobalHotkey.Text} shortcut is used by another program.", IsError: true));
+        ShowStatus(new SectionStatus(L.F("{0} shortcut is used by another program.", GlobalHotkey.Text), IsError: true));
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -338,6 +347,7 @@ public sealed class TrayPopupForm : Form
     {
         // Nothing is left watching the fans once the app is gone.
         _performanceSection.TurnOffMaxFanBeforeExit();
+        _keyboardScreenOff.Restore(); // Never leave the keyboard dark behind.
 
         _allowClose = true;
         Close();
@@ -359,14 +369,8 @@ public sealed class TrayPopupForm : Form
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 
-        // The rounded outline is drawn here; the window's region is given the
-        // same shape (see ApplyRoundedRegion) so the border is never clipped.
-        Paint += (_, args) =>
-        {
-            using var pen = new Pen(BorderColor);
-            args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            args.Graphics.DrawPath(pen, RoundedPath(ClientRectangle, S(CornerRadius)));
-        };
+        // The rounded corners and the outline come from Windows (see
+        // OnHandleCreated), as on the Settings and Battery windows.
     }
 
     private void BuildView()
@@ -401,7 +405,6 @@ public sealed class TrayPopupForm : Form
 
         Controls.Add(_content);
 
-        _customRowShown = _performanceSection.IsCustomRowShown;
         ResizeToFitRows();
     }
 
@@ -417,15 +420,14 @@ public sealed class TrayPopupForm : Form
 
     private RowStyle RowStyleOf(Row row) => _content.RowStyles[(int)row];
 
-    // Two rows change height: Performance gains the Custom boost row, and the
-    // Razer services row only exists when Razer's software is installed. Grow
-    // or shrink the popup to match, then re-anchor it to the taskbar so it does
-    // not end up floating or overlapping it.
+    // Some rows change height: the Razer services row only exists when Razer's
+    // software is installed, and Battery and Fans lose their readout lines when
+    // there is nothing to show. Grow or shrink the popup to match, then
+    // re-anchor it to the taskbar so it does not end up floating or overlapping it.
     private void ResizeToFitRows()
     {
-        RowStyleOf(Row.Performance).Height = PerformanceBaseRowHeight + SectionPanel.ExtraGap +
-            (_customRowShown ? CustomBoostRow.RowHeight : 0);
-        RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0; // No gap below: the footer follows.
+        RowStyleOf(Row.Performance).Height = PerformanceBaseRowHeight + SectionPanel.ExtraGap;
+        RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0;
         RowStyleOf(Row.Battery).Height = BatteryRowHeight + SectionPanel.ExtraGap -
             (_batterySection.IsLimitLineShown ? 0 : BatterySection.LimitLineHeight);
         RowStyleOf(Row.Fans).Height = FanRowHeight + SectionPanel.ExtraGap -
@@ -494,7 +496,7 @@ public sealed class TrayPopupForm : Form
     {
         var button = new GlyphButton(Glyph.Close, S(18))
         {
-            AccessibleName = "Close",
+            AccessibleName = L.T("Close"),
             Anchor = AnchorStyles.Right,
             BackColor = BackgroundColor,
             Margin = Padding.Empty,
@@ -502,7 +504,7 @@ public sealed class TrayPopupForm : Form
         };
 
         button.Click += (_, _) => RequestHide();
-        _toolTip.SetToolTip(button, "Close (RazerHelper keeps running in the tray)");
+        _toolTip.SetToolTip(button, L.T("Close (RazerHelper keeps running in the tray)"));
         return button;
     }
 
@@ -517,7 +519,7 @@ public sealed class TrayPopupForm : Form
         var outcome = await _dgpuCoordinator.FreeUpAsync();
 
         if (DgpuText.DescribeOutcome(outcome) is { } message)
-            MessageBox.Show(this, message, "Free up GPU", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, message, L.T("Free up GPU"), MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     // The coordinator works off the UI thread; the question has to be asked on it.
@@ -554,6 +556,35 @@ public sealed class TrayPopupForm : Form
             detailsForm.ShowDialog(this);
     }
 
+    // Custom's CPU and GPU levels, beside the popup like Settings. Only one
+    // at a time; it closes by itself if the laptop leaves Custom meanwhile.
+    private void ShowCustomBoost()
+    {
+        if (_customBoostForm is not null)
+            return;
+
+        using var boostForm = new CustomBoostForm(_performanceSection.BoostSelectors);
+
+        boostForm.PlaceBeside(this);
+        boostForm.TopMost = TopMost;
+        _customBoostForm = boostForm;
+
+        // The fan poll already reads the CPU temperature for the header; pass it on.
+        void ShowTemperature(object? sender, TemperatureReading reading) => boostForm.ShowCpuTemperature(reading.CpuCelsius);
+        _fanSection.TemperaturesRead += ShowTemperature;
+
+        try
+        {
+            using (KeepOpen())
+                boostForm.ShowDialog(this);
+        }
+        finally
+        {
+            _fanSection.TemperaturesRead -= ShowTemperature;
+            _customBoostForm = null;
+        }
+    }
+
     private void ShowSettings()
     {
         using var settingsForm = new SettingsForm(_settings, _startupRegistration);
@@ -579,6 +610,12 @@ public sealed class TrayPopupForm : Form
             _dgpuCoordinator.Enabled = enabled;
         };
 
+        settingsForm.KeyboardOffWithScreenChanged += (_, enabled) =>
+        {
+            SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
+            _keyboardScreenOff.SetEnabled(enabled);
+        };
+
         // Next to the popup, not over it, and in front of it: a popup that is
         // above other windows would otherwise hide the dialog it opened.
         settingsForm.PlaceBeside(this);
@@ -589,6 +626,30 @@ public sealed class TrayPopupForm : Form
 
         if (settingsForm.ResetConfirmed)
             _ = ResetToDefaultsAsync();
+        else if (settingsForm.LanguageChosen is { } language)
+            RestartInLanguage(language);
+    }
+
+    // Every text is set as a window is built, so a new language needs a fresh start.
+    private void RestartInLanguage(AppLanguage language)
+    {
+        SaveSettings(_settings with { Language = L.Code(language) });
+        AppLog.Info($"Interface language changed to {language}; restarting.");
+
+        if (!AppRestart.Relaunch())
+        {
+            using var hold = KeepOpen();
+            MessageBox.Show(
+                this,
+                L.T("RazerHelper could not restart itself. Please close it from the tray icon and open it again."),
+                "RazerHelper",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        CloseForApplicationExit();
+        Application.ExitThread();
     }
 
     // Confirmed in the Settings window. Clears everything, then restarts so the
@@ -605,9 +666,9 @@ public sealed class TrayPopupForm : Form
         {
             MessageBox.Show(
                 this,
-                "Most of the reset worked, but not everything:\r\n\r\n  - " + string.Join("\r\n  - ", result.Problems) +
-                "\r\n\r\nRazerHelper will restart now. Details are in the log.",
-                "Reset to defaults",
+                L.T("Most of the reset worked, but not everything:") + "\r\n\r\n  - " + string.Join("\r\n  - ", result.Problems) +
+                "\r\n\r\n" + L.T("RazerHelper will restart now. Details are in the log."),
+                L.T("Reset to defaults"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
@@ -622,8 +683,8 @@ public sealed class TrayPopupForm : Form
 
             MessageBox.Show(
                 this,
-                "The reset is done, but RazerHelper could not restart itself. Please close it from the tray icon and open it again.",
-                "Reset to defaults",
+                L.T("The reset is done, but RazerHelper could not restart itself. Please close it from the tray icon and open it again."),
+                L.T("Reset to defaults"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
             return;
@@ -677,15 +738,15 @@ public sealed class TrayPopupForm : Form
                 _fanSection.HideReadings();
 
             AppLog.Info(model.Verified
-                ? $"{model.Name} control interface found."
-                : $"{model.Name} control interface found (community-reported product id, not verified on this model).");
+                ? L.F("{0} control interface found.", model.Name)
+                : L.F("{0} control interface found (community-reported product id, not verified on this model).", model.Name));
             return;
         }
 
         AppLog.Error("No supported Razer laptop control interface found.");
 
         ShowStatus(new SectionStatus(
-            "No supported Razer laptop detected; fan and battery controls unavailable.",
+            L.T("No supported Razer laptop detected; fan and battery controls unavailable."),
             IsError: true));
     }
 
@@ -722,13 +783,14 @@ public sealed class TrayPopupForm : Form
         _ = _performanceSection.SetMaxFanAsync(enabled);
 
     // Max fan speed only exists in Custom mode, so the fan buttons follow the performance state.
-    private void PerformanceSection_StateChanged(object? sender, PerformanceState state) =>
+    private void PerformanceSection_StateChanged(object? sender, PerformanceState state)
+    {
         _fanSection.ShowPerformanceState(state);
 
-    private void PerformanceSection_CustomRowVisibilityChanged(object? sender, bool shown)
-    {
-        _customRowShown = shown;
-        ResizeToFitRows();
+        // The levels only mean something in Custom (the charger switching
+        // profiles, or the Fn keys, can leave it while the window is open).
+        if (state.Mode is PerformanceMode known && known != PerformanceMode.Custom)
+            _customBoostForm?.Close();
     }
 
     private void ServicesSection_HasServicesChanged(object? sender, bool hasServices)
@@ -807,44 +869,6 @@ public sealed class TrayPopupForm : Form
     {
         base.OnHandleCreated(e);
         WindowChrome.Apply(Handle, BorderColor);
-        ApplyRoundedRegion();
-    }
-
-    protected override void OnResize(EventArgs e)
-    {
-        base.OnResize(e);
-        ApplyRoundedRegion();
-    }
-
-    // --- Rounded outline ------------------------------------------------------
-
-    private const int CornerRadius = 12; // base-design pixels, scaled like everything else
-
-    // Gives the window the same rounded shape the Paint handler draws, and
-    // keeps the standard drop shadow, which follows the region's outline.
-    // Redone on every resize because a region is a fixed bitmap.
-    private void ApplyRoundedRegion()
-    {
-        if (IsDisposed || !IsHandleCreated || ClientSize.Width <= 0 || ClientSize.Height <= 0)
-            return;
-
-        using var path = RoundedPath(ClientRectangle, S(CornerRadius));
-        var previous = Region;
-        Region = new Region(path);
-        previous?.Dispose();
-    }
-
-    private static GraphicsPath RoundedPath(Rectangle bounds, int radius)
-    {
-        var diameter = radius * 2;
-
-        var path = new GraphicsPath();
-        path.AddArc(bounds.X, bounds.Y, diameter, diameter, 180, 90);
-        path.AddArc(bounds.Right - diameter, bounds.Y, diameter, diameter, 270, 90);
-        path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
-        path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
-        path.CloseFigure();
-        return path;
     }
 
     protected override void Dispose(bool disposing)
@@ -857,6 +881,7 @@ public sealed class TrayPopupForm : Form
         {
             _toolTip.Dispose();
             _hotkey.Dispose();
+            _displayWatcher.Dispose();
             _fadeTimer.Dispose();
             _dgpuCoordinator.Dispose();
 

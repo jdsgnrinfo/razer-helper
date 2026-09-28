@@ -13,7 +13,7 @@ namespace RazerHelper.UI;
 internal class RoundedButton : Button
 {
     // Base-design pixels, scaled like everything else.
-    private const int CornerRadius = 4;
+    internal const int CornerRadius = 4;
 
     private bool _hovered;
     private bool _pressed;
@@ -59,9 +59,18 @@ internal class RoundedButton : Button
         {
             graphics.FillPath(fill, path);
 
-            // No outline normally; only keyboard focus (Tab) shows a ring, so
+            // An unselected button that can be used gets a green outline under
+            // the pointer, its fill unchanged, so it reads as "can be picked"
+            // without looking already selected.
+            if (ShowsGreenOutline)
+            {
+                using var outline = new Pen(RazerGreen, S(1.5f));
+                using var inner = RoundedPath(new RectangleF(0.75f, 0.75f, Width - 2f, Height - 2f), S(CornerRadius) - 0.75f);
+                graphics.DrawPath(outline, inner);
+            }
+            // Otherwise no outline; only keyboard focus (Tab) shows a ring, so
             // it is never lost without the old border.
-            if (Focused && ShowFocusCues)
+            else if (Focused && ShowFocusCues)
             {
                 using var ring = new Pen(Color.Silver);
                 using var inner = RoundedPath(new RectangleF(1, 1, Width - 2.5f, Height - 2.5f), S(CornerRadius) - 1);
@@ -190,18 +199,26 @@ internal class RoundedButton : Button
         base.OnMouseUp(mevent);
     }
 
-    // Hover and press only lighten a button that can be used; one drawn as
+    // Hover and press only change a button that can be used; one drawn as
     // unavailable (a hand cursor is what marks the usable ones) stays flat.
     private Color CurrentFill()
     {
-        if (!Enabled || Cursor != Cursors.Hand)
+        if (!IsUsable)
             return BackColor;
 
         if (_pressed)
             return Lighten(BackColor, 0.22f);
 
-        return _hovered ? Lighten(BackColor, 0.12f) : BackColor;
+        // Only a green (selected) button lightens under the pointer; the others
+        // keep their fill and show a green outline instead.
+        return _hovered && IsGreen ? Lighten(BackColor, 0.12f) : BackColor;
     }
+
+    private bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();
+
+    private bool IsUsable => Enabled && Cursor == Cursors.Hand;
+
+    private bool ShowsGreenOutline => _hovered && IsUsable && !IsGreen;
 
     private static Color Lighten(Color color, float amount) => Color.FromArgb(
         color.A,

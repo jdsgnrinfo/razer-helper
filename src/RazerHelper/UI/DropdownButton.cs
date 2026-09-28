@@ -21,7 +21,9 @@ internal sealed class DropdownButton : RoundedButton
 
     private readonly string[] _items;
     private readonly string _placeholder;
-    private readonly ContextMenuStrip _menu = new();
+    // A plain drop-down, not a menu: a menu keeps margins for check marks,
+    // icons and shortcut keys, which left a gap beside the hover highlight.
+    private readonly ToolStripDropDown _menu = new() { LayoutStyle = ToolStripLayoutStyle.VerticalStackWithOverflow };
     private int _selectedIndex = -1;
 
     // Optional color swatches, one per item (null for an item without one).
@@ -44,8 +46,7 @@ internal sealed class DropdownButton : RoundedButton
         _menu.BackColor = ButtonColor;
         _menu.ForeColor = Color.White;
         _menu.Font = Font;
-        _menu.ShowImageMargin = _swatches is not null;
-        _menu.ImageScalingSize = new Size(SwatchSize, SwatchSize);
+        _menu.AutoSize = false; // Sized to the button each time it opens.
         _menu.Renderer = new DarkMenuRenderer();
         _menu.Padding = S(new Padding(ListInset));
 
@@ -67,8 +68,8 @@ internal sealed class DropdownButton : RoundedButton
             item.Click += (_, _) => Pick(itemIndex);
             _menu.Items.Add(item);
 
-            if (_swatches?[index] is { } swatch)
-                item.Image = CreateSwatchImage(swatch);
+            // The renderer draws the swatch beside the text.
+            item.Tag = _swatches?[index];
         }
 
         UpdateText();
@@ -81,19 +82,6 @@ internal sealed class DropdownButton : RoundedButton
     // own corner radius.
     private const int ListInset = 2;
     private const int HighlightRadius = 2;
-
-    private static Bitmap CreateSwatchImage(Color color)
-    {
-        var image = new Bitmap(SwatchSize, SwatchSize);
-
-        using var graphics = Graphics.FromImage(image);
-        using var fill = new SolidBrush(color);
-        using var border = new Pen(Color.Silver);
-
-        graphics.FillRectangle(fill, 0, 0, SwatchSize, SwatchSize);
-        graphics.DrawRectangle(border, 0, 0, SwatchSize - 1, SwatchSize - 1);
-        return image;
-    }
 
     /// <summary>Raised when the user picks an item.</summary>
     public event EventHandler? SelectionChanged;
@@ -114,9 +102,40 @@ internal sealed class DropdownButton : RoundedButton
     {
         base.OnClick(e);
 
-        _menu.MinimumSize = new Size(Width, 0);
+        // The list is exactly as wide as the button (or as its longest item),
+        // and every item fills its full inner width, so the hover highlight
+        // runs edge to edge. Left to itself, WinForms sizes the list to its
+        // text and keeps room on the right for shortcut keys this list lacks.
+        var items = _menu.Items.Cast<ToolStripItem>().ToList();
+
+        foreach (var item in items)
+            item.AutoSize = true;
+
+        var itemWidth = Math.Max(Width - _menu.Padding.Horizontal, items.Max(ItemContentWidth));
+        var listHeight = _menu.Padding.Vertical;
+
+        foreach (var item in items)
+        {
+            var height = item.GetPreferredSize(Size.Empty).Height;
+            item.AutoSize = false;
+            item.Size = new Size(itemWidth, height);
+            listHeight += height;
+        }
+
+        _menu.Size = new Size(itemWidth + _menu.Padding.Horizontal, listHeight);
         _menu.Show(this, new Point(0, Height));
     }
+
+    // What an item needs: its swatch and the gap after it, its text, and the inset each side.
+    private int ItemContentWidth(ToolStripItem item) =>
+        (item.Tag is Color ? SwatchSize + SwatchGap : 0) +
+        TextRenderer.MeasureText(item.Text, _menu.Font, Size.Empty, TextFormatFlags.NoPadding).Width +
+        2 * ItemInset;
+
+    private static int SwatchGap => S(6);
+
+    // Where an item's swatch, or its text without one, starts: as on the button.
+    private static int ItemInset => S(8);
 
     protected override void OnPaint(PaintEventArgs pevent)
     {
@@ -149,12 +168,7 @@ internal sealed class DropdownButton : RoundedButton
     protected override void Dispose(bool disposing)
     {
         if (disposing)
-        {
-            foreach (ToolStripItem item in _menu.Items)
-                item.Image?.Dispose();
-
             _menu.Dispose();
-        }
 
         base.Dispose(disposing);
     }
@@ -184,11 +198,33 @@ internal sealed class DropdownButton : RoundedButton
             RoundedEdges = false;
         }
 
+        // The swatch (if any) and the text, from the left as on the button and
+        // centered top to bottom, in the color chosen per item (the selected
+        // one is green).
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
-            // Keep the color chosen per item (the selected one is green).
-            e.TextColor = e.Item.ForeColor;
-            base.OnRenderItemText(e);
+            var item = e.Item;
+            var x = ItemInset - S(ListInset); // The item itself starts the list's inset in.
+
+            if (item.Tag is Color swatch)
+            {
+                var box = new Rectangle(x, (item.Height - SwatchSize) / 2, SwatchSize, SwatchSize);
+
+                using var fill = new SolidBrush(swatch);
+                using var border = new Pen(Color.Silver);
+
+                e.Graphics.FillRectangle(fill, box);
+                e.Graphics.DrawRectangle(border, box.X, box.Y, box.Width - 1, box.Height - 1);
+                x += SwatchSize + SwatchGap;
+            }
+
+            TextRenderer.DrawText(
+                e.Graphics,
+                e.Text,
+                e.TextFont,
+                new Rectangle(x, 0, item.Width - x, item.Height),
+                item.ForeColor,
+                TextFormatFlags.NoPadding | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         }
 
         // No outline around the open list.

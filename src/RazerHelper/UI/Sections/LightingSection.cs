@@ -1,4 +1,5 @@
 using RazerHelper.Core.Diagnostics;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiControls;
@@ -72,7 +73,7 @@ internal sealed class LightingSection : SectionPanel
         if (offersColor)
         {
             _colorDropdown = new DropdownButton(
-                [.. PresetColors.Select(preset => preset.Name)],
+                [.. PresetColors.Select(preset => L.T(preset.Name))],
                 swatches: [.. PresetColors.Select(preset => (Color?)ToColor(preset.Color))])
             {
                 Visible = false
@@ -93,26 +94,26 @@ internal sealed class LightingSection : SectionPanel
                 offersColor && IsColored(effect)
                     ? () => SetColoredEffectAsync(effect, _color)
                     : () => _lightingService.SetKeyboardEffectAsync(effect),
-                "Could not change the keyboard lighting.");
+                L.T("Could not change the keyboard lighting."));
         };
 
         _keyboard.Brightness.Committed += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetKeyboardBrightnessAsync(_keyboard.Brightness.Value),
-                "Could not change the keyboard brightness.");
+                L.T("Could not change the keyboard brightness."));
 
         _logo.Effect.SelectionChanged += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetLogoAsync(LogoModes[_logo.Effect.SelectedIndex]),
-                "Could not change the logo lighting.");
+                L.T("Could not change the logo lighting."));
         _logo.Brightness.Committed += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetLogoBrightnessAsync(_logo.Brightness.Value),
-                "Could not change the logo brightness.");
+                L.T("Could not change the logo brightness."));
 
         var lines = new TableLayoutPanel
         {
-            BackColor = BackgroundColor,
+            BackColor = CardColor,
             ColumnCount = 1,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
@@ -148,7 +149,7 @@ internal sealed class LightingSection : SectionPanel
         _color = color;
         await ApplyAsync(
             () => SetColoredEffectAsync(effect, color),
-            "Could not change the keyboard color.");
+            L.T("Could not change the keyboard color."));
     }
 
     // The effects that show the chosen color, on models that offer one.
@@ -184,7 +185,7 @@ internal sealed class LightingSection : SectionPanel
 
         _busy = true;
 
-        var state = await ReadStateOrUnknownAsync("Could not read the lighting state.").ConfigureAwait(false);
+        var state = await ReadStateOrUnknownAsync(L.T("Could not read the lighting state.")).ConfigureAwait(false);
 
         await PostToUiAsync(() =>
         {
@@ -217,7 +218,7 @@ internal sealed class LightingSection : SectionPanel
             failure = exception;
         }
 
-        var state = await ReadStateOrUnknownAsync("Could not read the lighting state after a change.").ConfigureAwait(false);
+        var state = await ReadStateOrUnknownAsync(L.T("Could not read the lighting state after a change.")).ConfigureAwait(false);
 
         await PostToUiAsync(() =>
         {
@@ -235,9 +236,9 @@ internal sealed class LightingSection : SectionPanel
 
     // Where a color can be chosen, the static effect shows that color, not green.
     private static string Describe(KeyboardEffect effect, bool offersColor) =>
-        effect == KeyboardEffect.StaticGreen ? (offersColor ? "Static" : "Static green") : effect.ToString();
+        L.T(effect == KeyboardEffect.StaticGreen ? (offersColor ? "Static" : "Static green") : effect.ToString());
 
-    private static string Describe(LogoMode mode) => mode == LogoMode.On ? "On" : mode.ToString();
+    private static string Describe(LogoMode mode) => L.T(mode == LogoMode.On ? "On" : mode.ToString());
 
     // A failed read is logged and shown as "unknown", never as an old value.
     private async Task<LightingState> ReadStateOrUnknownAsync(string logMessage)
@@ -333,7 +334,7 @@ internal sealed class LightingSection : SectionPanel
             // the effect list keeps its width whether the companion shows.
             var choices = new TableLayoutPanel
             {
-                BackColor = BackgroundColor,
+                BackColor = CardColor,
                 ColumnCount = 2,
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty,
@@ -355,7 +356,7 @@ internal sealed class LightingSection : SectionPanel
 
             var slider = new TableLayoutPanel
             {
-                BackColor = BackgroundColor,
+                BackColor = CardColor,
                 ColumnCount = 2,
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty,
@@ -371,7 +372,7 @@ internal sealed class LightingSection : SectionPanel
 
             Panel = new TableLayoutPanel
             {
-                BackColor = BackgroundColor,
+                BackColor = CardColor,
                 ColumnCount = 1,
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty,
@@ -390,7 +391,7 @@ internal sealed class LightingSection : SectionPanel
                 Font = GetDesignFont("Segoe UI", 9.5F),
                 ForeColor = Color.Silver,
                 Margin = S(new Padding(4, 0, 0, 0)),
-                Text = name,
+                Text = L.T(name),
                 TextAlign = ContentAlignment.BottomLeft
             }, 0, 0);
             Panel.Controls.Add(choices, 0, 1);

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using RazerHelper.Core.Diagnostics;
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiControls;
@@ -38,10 +39,6 @@ internal sealed class PerformanceSection : SectionPanel
     private readonly MaxFanMethod _maxFanMethod;
     private bool _autoSwitchProfiles = true;
 
-    // Tracked here because Control.Visible reads false whenever any parent is
-    // hidden, which is most of the time for a tray popup.
-    private bool _isCustomRowShown;
-
     public PerformanceSection(
         PerformanceService performanceService,
         IPowerSource powerSource,
@@ -70,7 +67,15 @@ internal sealed class PerformanceSection : SectionPanel
         {
             var mode = Enum.Parse<PerformanceMode>((string)button.Tag!);
             _buttons[mode] = button;
-            button.Click += async (_, _) => await SelectModeAsync(mode);
+            button.Click += async (_, _) =>
+            {
+                await SelectModeAsync(mode);
+
+                // Custom's levels live in a window of their own. It opens once
+                // the EC is in Custom, and clicking Custom again reopens it.
+                if (mode == PerformanceMode.Custom && _state.Mode == PerformanceMode.Custom)
+                    CustomBoostRequested?.Invoke(this, EventArgs.Empty);
+            };
 
             if (button is RoundedButton rounded)
             {
@@ -112,15 +117,10 @@ internal sealed class PerformanceSection : SectionPanel
         header.Controls.Add(CreateSectionLabel("Performance Mode", Glyph.Performance), 0, 0);
         header.Controls.Add(headerValues, 1, 0);
 
-        // Dock order: the header docks first, then the custom row, and the
-        // mode buttons fill whatever is left.
+        // Dock order: the header docks first, and the mode buttons fill whatever is left.
         Controls.Add(grid);
-        Controls.Add(_customRow);
         Controls.Add(header);
 
-        // Start with the row where the active profile last had it, so the
-        // popup does not jump when the real mode is read a moment later.
-        SetCustomRowShown(ActiveProfile.Mode == PerformanceMode.Custom);
         UpdateButtonStates();
 
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
@@ -135,10 +135,15 @@ internal sealed class PerformanceSection : SectionPanel
     /// <summary>Raised whenever the section shows a new state, so others (the fan buttons) can follow it.</summary>
     public event EventHandler<PerformanceState>? StateChanged;
 
-    /// <summary>Raised when the Custom row appears or disappears, so the host can resize.</summary>
-    public event EventHandler<bool>? CustomRowVisibilityChanged;
+    /// <summary>Raised when the user clicks Custom and the EC is in it. The host opens the boost window.</summary>
+    public event EventHandler? CustomBoostRequested;
 
-    public bool IsCustomRowShown => _isCustomRowShown;
+    /// <summary>
+    /// The CPU and GPU level selectors. The section keeps them up to date
+    /// whether or not they are shown; the Custom window borrows them while it
+    /// is open and hands them back when it closes.
+    /// </summary>
+    public CustomBoostRow BoostSelectors => _customRow;
 
     /// <summary>
     /// Whether plugging or unplugging the charger switches to the profile for
@@ -176,7 +181,6 @@ internal sealed class PerformanceSection : SectionPanel
 
         _temperatureLabel.Text = text;
         _temperatureLabel.Margin = Padding.Empty;
-        _toolTip.SetToolTip(_temperatureLabel, TemperatureText.Explain(reading.CpuCelsius, reading.GpuCelsius));
     }
 
     /// <summary>Applies the profile for the current power source, e.g. at startup.</summary>
@@ -197,7 +201,7 @@ internal sealed class PerformanceSection : SectionPanel
 
         return RunAsync(
             () => _performanceService.SetMaxFanAsync(enabled),
-            "Could not change max fan speed.",
+            L.T("Could not change max fan speed."),
             _ => { }); // Nothing to remember: it is not part of a profile.
     }
 
@@ -255,6 +259,9 @@ internal sealed class PerformanceSection : SectionPanel
         {
             _powerSource.PowerSourceChanged -= PowerSource_PowerSourceChanged;
             _toolTip.Dispose();
+
+            // Not a child of the section, so it is not disposed with it.
+            _customRow.Dispose();
         }
 
         base.Dispose(disposing);
@@ -305,7 +312,7 @@ internal sealed class PerformanceSection : SectionPanel
                     ? await _performanceService.SetMaxFanAsync(false)
                     : state;
             },
-            "Could not apply the power profile.",
+            L.T("Could not apply the power profile."),
             _ => _appliedSource = source);
     }
 
@@ -320,17 +327,17 @@ internal sealed class PerformanceSection : SectionPanel
     private Task SelectModeAsync(PerformanceMode mode) =>
         mode == _state.Mode || !PowerProfileRules.IsModeAllowed(mode, IsPluggedIn)
             ? Task.CompletedTask // Already there, or not offered on this power source.
-            : ChangeProfileAsync(profile => profile with { Mode = mode }, "Could not change the performance mode.");
+            : ChangeProfileAsync(profile => profile with { Mode = mode }, L.T("Could not change the performance mode."));
 
     private Task SelectCpuAsync(CpuBoost level) =>
         !PowerProfileRules.CanChangeBoost(_state, IsPluggedIn) || level == _state.Cpu
             ? Task.CompletedTask
-            : ChangeProfileAsync(profile => profile with { Cpu = level }, "Could not change the boost level.");
+            : ChangeProfileAsync(profile => profile with { Cpu = level }, L.T("Could not change the boost level."));
 
     private Task SelectGpuAsync(GpuBoost level) =>
         !PowerProfileRules.CanChangeBoost(_state, IsPluggedIn) || level == _state.Gpu
             ? Task.CompletedTask
-            : ChangeProfileAsync(profile => profile with { Gpu = level }, "Could not change the boost level.");
+            : ChangeProfileAsync(profile => profile with { Gpu = level }, L.T("Could not change the boost level."));
 
     private Task ChangeProfileAsync(Func<PowerProfile, PowerProfile> edit, string failureMessage)
     {
@@ -382,7 +389,7 @@ internal sealed class PerformanceSection : SectionPanel
                 ShowState(result);
                 onSuccess(result);
                 AppLog.Info($"Performance state is now {result.Mode} (CPU {result.Cpu}, GPU {result.Gpu}, max fan {result.MaxFan?.ToString() ?? "n/a"}).");
-                StatusChanged?.Invoke(this, new SectionStatus("Performance profile applied."));
+                StatusChanged?.Invoke(this, new SectionStatus(L.T("Performance profile applied.")));
             }
             else
             {
@@ -424,23 +431,8 @@ internal sealed class PerformanceSection : SectionPanel
         UpdateButtonStates();
 
         _customRow.ShowBoosts(state.Cpu, state.Gpu);
-        SetCustomRowShown(state.Mode == PerformanceMode.Custom);
 
         StateChanged?.Invoke(this, state);
-    }
-
-    private void SetCustomRowShown(bool shown)
-    {
-        if (_isCustomRowShown == shown && _customRow.Visible == shown)
-            return;
-
-        var changed = _isCustomRowShown != shown;
-
-        _isCustomRowShown = shown;
-        _customRow.Visible = shown;
-
-        if (changed)
-            CustomRowVisibilityChanged?.Invoke(this, shown);
     }
 
     private static Label CreateHeaderValueLabel() => new()

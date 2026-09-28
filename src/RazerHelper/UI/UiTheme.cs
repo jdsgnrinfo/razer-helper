@@ -28,8 +28,12 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(30, 30, 30);
-    public static readonly Color ButtonColor = Color.FromArgb(50, 50, 50);
+    public static readonly Color BackgroundColor = Color.FromArgb(14, 14, 14);
+    public static readonly Color ButtonColor = Color.FromArgb(38, 38, 38);
+
+    /// <summary>A card: just lighter than the background, so it groups without standing out.</summary>
+    public static readonly Color CardColor = Color.FromArgb(22, 22, 22);
+
     public static readonly Color BorderColor = Color.FromArgb(80, 80, 80);
     public static readonly Color RazerGreen = Color.FromArgb(68, 214, 44);
 

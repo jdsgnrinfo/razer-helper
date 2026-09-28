@@ -34,4 +34,10 @@ internal sealed record AppSettings(
     // How much bigger than the base design the window is drawn (1 = base size).
     // Null picks a size from Windows' display scaling. Edited by hand in
     // settings.json, for example 1.5; applies the next time the app starts.
-    double? WindowScale = null);
+    double? WindowScale = null,
+    // On unless the user turns it off: the keyboard backlight goes off while
+    // the screen is off (display timeout, sleep, closed lid).
+    bool KeyboardOffWithScreen = true,
+    // The interface language: "en" or "es". Null follows the Windows display
+    // language. Changing it restarts the app.
+    string? Language = null);
