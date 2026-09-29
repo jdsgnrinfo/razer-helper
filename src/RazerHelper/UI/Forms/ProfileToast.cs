@@ -119,7 +119,7 @@ internal sealed class ProfileToast : Form
         var box = new Rectangle(padding, padding, IconBox, IconBox);
 
         using (Brush fill = _applied
-            ? new System.Drawing.Drawing2D.LinearGradientBrush(Rectangle.Inflate(box, 0, 1), GradientDark, SelectedGradientEnd, System.Drawing.Drawing2D.LinearGradientMode.Vertical)
+            ? new System.Drawing.Drawing2D.LinearGradientBrush(Rectangle.Inflate(box, 0, 1), SelectedGradientStart, SelectedGradientEnd, System.Drawing.Drawing2D.LinearGradientMode.Vertical)
             : new SolidBrush(TrackColor))
         using (var shape = RoundedButton.RoundedPath(box, S(2)))
         using (var line = new SolidBrush(_applied ? RazerGreen : ButtonBorderColor))

@@ -48,8 +48,14 @@ internal static class UiTheme
     /// <summary>Where every gradient starts: the dark end, nearly the button color with a hint of green.</summary>
     public static readonly Color GradientDark = Color.FromArgb(0x17, 0x1C, 0x16);
 
-    /// <summary>The bottom of a selected button's top-to-bottom gradient.</summary>
-    public static readonly Color SelectedGradientEnd = Color.FromArgb(0x1C, 0x59, 0x12);
+    /// <summary>The top of a selected button's top-to-bottom gradient: Razer green at 2%.</summary>
+    public static readonly Color SelectedGradientStart = Color.FromArgb(5, RazerGreen);
+
+    /// <summary>The bottom of a selected button's top-to-bottom gradient: Razer green at 35%.</summary>
+    public static readonly Color SelectedGradientEnd = Color.FromArgb(89, RazerGreen);
+
+    /// <summary>The bottom of the selected button's gradient under the pointer: Razer green at 50%.</summary>
+    public static readonly Color SelectedGradientHoverEnd = Color.FromArgb(128, RazerGreen);
 
     /// <summary>The bright end of a slider's, switch's or bar's left-to-right gradient.</summary>
     public static readonly Color FillGradientEnd = Color.FromArgb(0x1D, 0x80, 0x0D);

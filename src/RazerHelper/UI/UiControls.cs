@@ -69,7 +69,7 @@ internal static class UiControls
 
     /// <summary>
     /// A small button sized to its text, such as "More info" or the footer's: 10px bold with 8px around it,
-    /// and an optional icon on the left, 12px to match the text, 5px before it.
+    /// and an optional icon on the left, 12px to match the text, 3px before it.
     /// </summary>
     public static Button CreateSmallButton(string text, Glyph? icon = null)
     {
@@ -82,7 +82,7 @@ internal static class UiControls
         {
             button.Glyph = glyph;
             button.GlyphSize = S(12);
-            button.GlyphGap = S(5);
+            button.GlyphGap = S(3);
             iconWidth = button.GlyphSize + button.GlyphGap;
         }
 

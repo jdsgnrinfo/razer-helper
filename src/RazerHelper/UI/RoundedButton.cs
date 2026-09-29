@@ -17,9 +17,6 @@ internal class RoundedButton : Button
     // Base-design pixels, scaled like everything else.
     internal const int CornerRadius = 2;
 
-    // How strong the glow is at full hover: half of the full white halo.
-    private const float GlowOpacity = 0.5f;
-
     private readonly System.Windows.Forms.Timer _hoverAnimation = new() { Interval = 15 };
     private readonly System.Diagnostics.Stopwatch _hoverClock = new();
 
@@ -70,10 +67,10 @@ internal class RoundedButton : Button
 
         using (var path = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
         {
-            // A selected button fades from dark at the top to green at the
-            // bottom; the others are flat.
+            // A selected button fades from a faint green at the top to a soft
+            // green at the bottom, stronger under the pointer; the others are flat.
             using (Brush fill = IsGreen
-                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(GradientDark), Pressed(SelectedGradientEnd), LinearGradientMode.Vertical)
+                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(SelectedGradientStart), Pressed(Motion.Blend(SelectedGradientEnd, SelectedGradientHoverEnd, Hover)), LinearGradientMode.Vertical)
                 : new SolidBrush(Pressed(BackColor)))
             {
                 graphics.FillPath(fill, path);
@@ -106,13 +103,11 @@ internal class RoundedButton : Button
             : ForeColor == OnGreenTextColor ? Color.White
             : ForeColor;
 
-        // The icon turns green on the selected button and under the pointer,
-        // and white with a soft white glow on the selected one under the
-        // pointer, fading between the two.
-        var glyphColor = IsGreen && IsUsable ? Motion.Blend(RazerGreen, Color.White, Hover)
+        // The icon is green on the selected button, and turns green under the
+        // pointer on the others.
+        var glyphColor = IsGreen && IsUsable ? RazerGreen
             : IsUsable ? Motion.Blend(textColor, RazerGreen, Hover)
             : textColor;
-        var glow = IsGreen ? Hover * GlowOpacity : 0;
 
         // With a glyph, the glyph and the text are centered together as one
         // group, the glyph drawn in the text's color so it follows selection
@@ -127,9 +122,6 @@ internal class RoundedButton : Button
 
                 var stacked = new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize);
 
-                if (glow > 0)
-                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(8f), glow);
-
                 Glyphs.Draw(graphics, glyph, stacked, glyphColor);
 
                 var textArea = new Rectangle(textBounds.Left, top + StackedGlyphSize + StackedGlyphGap, textBounds.Width, textHeight);
@@ -143,9 +135,6 @@ internal class RoundedButton : Button
             var left = textBounds.Left + (textBounds.Width - groupWidth) / 2;
 
             var inline = new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize);
-
-            if (glow > 0)
-                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(6f), glow);
 
             Glyphs.Draw(graphics, glyph, inline, glyphColor);
 

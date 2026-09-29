@@ -5,7 +5,7 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The very bottom of the popup: the app version on the left, then the
+/// The very bottom of the popup: the app version (just its number) on the left, then the
 /// "System info", "Free up GPU", Settings and Close buttons on the right. It only
 /// reports clicks; the popup decides what they do.
 /// </summary>
@@ -34,7 +34,7 @@ internal sealed class AppFooter : TableLayoutPanel
             Font = DesignFont(12),
             ForeColor = Color.White,
             Margin = Padding.Empty,
-            Text = $"RazerHelper {AppVersion.Current}",
+            Text = AppVersion.Current,
             TextAlign = ContentAlignment.MiddleLeft
         }, 0, 0);
 
