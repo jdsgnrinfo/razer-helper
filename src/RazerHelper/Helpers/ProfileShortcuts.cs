@@ -59,6 +59,15 @@ internal sealed class ProfileShortcuts : NativeWindow, IDisposable
         return taken;
     }
 
+    /// <summary>Stops listening, so another program can have the keys; <see cref="TryRegister"/> starts again.</summary>
+    public void Unregister()
+    {
+        foreach (var id in _registered)
+            UnregisterHotKey(Handle, id);
+
+        _registered.Clear();
+    }
+
     protected override void WndProc(ref Message message)
     {
         var index = (int)message.WParam - FirstId;
@@ -71,10 +80,7 @@ internal sealed class ProfileShortcuts : NativeWindow, IDisposable
 
     public void Dispose()
     {
-        foreach (var id in _registered)
-            UnregisterHotKey(Handle, id);
-
-        _registered.Clear();
+        Unregister();
 
         if (Handle != IntPtr.Zero)
             DestroyHandle();

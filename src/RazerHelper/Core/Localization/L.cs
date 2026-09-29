@@ -73,6 +73,8 @@ internal static class L
         ["Stays above other windows and games. {0} shows or hides it."] = "Queda sobre otras ventanas y juegos. {0} la muestra u oculta.",
         ["Free up GPU when unplugged"] = "Liberar GPU sin cargador",
         ["Offers to close apps using the dedicated GPU, to save battery."] = "Ofrece cerrar las apps que usan la GPU dedicada, para ahorrar batería.",
+        ["Performance mode shortcuts"] = "Atajos de los modos de rendimiento",
+        ["Ctrl+Shift+F1, F2 and F3 switch to Balanced, Silent and Gaming."] = "Ctrl+Shift+F1, F2 y F3 cambian a Equilibrado, Silencio y Juego.",
         ["Keyboard off with the screen"] = "Teclado apagado con la pantalla",
         ["Turns the lighting off and back on with the screen."] = "Apaga y vuelve a encender la luz junto con la pantalla.",
         ["Razer drivers and support"] = "Drivers y soporte de Razer",

@@ -38,6 +38,9 @@ internal sealed record AppSettings(
     // On unless the user turns it off: the keyboard backlight goes off while
     // the screen is off (display timeout, sleep, closed lid).
     bool KeyboardOffWithScreen = true,
+    // On unless the user turns it off: Ctrl+Shift+F1/F2/F3 switch performance
+    // mode from any program. Off frees them for another program that wants them.
+    bool ProfileShortcuts = true,
     // The interface language: "en" or "es". Null follows the Windows display
     // language. Changing it restarts the app.
     string? Language = null);

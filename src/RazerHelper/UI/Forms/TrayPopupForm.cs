@@ -232,7 +232,8 @@ public sealed class TrayPopupForm : Form
         _hotkey.Pressed += (_, _) => ToggleFromShortcut();
         _profileShortcuts.Pressed += async (_, mode) => await SwitchModeFromShortcutAsync(mode);
         StartShortcut();
-        StartProfileShortcuts();
+        if (_settings.ProfileShortcuts)
+            StartProfileShortcuts();
         _fadeTimer.Tick += OnFadeTick;
     }
 
@@ -346,7 +347,8 @@ public sealed class TrayPopupForm : Form
     }
 
     // Ctrl+Shift+F1/F2/F3 switch performance mode. One another program owns
-    // is logged and said in the header, and the others still work.
+    // is logged and said in the header, and the others still work. Off in
+    // Settings, none is taken.
     private void StartProfileShortcuts()
     {
         var taken = _profileShortcuts.TryRegister();
@@ -678,6 +680,20 @@ public sealed class TrayPopupForm : Form
         {
             SaveSettings(_settings with { CloseGpuAppsOnUnplug = enabled });
             _dgpuCoordinator.Enabled = enabled;
+        };
+
+        settingsForm.ProfileShortcutsChanged += (_, enabled) =>
+        {
+            SaveSettings(_settings with { ProfileShortcuts = enabled });
+
+            if (enabled)
+            {
+                StartProfileShortcuts();
+                return;
+            }
+
+            _profileShortcuts.Unregister();
+            AppLog.Info("Performance mode shortcuts are off.");
         };
 
         settingsForm.KeyboardOffWithScreenChanged += (_, enabled) =>

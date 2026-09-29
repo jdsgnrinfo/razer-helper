@@ -93,6 +93,7 @@ Press **Fn+Del** in any program, even a game, to bring the window to the front, 
 - A small notice at the top right of the screen shows the mode's icon, its name and how it went: "Active" (green icon), or why not (grey icon), such as "Needs to be plugged in" or "Not supported on this laptop".
 - It never takes the focus from the game or program in front, and fades out after two seconds. In a game in exclusive fullscreen Windows draws nothing over it, so the mode still changes but the notice is not seen; in windowed or borderless fullscreen it shows.
 - Like Fn+Del, they cost nothing when unused. If another program already uses one, the window says so at the top and the others still work.
+- They are on from the start. To free them for another program, or if you would rather not have them, turn off **Performance mode shortcuts** in Settings.
 - Why not Fn+1/2/3: the Blade's Fn key never reaches Windows, so Fn+1 looks exactly like 1, and every typed number would switch mode.
 
 ## Light on resources

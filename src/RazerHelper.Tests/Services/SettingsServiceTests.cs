@@ -87,6 +87,24 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Load_FromAnOlderFile_LeavesTheModeShortcutsOn()
+    {
+        WriteSettings("""{ "DisplayMode": "Auto" }""");
+
+        Assert.True(new SettingsService(_directory).Load().ProfileShortcuts);
+    }
+
+    [Fact]
+    public void Save_ThenLoad_KeepsTheModeShortcutsOff()
+    {
+        var service = new SettingsService(_directory);
+
+        service.Save(new AppSettings(ProfileShortcuts: false));
+
+        Assert.False(service.Load().ProfileShortcuts);
+    }
+
+    [Fact]
     public void Load_FromAnOlderFile_LeavesTheWindowSizeAutomatic()
     {
         WriteSettings("""{ "DisplayMode": "Auto" }""");
