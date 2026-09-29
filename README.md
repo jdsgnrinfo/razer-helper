@@ -18,6 +18,16 @@ It lives in the system tray, talks to the laptop's controller directly, and need
   <img src="docs/images/main-window.png" width="500" alt="The RazerHelper window: performance modes (Balanced selected), fans, display refresh rate, battery charge limit, lighting with keyboard and logo, and the footer buttons">
 </p>
 
+On the desktop, with the Custom mode's CPU and GPU levels open beside the window, and with Settings:
+
+<p align="center">
+  <img src="docs/images/preview-custom.png" width="800" alt="RazerHelper on the desktop with Custom selected and the Custom window beside it: CPU and GPU boost levels with their temperature, usage and clock speeds">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, free up GPU when unplugged and keyboard off with the screen">
+</p>
+
 The tray icon takes the color of the current performance mode, and hovering it names the mode, as in "RazerHelper (Gaming)":
 
 <p align="center">
