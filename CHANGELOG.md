@@ -29,6 +29,8 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 
+- **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a rounded highlight under the pointer.
+
 ### New windows
 
 - **Custom:** the CPU and GPU boost levels in their own window beside the popup, with live CPU temperature, usage and speed, and GPU temperature, usage, core clock and memory clock. The GPU's usage and core clock come from NVIDIA's library, asked only while the GPU is awake. The window closes by itself if the laptop leaves Custom.

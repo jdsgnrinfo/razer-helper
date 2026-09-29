@@ -32,6 +32,7 @@ Everything the original does still works the same way; on top of it:
 - **Spanish translation**, chosen in Settings (English stays the default).
 - **Performance mode shortcuts:** Ctrl+Shift+F1/F2/F3 switch to Balanced, Silent and Gaming from any program, with a small notice at the top right.
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, orange-red for Gaming, purple for Custom, and "RazerHelper (Gaming)" on hover.
+- **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **All four performance modes on every model:** Gaming is offered everywhere, not only on the Blade 15 Base (2020); where the firmware does not take it, the button is marked as not supported.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
 - **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.

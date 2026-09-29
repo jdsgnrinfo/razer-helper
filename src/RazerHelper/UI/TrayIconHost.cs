@@ -7,7 +7,7 @@ namespace RazerHelper.UI;
 
 public sealed class TrayIconHost : IDisposable
 {
-    private readonly ContextMenuStrip _menu;
+    private readonly TrayMenu _menu;
     private readonly NotifyIcon _notifyIcon;
     private readonly TrayPopupForm _popup;
     private readonly TrayIconArt _art;
@@ -18,10 +18,10 @@ public sealed class TrayIconHost : IDisposable
         _popup = popup;
         _art = new TrayIconArt(LoadTrayIcon());
 
-        _menu = new ContextMenuStrip();
-        _menu.Items.Add(L.T("Open RazerHelper"), null, (_, _) => TogglePopup());
-        _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add(L.T("Exit"), null, (_, _) => ExitApplication());
+        _menu = new TrayMenu();
+        _menu.AddItem(L.T("Open RazerHelper"), (_, _) => TogglePopup());
+        _menu.AddSeparator();
+        _menu.AddItem(L.T("Exit"), (_, _) => ExitApplication());
 
         _notifyIcon = new NotifyIcon
         {
