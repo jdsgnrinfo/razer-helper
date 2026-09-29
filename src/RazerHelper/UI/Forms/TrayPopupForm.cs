@@ -279,7 +279,12 @@ public sealed class TrayPopupForm : Form
 
     // --- Fade in and out ---------------------------------------------------
 
-    private const double FadeStep = 0.15; // opacity per 15 ms tick: ~120 ms in total
+    // Per 15 ms tick: the whole fade takes Motion.Milliseconds (300 ms).
+    private const double FadeStep = 15 / Motion.Milliseconds;
+
+    // How far the fade is, 0 hidden to 1 shown, moving evenly; the window's
+    // opacity follows it eased, slow at both ends.
+    private double _fadeLevel;
 
     // Hides the popup, but only once it has faded out, so it never pops away.
     // Safe to call repeatedly: while a fade-out is running it does nothing,
@@ -302,19 +307,21 @@ public sealed class TrayPopupForm : Form
 
     private void OnFadeTick(object? sender, EventArgs e)
     {
-        if (Opacity < _fadeTarget)
+        if (_fadeLevel < _fadeTarget)
         {
-            Opacity = Math.Min(_fadeTarget, Opacity + FadeStep);
+            _fadeLevel = Math.Min(_fadeTarget, _fadeLevel + FadeStep);
+            Opacity = Motion.Ease((float)_fadeLevel);
 
-            if (Opacity >= _fadeTarget)
+            if (_fadeLevel >= _fadeTarget)
                 _fadeTimer.Stop();
 
             return;
         }
 
-        Opacity = Math.Max(_fadeTarget, Opacity - FadeStep);
+        _fadeLevel = Math.Max(_fadeTarget, _fadeLevel - FadeStep);
+        Opacity = Motion.Ease((float)_fadeLevel);
 
-        if (Opacity > _fadeTarget)
+        if (_fadeLevel > _fadeTarget)
             return;
 
         _fadeTimer.Stop();

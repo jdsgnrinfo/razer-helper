@@ -13,8 +13,6 @@ namespace RazerHelper.UI;
 /// </summary>
 internal sealed class ToggleSwitch : CheckBox
 {
-    private const double AnimationMilliseconds = 160;
-
     private static int TrackWidth => S(48);
     private static int TrackHeight => S(24);
     private static int KnobInset => S(3);
@@ -71,10 +69,10 @@ internal sealed class ToggleSwitch : CheckBox
     private void Step()
     {
         var target = Checked ? 1f : 0f;
-        var progress = (float)Math.Min(1.0, _clock.Elapsed.TotalMilliseconds / AnimationMilliseconds);
+        var progress = (float)Math.Min(1.0, _clock.Elapsed.TotalMilliseconds / Motion.Milliseconds);
 
-        // Ease out: quick at first, settling gently into place.
-        var eased = 1 - (1 - progress) * (1 - progress) * (1 - progress);
+        // Slow at both ends, as every transition in the app.
+        var eased = Motion.Ease(progress);
         _position = _from + (target - _from) * eased;
 
         if (progress >= 1)

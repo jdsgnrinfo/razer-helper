@@ -17,8 +17,18 @@ internal class RoundedButton : Button
     // Base-design pixels, scaled like everything else.
     internal const int CornerRadius = 2;
 
+    // How strong the glow is at full hover: half of the full white halo.
+    private const float GlowOpacity = 0.5f;
+
+    private readonly System.Windows.Forms.Timer _hoverAnimation = new() { Interval = 15 };
+    private readonly System.Diagnostics.Stopwatch _hoverClock = new();
+
     private bool _hovered;
     private bool _pressed;
+
+    // 0 at rest, 1 fully hovered; in between while the hover fades in or out.
+    private float _hover;
+    private float _hoverFrom;
 
     public RoundedButton()
     {
@@ -32,6 +42,8 @@ internal class RoundedButton : Button
             ControlStyles.UserPaint |
             ControlStyles.ResizeRedraw,
             true);
+
+        _hoverAnimation.Tick += (_, _) => StepHover();
     }
 
     /// <summary>A rounded rectangle filling <paramref name="bounds"/>.</summary>
@@ -71,8 +83,8 @@ internal class RoundedButton : Button
             // corners and drawn inside the shape: green on the selected button
             // and on any other under the pointer, quiet otherwise, silver while it has keyboard focus (Tab).
             var stroke = Focused && ShowFocusCues ? Color.Silver
-                : IsGreen && IsUsable || ShowsGreenOutline ? RazerGreen
-                : ButtonBorderColor;
+                : IsGreen && IsUsable ? RazerGreen
+                : Motion.Blend(ButtonBorderColor, RazerGreen, Hover);
 
             var clip = graphics.Clip;
             graphics.SetClip(path, CombineMode.Intersect);
@@ -95,10 +107,12 @@ internal class RoundedButton : Button
             : ForeColor;
 
         // The icon turns green on the selected button and under the pointer,
-        // and white with a soft white glow on the selected one under the pointer.
-        var glyphColor = HoveredSelected ? Color.White
-            : IsUsable && (IsGreen || _hovered) ? RazerGreen
+        // and white with a soft white glow on the selected one under the
+        // pointer, fading between the two.
+        var glyphColor = IsGreen && IsUsable ? Motion.Blend(RazerGreen, Color.White, Hover)
+            : IsUsable ? Motion.Blend(textColor, RazerGreen, Hover)
             : textColor;
+        var glow = IsGreen ? Hover * GlowOpacity : 0;
 
         // With a glyph, the glyph and the text are centered together as one
         // group, the glyph drawn in the text's color so it follows selection
@@ -113,8 +127,8 @@ internal class RoundedButton : Button
 
                 var stacked = new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize);
 
-                if (HoveredSelected)
-                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(8f));
+                if (glow > 0)
+                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(8f), glow);
 
                 Glyphs.Draw(graphics, glyph, stacked, glyphColor);
 
@@ -130,8 +144,8 @@ internal class RoundedButton : Button
 
             var inline = new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize);
 
-            if (HoveredSelected)
-                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(6f));
+            if (glow > 0)
+                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(6f), glow);
 
             Glyphs.Draw(graphics, glyph, inline, glyphColor);
 
@@ -189,7 +203,7 @@ internal class RoundedButton : Button
     protected override void OnMouseEnter(EventArgs e)
     {
         _hovered = true;
-        Invalidate();
+        StartHover();
         base.OnMouseEnter(e);
     }
 
@@ -197,7 +211,7 @@ internal class RoundedButton : Button
     {
         _hovered = false;
         _pressed = false;
-        Invalidate();
+        StartHover();
         base.OnMouseLeave(e);
     }
 
@@ -228,9 +242,40 @@ internal class RoundedButton : Button
 
     private bool IsUsable => Enabled && Cursor == Cursors.Hand;
 
-    private bool ShowsGreenOutline => _hovered && IsUsable && !IsGreen;
+    // The hover, eased; nothing for a button that cannot be used.
+    private float Hover => IsUsable ? Motion.Ease(_hover) : 0;
 
-    private bool HoveredSelected => _hovered && IsUsable && IsGreen;
+    // Fades the hover in or out over Motion.Milliseconds, from wherever it is now.
+    private void StartHover()
+    {
+        _hoverFrom = _hover;
+        _hoverClock.Restart();
+        _hoverAnimation.Start();
+        Invalidate();
+    }
+
+    private void StepHover()
+    {
+        var target = _hovered ? 1f : 0f;
+
+        // The whole way takes Motion.Milliseconds; a part of the way, its share.
+        var needed = Math.Abs(target - _hoverFrom) * Motion.Milliseconds;
+        var done = needed <= 0 ? 1 : Math.Min(1, _hoverClock.Elapsed.TotalMilliseconds / needed);
+        _hover = _hoverFrom + (target - _hoverFrom) * (float)done;
+
+        if (done >= 1)
+            _hoverAnimation.Stop();
+
+        Invalidate();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            _hoverAnimation.Dispose();
+
+        base.Dispose(disposing);
+    }
 
     private static Color Lighten(Color color, float amount) => Color.FromArgb(
         color.A,

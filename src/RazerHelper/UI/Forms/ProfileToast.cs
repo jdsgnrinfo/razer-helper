@@ -13,7 +13,12 @@ namespace RazerHelper.UI.Forms;
 internal sealed class ProfileToast : Form
 {
     private const int ShownMilliseconds = 2_000;
-    private const double FadeStep = 0.12;
+    // Per 15 ms tick: the fade-out takes Motion.Milliseconds (300 ms).
+    private const double FadeStep = 15 / Motion.Milliseconds;
+
+    // How far the fade-out is, 1 fully shown to 0 gone, moving evenly; the
+    // opacity follows it eased.
+    private double _fadeLevel = 1;
 
     private const int WsExTopmost = 0x00000008;
     private const int WsExToolWindow = 0x00000080;
@@ -52,9 +57,10 @@ internal sealed class ProfileToast : Form
 
         _fadeTimer.Tick += (_, _) =>
         {
-            Opacity = Math.Max(0, Opacity - FadeStep);
+            _fadeLevel = Math.Max(0, _fadeLevel - FadeStep);
+            Opacity = Motion.Ease((float)_fadeLevel);
 
-            if (Opacity > 0)
+            if (_fadeLevel > 0)
                 return;
 
             _fadeTimer.Stop();
@@ -72,6 +78,7 @@ internal sealed class ProfileToast : Form
         Location = new Point(workingArea.Right - Width - ScreenMargin, workingArea.Top + ScreenMargin);
 
         _fadeTimer.Stop();
+        _fadeLevel = 1;
         Opacity = 1;
         Invalidate();
 

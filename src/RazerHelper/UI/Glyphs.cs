@@ -42,7 +42,7 @@ internal static class Glyphs
     /// it: faint copies of the icon spread in rings around its place, which
     /// pile up into a glow that fades outward.
     /// </summary>
-    public static void DrawGlow(Graphics graphics, Glyph icon, RectangleF bounds, Color color, float radius)
+    public static void DrawGlow(Graphics graphics, Glyph icon, RectangleF bounds, Color color, float radius, float opacity = 1)
     {
         const int Directions = 16;
         const int Rings = 6;
@@ -51,7 +51,12 @@ internal static class Glyphs
         {
             var distance = radius * ring / Rings;
             // Fainter the farther out, so the glow blurs away instead of ending in an edge.
-            var faint = Color.FromArgb(4 + 8 * (Rings - ring) / (Rings - 1), color);
+            var alpha = (int)Math.Round((4 + 8f * (Rings - ring) / (Rings - 1)) * opacity);
+
+            if (alpha <= 0)
+                continue;
+
+            var faint = Color.FromArgb(alpha, color);
 
             for (var step = 0; step < Directions; step++)
             {
