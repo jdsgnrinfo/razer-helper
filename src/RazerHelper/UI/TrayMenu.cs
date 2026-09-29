@@ -1,4 +1,3 @@
-using System.Drawing.Drawing2D;
 using RazerHelper.Helpers;
 using static RazerHelper.UI.UiTheme;
 
@@ -7,14 +6,12 @@ namespace RazerHelper.UI;
 /// <summary>
 /// The tray icon's right-click menu in the app's dark style: a dark rounded
 /// panel with a thin border (from Windows 11, like the windows), white text,
-/// a softly rounded highlight under the pointer and thin separators. No
+/// a highlight across the whole width under the pointer and thin separators. No
 /// image column, so the text starts close to the edge.
 /// </summary>
 internal sealed class TrayMenu : ContextMenuStrip
 {
     private static int ListInset => S(4);
-    private static int HighlightInset => S(4);
-    private static int HighlightRadius => S(4);
     private static readonly Color HoverColor = Color.FromArgb(0x33, 0x33, 0x33);
 
     public TrayMenu()
@@ -26,12 +23,12 @@ internal sealed class TrayMenu : ContextMenuStrip
         Renderer = new DarkRenderer();
         ShowCheckMargin = false;
         ShowImageMargin = false;
-
-        // Roomy, as Windows 11 menus are, even with short items.
-        MinimumSize = new Size(S(200), 0);
     }
 
-    /// <summary>Adds an item with the menu's spacing and colors.</summary>
+    /// <summary>
+    /// Adds an item with the menu's spacing and colors. The menu makes every
+    /// item as wide as the widest, so the highlight reaches both edges.
+    /// </summary>
     public ToolStripMenuItem AddItem(string text, EventHandler onClick)
     {
         var item = new ToolStripMenuItem(text, null, onClick)
@@ -68,27 +65,20 @@ internal sealed class TrayMenu : ContextMenuStrip
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e) =>
             e.Graphics.Clear(ButtonColor);
 
-        // Under the pointer: a rounded fill kept in from the menu's sides.
+        // Under the pointer: a fill across the whole width of the menu.
         protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
         {
             if (!e.Item.Selected || !e.Item.Enabled)
                 return;
 
-            var graphics = e.Graphics;
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
             using var fill = new SolidBrush(HoverColor);
-            using var path = RoundedButton.RoundedPath(
-                new RectangleF(HighlightInset, 0, e.Item.Width - 2 * HighlightInset - 0.5f, e.Item.Height - 0.5f),
-                HighlightRadius);
-
-            graphics.FillPath(fill, path);
+            e.Graphics.FillRectangle(fill, new Rectangle(Point.Empty, e.Item.Size));
         }
 
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
             var item = e.Item;
-            var left = HighlightInset + S(8);
+            var left = S(12);
 
             TextRenderer.DrawText(
                 e.Graphics,
@@ -99,13 +89,13 @@ internal sealed class TrayMenu : ContextMenuStrip
                 TextFormatFlags.NoPadding | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         }
 
-        // A thin line, kept in from the sides like the highlight.
+        // A thin line, kept in from the sides.
         protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
         {
             var y = e.Item.Height / 2;
 
             using var line = new Pen(BorderColor);
-            e.Graphics.DrawLine(line, HighlightInset + S(4), y, e.Item.Width - HighlightInset - S(4), y);
+            e.Graphics.DrawLine(line, S(8), y, e.Item.Width - S(8), y);
         }
     }
 
