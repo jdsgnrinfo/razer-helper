@@ -4,11 +4,11 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The app's button: a filled shape with rounded corners and a 1.5px line
+/// The app's button: a filled shape with rounded corners and a 2px line
 /// along the bottom only. WinForms' flat button can only draw square corners,
 /// so this paints itself: the fill (a dark-to-green gradient when selected, a
 /// little lighter while pressed), the bottom line (green when selected or
-/// under the pointer), then the icon and text. A green BackColor is what marks
+/// under the pointer, white on the selected one under the pointer), then the icon and text. A green BackColor is what marks
 /// the selected button, so selecting or greying a button works exactly as with
 /// a stock one.
 /// </summary>
@@ -68,9 +68,11 @@ internal class RoundedButton : Button
             }
 
             // The only outline is a line along the bottom, following the
-            // corners: green on the selected button and under the pointer,
-            // quiet otherwise, silver while it has keyboard focus (Tab).
+            // corners: white on the selected button under the pointer, green
+            // on the selected one and on any other under the pointer, quiet
+            // otherwise, silver while it has keyboard focus (Tab).
             var stroke = Focused && ShowFocusCues ? Color.Silver
+                : HoveredSelected ? Color.White
                 : IsGreen && IsUsable || ShowsGreenOutline ? RazerGreen
                 : ButtonBorderColor;
 
@@ -94,8 +96,11 @@ internal class RoundedButton : Button
             : ForeColor == OnGreenTextColor ? Color.White
             : ForeColor;
 
-        // The icon turns green on the selected button and under the pointer.
-        var glyphColor = IsUsable && (IsGreen || _hovered) ? RazerGreen : textColor;
+        // The icon turns green on the selected button and under the pointer,
+        // and white with a soft white glow on the selected one under the pointer.
+        var glyphColor = HoveredSelected ? Color.White
+            : IsUsable && (IsGreen || _hovered) ? RazerGreen
+            : textColor;
 
         // With a glyph, the glyph and the text are centered together as one
         // group, the glyph drawn in the text's color so it follows selection
@@ -108,11 +113,12 @@ internal class RoundedButton : Button
                 var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
                 var top = textBounds.Top + (textBounds.Height - (StackedGlyphSize + StackedGlyphGap + textHeight)) / 2;
 
-                Glyphs.Draw(
-                    graphics,
-                    glyph,
-                    new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize),
-                    glyphColor);
+                var stacked = new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize);
+
+                if (HoveredSelected)
+                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(4f));
+
+                Glyphs.Draw(graphics, glyph, stacked, glyphColor);
 
                 var textArea = new Rectangle(textBounds.Left, top + StackedGlyphSize + StackedGlyphGap, textBounds.Width, textHeight);
                 TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
@@ -124,7 +130,12 @@ internal class RoundedButton : Button
             var groupWidth = Math.Min(GlyphSize + GlyphGap + textWidth, textBounds.Width);
             var left = textBounds.Left + (textBounds.Width - groupWidth) / 2;
 
-            Glyphs.Draw(graphics, glyph, new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize), glyphColor);
+            var inline = new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize);
+
+            if (HoveredSelected)
+                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(3f));
+
+            Glyphs.Draw(graphics, glyph, inline, glyphColor);
 
             textBounds = new Rectangle(left + GlyphSize + GlyphGap, textBounds.Top, groupWidth - GlyphSize - GlyphGap, textBounds.Height);
             TextRenderer.DrawText(graphics, Text, Font, textBounds, textColor,
@@ -220,6 +231,8 @@ internal class RoundedButton : Button
     private bool IsUsable => Enabled && Cursor == Cursors.Hand;
 
     private bool ShowsGreenOutline => _hovered && IsUsable && !IsGreen;
+
+    private bool HoveredSelected => _hovered && IsUsable && IsGreen;
 
     private static Color Lighten(Color color, float amount) => Color.FromArgb(
         color.A,

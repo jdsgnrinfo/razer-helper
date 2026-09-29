@@ -37,6 +37,30 @@ internal static class Glyphs
 {
     private const float Grid = 16f;
 
+    /// <summary>
+    /// A soft halo of <paramref name="color"/> around the icon, drawn before
+    /// it: faint copies of the icon spread in rings around its place, which
+    /// pile up into a glow that fades outward.
+    /// </summary>
+    public static void DrawGlow(Graphics graphics, Glyph icon, RectangleF bounds, Color color, float radius)
+    {
+        const int Directions = 12;
+        const int Rings = 3;
+
+        for (var ring = Rings; ring >= 1; ring--)
+        {
+            var distance = radius * ring / Rings;
+            var faint = Color.FromArgb(ring == Rings ? 10 : 16, color);
+
+            for (var step = 0; step < Directions; step++)
+            {
+                var angle = step * 2 * Math.PI / Directions;
+                var offset = new SizeF((float)(Math.Cos(angle) * distance), (float)(Math.Sin(angle) * distance));
+                Draw(graphics, icon, new RectangleF(bounds.Location + offset, bounds.Size), faint);
+            }
+        }
+    }
+
     public static void Draw(Graphics graphics, Glyph icon, RectangleF bounds, Color color)
     {
         var state = graphics.Save();

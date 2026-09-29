@@ -30,7 +30,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
-- **Gradients and bottom lines:** buttons keep only a 1.5px line along the bottom (green when selected or under the pointer); the selected button fades from dark to green, with its icon in green; sliders, switches and level bars fill with a dark-to-green gradient; switches have a square knob.
+- **Gradients and bottom lines:** buttons keep only a 2px line along the bottom (green when selected or under the pointer); the selected button fades from dark to green, with its icon in green, and under the pointer its icon and line turn white with a soft white glow; sliders and level bars fill with a dark-to-green gradient; switches fade from dark green to Razer green, with no outline and a square knob.
 
 ### New windows
 

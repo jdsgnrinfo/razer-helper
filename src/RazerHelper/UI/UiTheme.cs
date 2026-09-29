@@ -55,7 +55,7 @@ internal static class UiTheme
     public static readonly Color FillGradientEnd = Color.FromArgb(0x1D, 0x80, 0x0D);
 
     /// <summary>The thin line along the bottom of every button.</summary>
-    public static float ButtonStroke => S(1.5f);
+    public static float ButtonStroke => S(2f);
 
     /// <summary>The text on a green (selected) button.</summary>
     public static readonly Color OnGreenTextColor = Color.FromArgb(0x1E, 0x1E, 0x1E);

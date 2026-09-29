@@ -6,8 +6,8 @@ namespace RazerHelper.UI;
 
 /// <summary>
 /// An on/off switch: a softly rounded track with a black square knob that
-/// sits right when on. On fades from dark to green with a green outline; off
-/// is flat grey. A change slides the knob across and fades the
+/// sits right when on. On fades from dark green to Razer green; off is flat
+/// grey. No outline. A change slides the knob across and fades the
 /// colors rather than jumping. Everything else (Checked, events, Space to
 /// toggle) is the ordinary CheckBox.
 /// </summary>
@@ -20,7 +20,7 @@ internal sealed class ToggleSwitch : CheckBox
     private static int KnobInset => S(3);
 
     private static readonly Color OffTrackColor = Color.FromArgb(0x68, 0x68, 0x68);
-    private static readonly Color OffEdgeColor = Color.FromArgb(0x7A, 0x7A, 0x7A);
+    private static readonly Color SwitchGradientStart = Color.FromArgb(0x14, 0x32, 0x0E);
 
     private readonly System.Windows.Forms.Timer _animation = new() { Interval = 15 };
     private readonly Stopwatch _clock = new();
@@ -100,10 +100,9 @@ internal sealed class ToggleSwitch : CheckBox
         var radius = S(3f);
 
         // Off: a flat grey track. On: dark on the left fading to green on the
-        // right, with a green outline. In between, one blends into the other.
-        var start = Enabled ? GradientDark : SystemColors.GrayText;
-        var end = Enabled ? FillGradientEnd : SystemColors.GrayText;
-        var edge = Enabled ? RazerGreen : SystemColors.GrayText;
+        // right. No outline either way. In between, one blends into the other.
+        var start = Enabled ? SwitchGradientStart : SystemColors.GrayText;
+        var end = Enabled ? RazerGreen : SystemColors.GrayText;
 
         using (var path = RoundedButton.RoundedPath(track, radius))
         {
@@ -112,9 +111,6 @@ internal sealed class ToggleSwitch : CheckBox
             {
                 graphics.FillPath(fill, path);
             }
-
-            using (var outline = new Pen(Blend(OffEdgeColor, edge, _position)))
-                graphics.DrawPath(outline, path);
 
             // Only keyboard focus (Tab) shows a ring, as on the buttons.
             if (Focused && ShowFocusCues)
