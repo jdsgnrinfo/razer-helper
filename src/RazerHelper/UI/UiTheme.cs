@@ -45,6 +45,18 @@ internal static class UiTheme
     public static readonly Color BorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
     public static readonly Color RazerGreen = Color.FromArgb(0x46, 0xD7, 0x2E);
 
+    /// <summary>Where every gradient starts: the dark end, nearly the button color with a hint of green.</summary>
+    public static readonly Color GradientDark = Color.FromArgb(0x17, 0x1C, 0x16);
+
+    /// <summary>The bottom of a selected button's top-to-bottom gradient.</summary>
+    public static readonly Color SelectedGradientEnd = Color.FromArgb(0x1C, 0x59, 0x12);
+
+    /// <summary>The bright end of a slider's, switch's or bar's left-to-right gradient.</summary>
+    public static readonly Color FillGradientEnd = Color.FromArgb(0x1D, 0x80, 0x0D);
+
+    /// <summary>The thin line along the bottom of every button.</summary>
+    public static float ButtonStroke => S(1.5f);
+
     /// <summary>The text on a green (selected) button.</summary>
     public static readonly Color OnGreenTextColor = Color.FromArgb(0x1E, 0x1E, 0x1E);
 

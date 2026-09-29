@@ -30,6 +30,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
+- **Gradients and bottom lines:** buttons keep only a 1.5px line along the bottom (green when selected or under the pointer); the selected button fades from dark to green, with its icon in green; sliders, switches and level bars fill with a dark-to-green gradient; switches have a square knob.
 
 ### New windows
 

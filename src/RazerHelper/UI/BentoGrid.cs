@@ -195,7 +195,9 @@ internal sealed class BentoGrid : TableLayoutPanel
 
                 if (filled.Width >= S(6))
                 {
-                    using var level = new SolidBrush(spec.BarColor ?? RazerGreen);
+                    // Dark on the left, the level's color at its end, as on the sliders.
+                    var end = spec.BarColor is { } color && color.ToArgb() != RazerGreen.ToArgb() ? color : FillGradientEnd;
+                    using var level = new LinearGradientBrush(RectangleF.Inflate(filled, 1, 0), GradientDark, end, LinearGradientMode.Horizontal);
                     using var levelShape = RoundedButton.RoundedPath(filled, S(3));
                     graphics.FillPath(level, levelShape);
                 }

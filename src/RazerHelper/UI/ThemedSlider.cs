@@ -210,7 +210,18 @@ internal sealed class ThemedSlider : Control
         // Track, the full width with round ends, then the filled part up to the thumb.
         var top = TrackY - TrackHeight / 2f;
         FillPill(graphics, TrackBrush, new RectangleF(0, top, Width - 1, TrackHeight));
-        FillPill(graphics, accent, new RectangleF(0, top, thumbX, TrackHeight));
+        // The filled part fades from dark at the left to green at the thumb.
+        var filled = new RectangleF(0, top, thumbX, TrackHeight);
+
+        if (IsLive && filled.Width > 0)
+        {
+            using var gradient = new LinearGradientBrush(RectangleF.Inflate(filled, 1, 0), GradientDark, FillGradientEnd, LinearGradientMode.Horizontal);
+            FillPill(graphics, gradient, filled);
+        }
+        else
+        {
+            FillPill(graphics, accent, filled);
+        }
 
         // Thumb: a green dot, with a white ring when the keyboard has focus.
         var thumb = new Rectangle(thumbX - ThumbRadius, TrackY - ThumbRadius, ThumbRadius * 2, ThumbRadius * 2);

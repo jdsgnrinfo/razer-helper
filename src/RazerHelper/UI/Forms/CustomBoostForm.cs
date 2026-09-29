@@ -234,7 +234,9 @@ internal sealed class CustomBoostForm : Form
             name.Margin = new Padding(0, 0, 0, S(8));
             table.Controls.Add(name, index, 0);
 
+            // The reading in grey under its white name, as in the design.
             values[index] = CreateStatLabel(DesignFont(12));
+            values[index].ForeColor = SubtleTextColor;
             values[index].Text = HardwareStatsText.NoReading;
             table.Controls.Add(values[index], index, 1);
         }

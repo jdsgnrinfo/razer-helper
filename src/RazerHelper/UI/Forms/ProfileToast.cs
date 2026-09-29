@@ -106,20 +106,28 @@ internal sealed class ProfileToast : Form
         var graphics = e.Graphics;
         graphics.Clear(BackColor);
 
-        // The icon in a green square when the mode is on, grey when refused.
+        // The icon in a square like the selected mode button when the mode is
+        // on (dark to green, a green line along the bottom), grey when refused.
         var padding = (Height - IconBox) / 2;
         var box = new Rectangle(padding, padding, IconBox, IconBox);
 
-        using (var fill = new SolidBrush(_applied ? RazerGreen : TrackColor))
+        using (Brush fill = _applied
+            ? new System.Drawing.Drawing2D.LinearGradientBrush(Rectangle.Inflate(box, 0, 1), GradientDark, SelectedGradientEnd, System.Drawing.Drawing2D.LinearGradientMode.Vertical)
+            : new SolidBrush(TrackColor))
         using (var shape = RoundedButton.RoundedPath(box, S(2)))
+        using (var line = new SolidBrush(_applied ? RazerGreen : ButtonBorderColor))
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             graphics.FillPath(fill, shape);
+
+            graphics.SetClip(shape);
+            graphics.FillRectangle(line, box.X, box.Bottom - ButtonStroke, box.Width, ButtonStroke);
+            graphics.ResetClip();
         }
 
         var glyph = S(24);
         Glyphs.Draw(graphics, _icon, new RectangleF(box.X + (IconBox - glyph) / 2f, box.Y + (IconBox - glyph) / 2f, glyph, glyph),
-            _applied ? OnGreenTextColor : Color.White);
+            _applied ? RazerGreen : Color.White);
 
         // The name above the status, both beside the icon.
         var textLeft = box.Right + S(12);

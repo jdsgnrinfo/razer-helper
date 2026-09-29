@@ -5,9 +5,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// An on/off switch as Windows 11 Settings draws it: a pill with a knob that
-/// sits right when on. On is Razer green with a black knob; off is a quiet
-/// outline with a light one. A change slides the knob across and fades the
+/// An on/off switch: a softly rounded track with a black square knob that
+/// sits right when on. On fades from dark to green with a green outline; off
+/// is flat grey. A change slides the knob across and fades the
 /// colors rather than jumping. Everything else (Checked, events, Space to
 /// toggle) is the ordinary CheckBox.
 /// </summary>
@@ -17,9 +17,10 @@ internal sealed class ToggleSwitch : CheckBox
 
     private static int TrackWidth => S(48);
     private static int TrackHeight => S(24);
-    private static int KnobInset => S(2);
+    private static int KnobInset => S(3);
 
     private static readonly Color OffTrackColor = Color.FromArgb(0x68, 0x68, 0x68);
+    private static readonly Color OffEdgeColor = Color.FromArgb(0x7A, 0x7A, 0x7A);
 
     private readonly System.Windows.Forms.Timer _animation = new() { Interval = 15 };
     private readonly Stopwatch _clock = new();
@@ -96,14 +97,24 @@ internal sealed class ToggleSwitch : CheckBox
             (Height - TrackHeight) / 2f + 0.5f,
             TrackWidth - 1,
             TrackHeight - 1);
-        var radius = track.Height / 2f;
-        var on = Enabled ? RazerGreen : SystemColors.GrayText;
+        var radius = S(3f);
+
+        // Off: a flat grey track. On: dark on the left fading to green on the
+        // right, with a green outline. In between, one blends into the other.
+        var start = Enabled ? GradientDark : SystemColors.GrayText;
+        var end = Enabled ? FillGradientEnd : SystemColors.GrayText;
+        var edge = Enabled ? RazerGreen : SystemColors.GrayText;
 
         using (var path = RoundedButton.RoundedPath(track, radius))
         {
-            // A grey track turning green.
-            using var fill = new SolidBrush(Blend(OffTrackColor, on, _position));
-            graphics.FillPath(fill, path);
+            using (var fill = new LinearGradientBrush(RectangleF.Inflate(track, 1, 0),
+                Blend(OffTrackColor, start, _position), Blend(OffTrackColor, end, _position), LinearGradientMode.Horizontal))
+            {
+                graphics.FillPath(fill, path);
+            }
+
+            using (var outline = new Pen(Blend(OffEdgeColor, edge, _position)))
+                graphics.DrawPath(outline, path);
 
             // Only keyboard focus (Tab) shows a ring, as on the buttons.
             if (Focused && ShowFocusCues)
@@ -114,14 +125,15 @@ internal sealed class ToggleSwitch : CheckBox
             }
         }
 
-        // The knob slides from left to right, always black.
+        // The knob, a black square with softened corners, slides from left to right.
         var knob = TrackHeight - 2 * KnobInset;
         var left = track.Left + KnobInset;
         var right = track.Right - KnobInset - knob;
         var knobBounds = new RectangleF(left + (right - left) * _position, track.Top + (track.Height - knob) / 2f, knob, knob);
 
         using var knobFill = new SolidBrush(Color.Black);
-        graphics.FillEllipse(knobFill, knobBounds);
+        using var knobShape = RoundedButton.RoundedPath(knobBounds, S(2f));
+        graphics.FillPath(knobFill, knobShape);
     }
 
     private static Color Blend(Color from, Color to, float amount) => Color.FromArgb(

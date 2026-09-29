@@ -4,11 +4,13 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The app's button: a filled shape with rounded corners and no outline.
-/// WinForms' flat button can only draw square corners, so this paints itself:
-/// the fill (a little lighter on hover, lighter still while pressed), then
-/// the text. Colors come from the ordinary BackColor and ForeColor, so
-/// selecting or greying a button works exactly as with a stock one.
+/// The app's button: a filled shape with rounded corners and a 1.5px line
+/// along the bottom only. WinForms' flat button can only draw square corners,
+/// so this paints itself: the fill (a dark-to-green gradient when selected, a
+/// little lighter while pressed), the bottom line (green when selected or
+/// under the pointer), then the icon and text. A green BackColor is what marks
+/// the selected button, so selecting or greying a button works exactly as with
+/// a stock one.
 /// </summary>
 internal class RoundedButton : Button
 {
@@ -54,29 +56,31 @@ internal class RoundedButton : Button
         graphics.Clear(Parent?.BackColor ?? BackgroundColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        using (var fill = new SolidBrush(CurrentFill()))
-        using (var path = RoundedPath(new RectangleF(0, 0, Width - 0.5f, Height - 0.5f), S(CornerRadius)))
+        using (var path = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
         {
-            graphics.FillPath(fill, path);
+            // A selected button fades from dark at the top to green at the
+            // bottom; the others are flat.
+            using (Brush fill = IsGreen
+                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(GradientDark), Pressed(SelectedGradientEnd), LinearGradientMode.Vertical)
+                : new SolidBrush(Pressed(BackColor)))
+            {
+                graphics.FillPath(fill, path);
+            }
 
-            // An unselected button that can be used gets a green outline under
-            // the pointer, its fill unchanged, so it reads as "can be picked"
-            // without looking already selected.
-            if (ShowsGreenOutline)
-            {
-                using var outline = new Pen(RazerGreen, S(1.5f));
-                using var inner = RoundedPath(new RectangleF(0.75f, 0.75f, Width - 2f, Height - 2f), S(CornerRadius) - 0.75f);
-                graphics.DrawPath(outline, inner);
-            }
-            // Otherwise a quiet 1px outline on an unselected button (a green
-            // one has none), silver while it has keyboard focus (Tab) so focus
-            // is never lost.
-            else if (!IsGreen || (Focused && ShowFocusCues))
-            {
-                using var ring = new Pen(Focused && ShowFocusCues ? Color.Silver : ButtonBorderColor);
-                using var inner = RoundedPath(new RectangleF(0.5f, 0.5f, Width - 1.5f, Height - 1.5f), S(CornerRadius));
-                graphics.DrawPath(ring, inner);
-            }
+            // The only outline is a line along the bottom, following the
+            // corners: green on the selected button and under the pointer,
+            // quiet otherwise, silver while it has keyboard focus (Tab).
+            var stroke = Focused && ShowFocusCues ? Color.Silver
+                : IsGreen && IsUsable || ShowsGreenOutline ? RazerGreen
+                : ButtonBorderColor;
+
+            var clip = graphics.Clip;
+            graphics.SetClip(path, CombineMode.Intersect);
+
+            using (var line = new SolidBrush(stroke))
+                graphics.FillRectangle(line, 0, Height - ButtonStroke, Width, ButtonStroke);
+
+            graphics.Clip = clip;
         }
 
         var textBounds = new Rectangle(
@@ -85,7 +89,13 @@ internal class RoundedButton : Button
             Width - Padding.Horizontal,
             Height - Padding.Vertical);
 
-        var textColor = Enabled ? ForeColor : SystemColors.GrayText;
+        // The text stays white on the selected button's dark gradient.
+        var textColor = !Enabled ? SystemColors.GrayText
+            : ForeColor == OnGreenTextColor ? Color.White
+            : ForeColor;
+
+        // The icon turns green on the selected button and under the pointer.
+        var glyphColor = IsUsable && (IsGreen || _hovered) ? RazerGreen : textColor;
 
         // With a glyph, the glyph and the text are centered together as one
         // group, the glyph drawn in the text's color so it follows selection
@@ -102,7 +112,7 @@ internal class RoundedButton : Button
                     graphics,
                     glyph,
                     new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize),
-                    textColor);
+                    glyphColor);
 
                 var textArea = new Rectangle(textBounds.Left, top + StackedGlyphSize + StackedGlyphGap, textBounds.Width, textHeight);
                 TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
@@ -114,7 +124,7 @@ internal class RoundedButton : Button
             var groupWidth = Math.Min(GlyphSize + GlyphGap + textWidth, textBounds.Width);
             var left = textBounds.Left + (textBounds.Width - groupWidth) / 2;
 
-            Glyphs.Draw(graphics, glyph, new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize), textColor);
+            Glyphs.Draw(graphics, glyph, new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize), glyphColor);
 
             textBounds = new Rectangle(left + GlyphSize + GlyphGap, textBounds.Top, groupWidth - GlyphSize - GlyphGap, textBounds.Height);
             TextRenderer.DrawText(graphics, Text, Font, textBounds, textColor,
@@ -200,20 +210,10 @@ internal class RoundedButton : Button
         base.OnMouseUp(mevent);
     }
 
-    // Hover and press only change a button that can be used; one drawn as
-    // unavailable (a hand cursor is what marks the usable ones) stays flat.
-    private Color CurrentFill()
-    {
-        if (!IsUsable)
-            return BackColor;
-
-        if (_pressed)
-            return Lighten(BackColor, 0.22f);
-
-        // Only a green (selected) button lightens under the pointer; the others
-        // keep their fill and show a green outline instead.
-        return _hovered && IsGreen ? Lighten(BackColor, 0.12f) : BackColor;
-    }
+    // Pressing lightens a button that can be used; one drawn as unavailable
+    // (a hand cursor is what marks the usable ones) stays flat. Hover changes
+    // only the bottom line and the icon, never the fill.
+    private Color Pressed(Color color) => _pressed && IsUsable ? Lighten(color, 0.12f) : color;
 
     private bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();
 
