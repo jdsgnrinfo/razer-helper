@@ -65,7 +65,7 @@ public sealed class TrayPopupForm : Form
     private readonly SynchronizationContext _uiContext;
     private readonly Label _headerStatusLabel = CreateHeaderStatusLabel();
     // Set in CreateAppHeader; the model name is appended to the title once known.
-    private Label _titleLabel = null!;
+    private Label _modelLabel = null!;
     private readonly ThemedToolTip _toolTip = new();
     private readonly GlobalHotkey _hotkey = new();
     private readonly ProfileShortcuts _profileShortcuts = new();
@@ -425,6 +425,8 @@ public sealed class TrayPopupForm : Form
         footer.SystemInfoRequested += (_, _) => ShowSystemInfo();
         footer.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
         footer.SettingsRequested += (_, _) => ShowSettings();
+        footer.CloseRequested += (_, _) => RequestHide();
+        _toolTip.SetToolTip(footer.CloseButton, L.T("Close (RazerHelper keeps running in the tray)"));
 
         AddRow(Row.Header, CreateAppHeader(), HeaderRowHeight);
         AddRow(Row.Performance, _performanceSection, PerformanceRowHeight);
@@ -471,64 +473,98 @@ public sealed class TrayPopupForm : Form
             Location = TaskbarPlacement.GetPopupLocation(Size);
     }
 
-    // Left: the app name and, once the laptop is identified, its model after a
-    // dash, all in one bold white label. Middle: errors, in red, only while they
-    // last. Right: the close button (an X). The bottom of the popup belongs to the Razer
-    // services row, so this is where status text lives.
+    // Left: the app's logo and name. Middle: errors, in red, only while they
+    // last. Right: the laptop's model once it is identified. The bottom of the
+    // popup belongs to the buttons, so this is where status text lives.
     private Control CreateAppHeader()
     {
         var header = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
-            ColumnCount = 3,
+            ColumnCount = 4,
             Dock = DockStyle.Fill,
             Margin = new Padding(0, 0, 0, SectionPanel.GapBelow),
             Padding = Padding.Empty,
             RowCount = 1
         };
 
-        // The title hugs the left; errors take the slack; Close hugs the right.
+        // The logo and name hug the left; errors take the slack; the model hugs the right.
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        _titleLabel = new Label
+        header.Controls.Add(new PictureBox
+        {
+            Anchor = AnchorStyles.Left,
+            BackColor = BackgroundColor,
+            Image = LoadLogo(S(20)),
+            Margin = new Padding(0, 0, S(8), 0),
+            Size = S(new Size(20, 20)),
+            SizeMode = PictureBoxSizeMode.CenterImage
+        }, 0, 0);
+
+        header.Controls.Add(new Label
         {
             AutoSize = true,
             Dock = DockStyle.Fill,
             Font = DesignFont(13, FontStyle.Bold),
             ForeColor = Color.White,
             Margin = Padding.Empty,
+            Text = "RazerHelper",
             TextAlign = ContentAlignment.MiddleLeft
+        }, 1, 0);
+
+        _modelLabel = new Label
+        {
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            Font = DesignFont(13, FontStyle.Bold),
+            ForeColor = Color.White,
+            Margin = Padding.Empty,
+            TextAlign = ContentAlignment.MiddleRight
         };
         UpdateTitleText();
-        header.Controls.Add(_titleLabel, 0, 0);
-        header.Controls.Add(_headerStatusLabel, 1, 0);
-        header.Controls.Add(CreateCloseButton(), 2, 0);
+        header.Controls.Add(_headerStatusLabel, 2, 0);
+        header.Controls.Add(_modelLabel, 3, 0);
 
         return header;
     }
 
-    // "RazerHelper" alone until the laptop is identified, then its model after
-    // a dash, in the same bold white type.
-    private void UpdateTitleText() =>
-        _titleLabel.Text = _modelText == DeviceSupportService.GenericModelName
-            ? "RazerHelper"
-            : $"RazerHelper - {_modelText}";
-
-    // The top-right close button, a small button like the footer's: an arrow
-    // leaving a box, then "Close". It hides the popup to the tray (fading out
-    // first); the app keeps running.
-    private Button CreateCloseButton()
+    // The app's logo, always in its own green whatever the mode, drawn from the
+    // icon file's largest size down to <paramref name="size"/> so it stays smooth.
+    private static Bitmap? LoadLogo(int size)
     {
-        var button = CreateSmallButton("Close", Glyph.Leave);
-        button.Anchor = AnchorStyles.Right;
+        try
+        {
+            using var stream = typeof(TrayPopupForm).Assembly.GetManifestResourceStream("RazerHelper.ico");
 
-        button.Click += (_, _) => RequestHide();
-        _toolTip.SetToolTip(button, L.T("Close (RazerHelper keeps running in the tray)"));
-        return button;
+            if (stream is null)
+                return null;
+
+            using var icon = new Icon(stream, 256, 256);
+            using var large = icon.ToBitmap();
+            var logo = new Bitmap(size, size);
+
+            using var graphics = Graphics.FromImage(logo);
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+            graphics.DrawImage(large, 0, 0, size, size);
+            return logo;
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException)
+        {
+            AppLog.Error("Could not load the logo.", exception);
+            return null;
+        }
     }
+
+    // Empty until the laptop is identified, then its model.
+    private void UpdateTitleText() =>
+        _modelLabel.Text = _modelText == DeviceSupportService.GenericModelName
+            ? string.Empty
+            : _modelText;
 
     // The user asked to close the apps keeping the dedicated GPU awake. The
     // list and the question come from the coordinator; this only tells them

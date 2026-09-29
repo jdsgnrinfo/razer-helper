@@ -32,7 +32,8 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
 - **Gradients and bottom lines:** buttons keep only a 2.5px line along the bottom, drawn inside the shape (green when selected or under the pointer); the selected button fades from dark to green, with its icon in green, and under the pointer its icon turns white with a soft, blurred white glow; sliders and level bars fill with a dark-to-green gradient; switches fade from dark green to Razer green, with no outline and a square knob.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out; the hover glow is at half strength.
-- **Icons on the small buttons:** System info, Free up GPU and Settings show their icon before the text, and the X at the top is now a Close button like them, with an arrow leaving a box.
+- **Icons on the small buttons:** System info, Free up GPU and Settings show their icon before the text, and Close (an arrow leaving a box) joins them at the bottom, taking the place of the X at the top.
+- **New header:** the app's logo and name on the left, the recognised laptop model on the right.
 
 ### New windows
 
