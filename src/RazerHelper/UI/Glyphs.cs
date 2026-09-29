@@ -44,13 +44,14 @@ internal static class Glyphs
     /// </summary>
     public static void DrawGlow(Graphics graphics, Glyph icon, RectangleF bounds, Color color, float radius)
     {
-        const int Directions = 12;
-        const int Rings = 3;
+        const int Directions = 16;
+        const int Rings = 6;
 
         for (var ring = Rings; ring >= 1; ring--)
         {
             var distance = radius * ring / Rings;
-            var faint = Color.FromArgb(ring == Rings ? 10 : 16, color);
+            // Fainter the farther out, so the glow blurs away instead of ending in an edge.
+            var faint = Color.FromArgb(4 + 8 * (Rings - ring) / (Rings - 1), color);
 
             for (var step = 0; step < Directions; step++)
             {

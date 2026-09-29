@@ -54,8 +54,8 @@ internal static class UiTheme
     /// <summary>The bright end of a slider's, switch's or bar's left-to-right gradient.</summary>
     public static readonly Color FillGradientEnd = Color.FromArgb(0x1D, 0x80, 0x0D);
 
-    /// <summary>The thin line along the bottom of every button.</summary>
-    public static float ButtonStroke => S(2f);
+    /// <summary>The line along the bottom of every button, drawn inside its shape.</summary>
+    public static float ButtonStroke => S(2.5f);
 
     /// <summary>The text on a green (selected) button.</summary>
     public static readonly Color OnGreenTextColor = Color.FromArgb(0x1E, 0x1E, 0x1E);

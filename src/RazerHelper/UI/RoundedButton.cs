@@ -4,11 +4,11 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The app's button: a filled shape with rounded corners and a 2px line
+/// The app's button: a filled shape with rounded corners and a 2.5px line (inside the shape)
 /// along the bottom only. WinForms' flat button can only draw square corners,
 /// so this paints itself: the fill (a dark-to-green gradient when selected, a
 /// little lighter while pressed), the bottom line (green when selected or
-/// under the pointer, white on the selected one under the pointer), then the icon and text. A green BackColor is what marks
+/// under the pointer), then the icon and text. A green BackColor is what marks
 /// the selected button, so selecting or greying a button works exactly as with
 /// a stock one.
 /// </summary>
@@ -68,11 +68,9 @@ internal class RoundedButton : Button
             }
 
             // The only outline is a line along the bottom, following the
-            // corners: white on the selected button under the pointer, green
-            // on the selected one and on any other under the pointer, quiet
-            // otherwise, silver while it has keyboard focus (Tab).
+            // corners and drawn inside the shape: green on the selected button
+            // and on any other under the pointer, quiet otherwise, silver while it has keyboard focus (Tab).
             var stroke = Focused && ShowFocusCues ? Color.Silver
-                : HoveredSelected ? Color.White
                 : IsGreen && IsUsable || ShowsGreenOutline ? RazerGreen
                 : ButtonBorderColor;
 
@@ -116,7 +114,7 @@ internal class RoundedButton : Button
                 var stacked = new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize);
 
                 if (HoveredSelected)
-                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(4f));
+                    Glyphs.DrawGlow(graphics, glyph, stacked, Color.White, S(8f));
 
                 Glyphs.Draw(graphics, glyph, stacked, glyphColor);
 
@@ -133,7 +131,7 @@ internal class RoundedButton : Button
             var inline = new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize);
 
             if (HoveredSelected)
-                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(3f));
+                Glyphs.DrawGlow(graphics, glyph, inline, Color.White, S(6f));
 
             Glyphs.Draw(graphics, glyph, inline, glyphColor);
 
