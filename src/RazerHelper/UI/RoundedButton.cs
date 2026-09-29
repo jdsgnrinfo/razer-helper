@@ -197,8 +197,15 @@ internal class RoundedButton : Button
     private static int StackedGlyphSize => S(24);
     private static int StackedGlyphGap => S(6);
 
-    private static int GlyphSize => S(16);
-    private static int GlyphGap => S(6);
+    /// <summary>The size of a glyph beside the text; smaller on the small buttons, to match their text.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public int GlyphSize { get; set; } = S(16);
+
+    /// <summary>The space between a glyph beside the text and the text.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public int GlyphGap { get; set; } = S(6);
 
     protected override void OnMouseEnter(EventArgs e)
     {

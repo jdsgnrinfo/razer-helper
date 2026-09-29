@@ -67,16 +67,28 @@ internal static class UiControls
         TextAlign = ContentAlignment.MiddleRight
     };
 
-    /// <summary>A small button sized to its text, such as "More info" or the footer's: 10px bold with 8px around it.</summary>
-    public static Button CreateSmallButton(string text)
+    /// <summary>
+    /// A small button sized to its text, such as "More info" or the footer's: 10px bold with 8px around it,
+    /// and an optional icon on the left, 12px to match the text, 5px before it.
+    /// </summary>
+    public static Button CreateSmallButton(string text, Glyph? icon = null)
     {
-        var button = CreateActionButton(text);
+        var button = (RoundedButton)CreateActionButton(text);
         var font = button.Font = DesignFont(10, FontStyle.Bold);
         var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
+        var iconWidth = 0;
+
+        if (icon is { } glyph)
+        {
+            button.Glyph = glyph;
+            button.GlyphSize = S(12);
+            button.GlyphGap = S(5);
+            iconWidth = button.GlyphSize + button.GlyphGap;
+        }
 
         button.Dock = DockStyle.None;
         button.Margin = Padding.Empty;
-        button.Size = new Size(textSize.Width + S(2 * 8), Math.Max(textSize.Height, S(12)) + S(2 * 6) + S(2));
+        button.Size = new Size(iconWidth + textSize.Width + S(2 * 8), Math.Max(textSize.Height, S(12)) + S(2 * 6) + S(2));
         return button;
     }
 

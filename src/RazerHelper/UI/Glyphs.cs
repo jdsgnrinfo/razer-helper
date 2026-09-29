@@ -25,7 +25,11 @@ internal enum Glyph
     // Windows.
     SystemInfo,
     Settings,
-    Close
+    Close,
+
+    // Footer and header actions.
+    Cleaning,
+    Leave
 }
 
 /// <summary>
@@ -121,6 +125,12 @@ internal static class Glyphs
                 case Glyph.Settings:
                     FillSetIcon(graphics, IconSet.Cog, brush);
                     break;
+                case Glyph.Cleaning:
+                    FillSetIcon(graphics, IconSet.Broom, brush);
+                    break;
+                case Glyph.Leave:
+                    FillSetIcon(graphics, IconSet.ArrowOutOfBox, brush);
+                    break;
                 case Glyph.Close:
                     // An X, in the same stroke as the outlined icons.
                     graphics.DrawLine(pen, 3.5f, 3.5f, 12.5f, 12.5f);
@@ -192,6 +202,15 @@ internal static class Glyphs
         // Settings: BiSolidCog (Boxicons).
         public static readonly SetIcon Cog = new(24f,
             "m2.344 15.271 2 3.46a1 1 0 0 0 1.366.365l1.396-.806c.58.457 1.221.832 1.895 1.112V21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.598a8.094 8.094 0 0 0 1.895-1.112l1.396.806c.477.275 1.091.11 1.366-.365l2-3.46a1.004 1.004 0 0 0-.365-1.366l-1.372-.793a7.683 7.683 0 0 0-.002-2.224l1.372-.793c.476-.275.641-.89.365-1.366l-2-3.46a1 1 0 0 0-1.366-.365l-1.396.806A8.034 8.034 0 0 0 15 4.598V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v1.598A8.094 8.094 0 0 0 7.105 5.71L5.71 4.904a.999.999 0 0 0-1.366.365l-2 3.46a1.004 1.004 0 0 0 .365 1.366l1.372.793a7.683 7.683 0 0 0 0 2.224l-1.372.793c-.476.275-.641.89-.365 1.366zM12 8c2.206 0 4 1.794 4 4s-1.794 4-4 4-4-1.794-4-4 1.794-4 4-4z");
+
+        // Free up GPU: MdCleaningServices (Material Icons).
+        public static readonly SetIcon Broom = new(24f,
+            "M16 11h-1V3c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v8H8c-2.76 0-5 2.24-5 5v7h18v-7c0-2.76-2.24-5-5-5m3 10h-2v-3c0-.55-.45-1-1-1s-1 .45-1 1v3h-2v-3c0-.55-.45-1-1-1s-1 .45-1 1v3H9v-3c0-.55-.45-1-1-1s-1 .45-1 1v3H5v-5c0-1.65 1.35-3 3-3h8c1.65 0 3 1.35 3 3z");
+
+        // Close: HiMiniArrowRightStartOnRectangle (Heroicons, mini).
+        public static readonly SetIcon ArrowOutOfBox = new(20f,
+            "M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" +
+            "M6 10a.75.75 0 0 1 .75-.75h9.546l-1.048-.943a.75.75 0 1 1 1.004-1.114l2.5 2.25a.75.75 0 0 1 0 1.114l-2.5 2.25a.75.75 0 1 1-1.004-1.114l1.048-.943H6.75A.75.75 0 0 1 6 10Z");
     }
 
     // Balanced: a speedometer, an open dial with its needle part way up.

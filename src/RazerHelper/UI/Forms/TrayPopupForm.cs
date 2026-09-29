@@ -517,20 +517,13 @@ public sealed class TrayPopupForm : Form
             ? "RazerHelper"
             : $"RazerHelper - {_modelText}";
 
-    // The top-right close button: an X in the icons' style, a little larger
-    // than the section icons (18px against 16) in a 28px target so it is easy
-    // to hit. It hides the popup to the tray (fading out first); the app
-    // keeps running.
-    private GlyphButton CreateCloseButton()
+    // The top-right close button, a small button like the footer's: an arrow
+    // leaving a box, then "Close". It hides the popup to the tray (fading out
+    // first); the app keeps running.
+    private Button CreateCloseButton()
     {
-        var button = new GlyphButton(Glyph.Close, S(18))
-        {
-            AccessibleName = L.T("Close"),
-            Anchor = AnchorStyles.Right,
-            BackColor = BackgroundColor,
-            Margin = Padding.Empty,
-            Size = S(new Size(24, 24))
-        };
+        var button = CreateSmallButton("Close", Glyph.Leave);
+        button.Anchor = AnchorStyles.Right;
 
         button.Click += (_, _) => RequestHide();
         _toolTip.SetToolTip(button, L.T("Close (RazerHelper keeps running in the tray)"));

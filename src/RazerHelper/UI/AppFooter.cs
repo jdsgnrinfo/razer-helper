@@ -37,19 +37,19 @@ internal sealed class AppFooter : TableLayoutPanel
             TextAlign = ContentAlignment.MiddleLeft
         }, 0, 0);
 
-        var systemInfoButton = CreateSmallButton("System info");
+        var systemInfoButton = CreateSmallButton("System info", Glyph.SystemInfo);
         systemInfoButton.Anchor = AnchorStyles.Right;
         systemInfoButton.Margin = new Padding(0, 0, ButtonGap, 0);
         systemInfoButton.Click += (_, _) => SystemInfoRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(systemInfoButton, 1, 0);
 
-        var freeUpButton = CreateSmallButton("Free up GPU");
+        var freeUpButton = CreateSmallButton("Free up GPU", Glyph.Cleaning);
         freeUpButton.Anchor = AnchorStyles.Right;
         freeUpButton.Margin = new Padding(0, 0, ButtonGap, 0);
         freeUpButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(freeUpButton, 2, 0);
 
-        var settingsButton = CreateSmallButton("Settings");
+        var settingsButton = CreateSmallButton("Settings", Glyph.Settings);
         settingsButton.Anchor = AnchorStyles.Right;
         settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(settingsButton, 3, 0);
