@@ -15,7 +15,7 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 ## Preview
 
 <p align="center">
-  <img src="docs/images/main-window.png" width="500" alt="The RazerHelper window: performance modes (Balanced selected), fans, display refresh rate, battery charge limit, lighting with keyboard and logo, and the footer buttons">
+  <img src="docs/images/preview-main.png" width="800" alt="RazerHelper on the desktop above the tray: performance modes (Balanced selected), fans, display refresh rate, battery charge limit, lighting with keyboard and logo, and the footer buttons">
 </p>
 
 On the desktop, with the Custom mode's CPU and GPU levels open beside the window, and with Settings:
