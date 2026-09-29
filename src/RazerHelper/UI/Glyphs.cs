@@ -15,7 +15,6 @@ internal enum Glyph
     // Performance modes.
     Balanced,
     Silent,
-    Gaming,
     Custom,
 
     // Custom mode's boost selectors.
@@ -77,11 +76,8 @@ internal static class Glyphs
                 case Glyph.Silent:
                     FillSetIcon(graphics, IconSet.Leaf, brush);
                     break;
-                case Glyph.Gaming:
-                    FillSetIcon(graphics, IconSet.GameController, brush);
-                    break;
                 case Glyph.Custom:
-                    FillSetIcon(graphics, IconSet.Widget, brush);
+                    FillSetIcon(graphics, IconSet.GameController, brush);
                     break;
                 case Glyph.Cpu:
                     DrawChip(graphics, pen, brush);
@@ -157,13 +153,9 @@ internal static class Glyphs
         public static readonly SetIcon Leaf = new(24f,
             "m22 3.41-.12-1.26-1.2.4a13.84 13.84 0 0 1-6.41.64 11.87 11.87 0 0 0-6.68.9A7.23 7.23 0 0 0 3.3 9.5a9 9 0 0 0 .39 4.58 16.6 16.6 0 0 1 1.18-2.2 9.85 9.85 0 0 1 4.07-3.43 11.16 11.16 0 0 1 5.06-1A12.08 12.08 0 0 0 9.34 9.2a9.48 9.48 0 0 0-1.86 1.53 11.38 11.38 0 0 0-1.39 1.91 16.39 16.39 0 0 0-1.57 4.54A26.42 26.42 0 0 0 4 22h2a30.69 30.69 0 0 1 .59-4.32 9.25 9.25 0 0 0 4.52 1.11 11 11 0 0 0 4.28-.87C23 14.67 22 3.86 22 3.41z");
 
-        // Gaming: IoGameController (Ionicons 5).
+        // Custom: IoGameController (Ionicons 5).
         public static readonly SetIcon GameController = new(512f,
             "M483.13 245.38C461.92 149.49 430 98.31 382.65 84.33A107.13 107.13 0 00352 80c-13.71 0-25.65 3.34-38.28 6.88C298.5 91.15 281.21 96 256 96s-42.51-4.84-57.76-9.11C185.6 83.34 173.67 80 160 80a115.74 115.74 0 00-31.73 4.32c-47.1 13.92-79 65.08-100.52 161C4.61 348.54 16 413.71 59.69 428.83a56.62 56.62 0 0018.64 3.22c29.93 0 53.93-24.93 70.33-45.34 18.53-23.1 40.22-34.82 107.34-34.82 59.95 0 84.76 8.13 106.19 34.82 13.47 16.78 26.2 28.52 38.9 35.91 16.89 9.82 33.77 12 50.16 6.37 25.82-8.81 40.62-32.1 44-69.24 2.57-28.48-1.39-65.89-12.12-114.37zM208 240h-32v32a16 16 0 01-32 0v-32h-32a16 16 0 010-32h32v-32a16 16 0 0132 0v32h32a16 16 0 010 32zm84 4a20 20 0 1120-20 20 20 0 01-20 20zm44 44a20 20 0 1120-19.95A20 20 0 01336 288zm0-88a20 20 0 1120-20 20 20 0 01-20 20zm44 44a20 20 0 1120-20 20 20 0 01-20 20z");
-
-        // Custom: BiSolidWidget (Boxicons).
-        public static readonly SetIcon Widget = new(24f,
-            "M4 11h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm0 10h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm10 0h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm7.293-14.707-3.586-3.586a.999.999 0 0 0-1.414 0l-3.586 3.586a.999.999 0 0 0 0 1.414l3.586 3.586a.999.999 0 0 0 1.414 0l3.586-3.586a.999.999 0 0 0 0-1.414z");
 
         // System information: PiLaptopFill (Phosphor).
         public static readonly SetIcon Laptop = new(256f,

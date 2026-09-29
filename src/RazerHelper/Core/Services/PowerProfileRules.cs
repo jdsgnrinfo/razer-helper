@@ -44,11 +44,16 @@ internal static class PowerProfileRules
     /// <summary>
     /// Makes a stored profile safe to apply on <paramref name="pluggedIn"/>.
     /// A battery profile saved by an earlier version may hold a mode that is no
-    /// longer offered there; it falls back to Balanced. Plugged-in profiles
-    /// are never restricted.
+    /// longer offered there; it falls back to Balanced. Gaming, saved by an
+    /// earlier version but no longer offered, becomes Custom (Balanced on
+    /// battery, where Custom is not offered either). Plugged-in profiles are
+    /// otherwise never restricted.
     /// </summary>
     public static PowerProfile Sanitize(PowerProfile profile, bool pluggedIn)
     {
+        if (profile.Mode == PerformanceMode.Gaming)
+            profile = profile with { Mode = PerformanceMode.Custom };
+
         if (profile.Mode is not PerformanceMode mode || IsModeAllowed(mode, pluggedIn))
             return profile;
 

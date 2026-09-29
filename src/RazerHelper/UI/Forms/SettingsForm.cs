@@ -68,7 +68,7 @@ internal sealed class SettingsForm : Form
         _autoSwitchBox = AddOption(layout, "Switch profile with the charger", "Changes mode when you plug in or unplug.");
         _hideWhenClickedAwayBox = AddOption(layout, "Hide when clicking away", "Off, it stays open until you click the tray icon.");
         _alwaysOnTopBox = AddOption(layout, "Always on top", L.F("Stays above other windows and games. {0} shows or hides it.", GlobalHotkey.Text));
-        _profileShortcutsBox = AddOption(layout, "Performance mode shortcuts", "Ctrl+Shift+F1, F2 and F3 switch to Balanced, Silent and Gaming.");
+        _profileShortcutsBox = AddOption(layout, "Performance mode shortcuts", "Ctrl+Shift+F1 and F2 switch to Balanced and Silent.");
         _closeGpuAppsBox = AddOption(layout, "Free up GPU when unplugged", "Offers to close apps using the dedicated GPU, to save battery.");
         _keyboardOffWithScreenBox = AddOption(layout, "Keyboard off with the screen", "Turns the lighting off and back on with the screen.");
 

@@ -5,7 +5,7 @@ namespace RazerHelper.Helpers;
 
 /// <summary>
 /// The shortcuts that switch performance mode from any program, including a
-/// game: Ctrl+Shift+F1 Balanced, F2 Silent, F3 Gaming. Like
+/// game: Ctrl+Shift+F1 Balanced, F2 Silent. Like
 /// <see cref="GlobalHotkey"/>, Windows delivers them to a hidden window of
 /// ours, so nothing watches the keyboard. (Fn+1/2/3 cannot be used: the
 /// Blade's Fn key never reaches Windows, so Fn+1 looks exactly like 1.)
@@ -26,8 +26,7 @@ internal sealed class ProfileShortcuts : NativeWindow, IDisposable
     public static readonly (PerformanceMode Mode, Keys Key, string Text)[] All =
     [
         (PerformanceMode.Balanced, Keys.F1, "Ctrl+Shift+F1"),
-        (PerformanceMode.Silent, Keys.F2, "Ctrl+Shift+F2"),
-        (PerformanceMode.Gaming, Keys.F3, "Ctrl+Shift+F3")
+        (PerformanceMode.Silent, Keys.F2, "Ctrl+Shift+F2")
     ];
 
     private readonly HashSet<int> _registered = [];

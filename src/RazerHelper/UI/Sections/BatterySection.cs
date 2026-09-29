@@ -172,6 +172,7 @@ internal sealed class BatterySection : SectionPanel
         // Drawn as unavailable but not disabled, so its tooltip still shows
         // (WinForms shows none on a disabled control), as on Max.
         _slider.Available = false;
+        _limitLabel.ForeColor = SubtleTextColor;
         _slider.Cursor = Cursors.Default;
         _toolTip.SetToolTip(_slider, L.T("This laptop does not support a battery charge limit"));
     }

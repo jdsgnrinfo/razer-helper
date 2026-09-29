@@ -60,10 +60,11 @@ internal sealed class PerformanceSection : SectionPanel
             [false] = PowerProfileRules.Sanitize(onBatteryProfile ?? PowerProfile.DefaultOnBattery, pluggedIn: false)
         };
 
-        // Every mode on every model, in Synapse's order (Enum.GetValues would
-        // sort by wire byte instead). A mode the firmware turns out not to
-        // take is marked as such the first time it is tried.
-        PerformanceMode[] modes = [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Gaming, PerformanceMode.Custom];
+        // Balanced, Silent and Custom on every model, in Synapse's order
+        // (Enum.GetValues would sort by wire byte instead). Gaming is not
+        // offered. A mode the firmware turns out not to take is marked as such
+        // the first time it is tried.
+        PerformanceMode[] modes = [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Custom];
         var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton");
 
         foreach (var button in grid.Controls.OfType<Button>())
@@ -164,7 +165,6 @@ internal sealed class PerformanceSection : SectionPanel
     {
         PerformanceMode.Balanced => Glyph.Balanced,
         PerformanceMode.Silent => Glyph.Silent,
-        PerformanceMode.Gaming => Glyph.Gaming,
         _ => Glyph.Custom
     };
 
@@ -449,8 +449,8 @@ internal sealed class PerformanceSection : SectionPanel
 
         HighlightSelected(
             _buttons.Values,
-            // A mode with no button here (Gaming set by Fn keys on a model
-            // where it is not offered) highlights nothing.
+            // A mode with no button here (Gaming, set by Fn keys or another
+            // program) highlights nothing.
             state.Mode is PerformanceMode known ? _buttons.GetValueOrDefault(known) : null);
 
         // Highlighting resets the text colors, so redo the unavailable look.

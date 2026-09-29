@@ -6,16 +6,16 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Razer Blade 15 Base (2020)
 
-- **Gaming** performance mode, and **Silent** offered on battery.
+- **Silent** offered on battery.
 - **Max fan** through the model's manual fan method (not in Silent). It is turned off when the app starts and exits, so the fans are never left flat out.
 - **Keyboard color:** Static and Breathing in a chosen color. Wave is not offered (single-zone keyboard).
 - The charge limit and the max fan flag are shown as unavailable: this firmware only echoes those commands without acting on them.
 
 ### Performance modes
 
-- **Tray icon in the mode's color:** green for Balanced, blue for Silent, orange-red for Gaming, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Gaming)".
-- **Shortcuts:** Ctrl+Shift+F1, F2 and F3 switch to Balanced, Silent and Gaming from any program, even a game. A small notice at the top right shows the mode's icon, name and status without taking the focus, then fades out. A switch in Settings, on by default, turns them off for anyone who does not want them or has another program using those keys.
-- **Balanced, Silent, Gaming and Custom on every model.** Gaming used to be offered only on the Blade 15 Base (2020). A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
+- **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Silent)".
+- **Shortcuts:** Ctrl+Shift+F1 and F2 switch to Balanced and Silent from any program, even a game. A small notice at the top right shows the mode's icon, name and status without taking the focus, then fades out. A switch in Settings, on by default, turns them off for anyone who does not want them or has another program using those keys.
+- **Balanced, Silent and Custom on every model.** Gaming is no longer offered, and Custom takes its game controller icon; a profile saved with Gaming is applied as Custom. A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
 
 ### Language
 
@@ -30,7 +30,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
-- **Gradients and bottom lines:** buttons keep only a 2.5px line along the bottom, drawn inside the shape (green when selected or under the pointer); the selected button fades from a faint to a soft green, with its icon in green, and its green grows stronger under the pointer; sliders and level bars fill with a dark-to-green gradient; switches fade from dark green to Razer green, with no outline and a square knob.
+- **Gradients and bottom lines:** buttons keep only a 2.5px line along the bottom, drawn inside the shape (green when selected or under the pointer); the selected button fades from a faint to a soft green, with its icon in green, and its green grows stronger under the pointer; sliders and level bars fill with a dark-to-green gradient; switches fade from dark green to Razer green, with no outline and a square knob that turns from black to white when on; sliders have a thinner track and a white square thumb, all grey while unavailable.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
 - **Icons on the small buttons:** System info, Free up GPU and Settings show their icon before the text, and Close (an arrow leaving a box) joins them at the bottom, taking the place of the X at the top.
 - **New header:** the app's logo and name on the left, the recognised laptop model on the right.

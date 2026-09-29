@@ -38,7 +38,7 @@ public class TrayIconArtTests
     [Fact]
     public void HoverText_NamesTheModeInBrackets()
     {
-        Assert.Equal("RazerHelper (Gaming)", TrayIconHost.HoverText(PerformanceMode.Gaming));
+        Assert.Equal("RazerHelper (Silent)", TrayIconHost.HoverText(PerformanceMode.Silent));
         Assert.Equal("RazerHelper", TrayIconHost.HoverText(null));
     }
 }

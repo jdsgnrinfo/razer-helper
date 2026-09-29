@@ -416,6 +416,8 @@ internal sealed class LightingSection : SectionPanel
             {
                 Effect.Enabled = value;
                 Brightness.Enabled = value;
+                // The percentage greys out with the slider.
+                _percent.ForeColor = value ? Color.White : SubtleTextColor;
             }
         }
 

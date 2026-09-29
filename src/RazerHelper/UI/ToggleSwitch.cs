@@ -5,8 +5,8 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// An on/off switch: a softly rounded track with a black square knob that
-/// sits right when on. On fades from dark green to Razer green; off is flat
+/// An on/off switch: a softly rounded track with a square knob, black when
+/// off and white when on, where it sits right. On fades from dark green to Razer green; off is flat
 /// grey. No outline. A change slides the knob across and fades the
 /// colors rather than jumping. Everything else (Checked, events, Space to
 /// toggle) is the ordinary CheckBox.
@@ -119,13 +119,14 @@ internal sealed class ToggleSwitch : CheckBox
             }
         }
 
-        // The knob, a black square with softened corners, slides from left to right.
+        // The knob, a square with softened corners, slides from left to right,
+        // black when off and turning white as it goes on.
         var knob = TrackHeight - 2 * KnobInset;
         var left = track.Left + KnobInset;
         var right = track.Right - KnobInset - knob;
         var knobBounds = new RectangleF(left + (right - left) * _position, track.Top + (track.Height - knob) / 2f, knob, knob);
 
-        using var knobFill = new SolidBrush(Color.Black);
+        using var knobFill = new SolidBrush(Blend(Color.Black, Color.White, _position));
         using var knobShape = RoundedButton.RoundedPath(knobBounds, S(2f));
         graphics.FillPath(knobFill, knobShape);
     }

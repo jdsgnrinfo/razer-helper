@@ -16,7 +16,6 @@ internal sealed class TrayIconArt : IDisposable
     public static readonly IReadOnlyDictionary<PerformanceMode, Color> ModeColors = new Dictionary<PerformanceMode, Color>
     {
         [PerformanceMode.Silent] = Color.FromArgb(0x00, 0x6A, 0xFF),
-        [PerformanceMode.Gaming] = Color.FromArgb(0xFF, 0x5A, 0x00),
         [PerformanceMode.Custom] = Color.FromArgb(0xA2, 0x59, 0xFF)
     };
 

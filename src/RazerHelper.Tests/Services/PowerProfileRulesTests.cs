@@ -104,6 +104,20 @@ public class PowerProfileRulesTests
     }
 
     [Theory]
+    [InlineData(true, (byte)PerformanceMode.Custom)]
+    [InlineData(false, (byte)PerformanceMode.Balanced)]   // Custom is not offered on battery either
+    public void Sanitize_TurnsASavedGamingProfileIntoCustom(bool pluggedIn, byte expectedByte)
+    {
+        var stored = new PowerProfile(PerformanceMode.Gaming, CpuBoost.High, GpuBoost.Medium);
+
+        var safe = PowerProfileRules.Sanitize(stored, pluggedIn);
+
+        Assert.Equal((PerformanceMode)expectedByte, safe.Mode);
+        Assert.Equal(CpuBoost.High, safe.Cpu);
+        Assert.Equal(GpuBoost.Medium, safe.Gpu);
+    }
+
+    [Theory]
     [InlineData((byte)PerformanceMode.Custom)]
     public void Sanitize_TurnsAStaleBatteryModeIntoBalanced(byte staleModeByte)
     {
