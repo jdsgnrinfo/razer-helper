@@ -121,7 +121,7 @@ internal sealed class ProfileToast : Form
         using (Brush fill = _applied
             ? new System.Drawing.Drawing2D.LinearGradientBrush(Rectangle.Inflate(box, 0, 1), SelectedGradientStart, SelectedGradientEnd, System.Drawing.Drawing2D.LinearGradientMode.Vertical)
             : new SolidBrush(TrackColor))
-        using (var shape = RoundedButton.RoundedPath(box, S(2)))
+        using (var shape = RoundedButton.RoundedPath(box, S(RoundedButton.CornerRadius)))
         using (var line = new SolidBrush(_applied ? RazerGreen : ButtonBorderColor))
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;

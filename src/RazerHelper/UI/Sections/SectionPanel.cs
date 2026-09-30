@@ -13,7 +13,7 @@ internal abstract class SectionPanel : Panel
     /// The space below every section, which sets the sections apart. The host
     /// adds it to each section's row height.
     /// </summary>
-    public static int GapBelow => S(16);
+    public static int GapBelow => S(24);
 
     // Post through the UI thread's context instead of Control.BeginInvoke,
     // which needs a window handle. A tray popup has none until it is first
