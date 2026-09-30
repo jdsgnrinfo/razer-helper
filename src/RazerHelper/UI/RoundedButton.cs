@@ -4,13 +4,12 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The app's button: a filled shape with rounded corners and a 2.5px line along
-/// the bottom only, which curls up around the bottom corners. WinForms' flat button can only draw square corners,
-/// so this paints itself: the fill (a dark-to-green gradient when selected, a
-/// little lighter while pressed), the bottom line (green when selected or
-/// under the pointer), then the icon and text. A green BackColor is what marks
-/// the selected button, so selecting or greying a button works exactly as with
-/// a stock one.
+/// The app's button: a flat fill with rounded corners, green with dark text
+/// when selected and grey with white text otherwise, a touch lighter under the
+/// pointer and lighter still while pressed. WinForms' flat button can only draw
+/// square corners, so this paints itself. A green BackColor is what marks the
+/// selected button, so selecting or greying a button works exactly as with a
+/// stock one.
 /// </summary>
 internal class RoundedButton : Button
 {
@@ -61,48 +60,26 @@ internal class RoundedButton : Button
     {
         var graphics = pevent.Graphics;
 
-        var parentColor = Parent?.BackColor ?? BackgroundColor;
-
         // Outside the corners the parent shows through.
-        graphics.Clear(parentColor);
+        graphics.Clear(Parent?.BackColor ?? BackgroundColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        // The only outline is a line along the bottom: the button's whole
-        // shape in the line's color, with the face laid over it a little
-        // shorter, so the line shows under the face and curls up around its
-        // bottom corners. Green on the selected button and on any other under
-        // the pointer, quiet otherwise, silver while it has keyboard focus (Tab).
-        var stroke = Focused && ShowFocusCues ? Color.Silver
-            : IsGreen && IsUsable ? RazerGreen
-            : Motion.Blend(ButtonBorderColor, RazerGreen, Hover);
+        var fillColor = IsGreen
+            ? Motion.Blend(RazerGreen, RazerGreenHover, Hover)
+            : BackColor == ButtonColor ? Motion.Blend(ButtonColor, ButtonHoverColor, Hover) : BackColor;
 
-        // Only its bottom part is painted: higher up the face's edge lies
-        // exactly on it, and the line's color would fringe the face.
-        using (var shape = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
-        using (var line = new SolidBrush(stroke))
+        using (var path = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
         {
-            var lineTop = Height - ButtonStroke - S(CornerRadius);
-            graphics.SetClip(new RectangleF(0, lineTop, Width, Height - lineTop));
-            graphics.FillPath(line, shape);
-            graphics.ResetClip();
-        }
+            using (var fill = new SolidBrush(Pressed(fillColor)))
+                graphics.FillPath(fill, path);
 
-        using (var face = RoundedPath(new RectangleF(0, 0, Width, Height - ButtonStroke), S(CornerRadius)))
-        {
-            // A selected button fades from a faint green at the top to a soft
-            // green at the bottom, stronger under the pointer, over the
-            // parent's color (the greens are see-through); the others are flat.
-            if (IsGreen)
+            // Keyboard focus (Tab) shows a thin silver outline.
+            if (Focused && ShowFocusCues)
             {
-                using var under = new SolidBrush(parentColor);
-                graphics.FillPath(under, face);
+                using var ring = RoundedPath(new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), S(CornerRadius));
+                using var pen = new Pen(Color.Silver);
+                graphics.DrawPath(pen, ring);
             }
-
-            using Brush fill = IsGreen
-                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(SelectedGradientStart), Pressed(Motion.Blend(SelectedGradientEnd, SelectedGradientHoverEnd, Hover)), LinearGradientMode.Vertical)
-                : new SolidBrush(Pressed(BackColor));
-
-            graphics.FillPath(fill, face);
         }
 
         var textBounds = new Rectangle(
@@ -111,49 +88,27 @@ internal class RoundedButton : Button
             Width - Padding.Horizontal,
             Height - Padding.Vertical);
 
-        // The text stays white on the selected button's dark gradient.
-        var textColor = !Enabled ? SystemColors.GrayText
-            : ForeColor == OnGreenTextColor ? Color.White
-            : ForeColor;
+        var textColor = !Enabled ? SystemColors.GrayText : ForeColor;
 
-        // The icon is green on the selected button, and turns green under the
-        // pointer on the others.
-        var glyphColor = IsGreen && IsUsable ? RazerGreen
-            : IsUsable ? Motion.Blend(textColor, RazerGreen, Hover)
-            : textColor;
-
-        // With a glyph, the glyph and the text are centered together as one
-        // group, the glyph drawn in the text's color so it follows selection
-        // and availability with it.
+        // With a glyph: a larger icon in a circle over the text, the pair
+        // centered in the button. The icon is green on grey, dark on the selected
+        // green (whose circle is a deeper green), grey when unavailable.
         if (Glyph is { } glyph)
         {
-            if (GlyphAbove)
-            {
-                // A larger glyph over the text, the pair centered in the button.
-                var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
-                var top = textBounds.Top + (textBounds.Height - (StackedGlyphSize + StackedGlyphGap + textHeight)) / 2;
+            var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
+            var top = textBounds.Top + (textBounds.Height - (CircleSize + StackedGlyphGap + textHeight)) / 2;
+            var circle = new RectangleF(textBounds.Left + (textBounds.Width - CircleSize) / 2f, top, CircleSize, CircleSize);
 
-                var stacked = new RectangleF(textBounds.Left + (textBounds.Width - StackedGlyphSize) / 2f, top, StackedGlyphSize, StackedGlyphSize);
+            using (var circleFill = new SolidBrush(IsGreen ? SelectedIconCircleColor : IconCircleColor))
+                graphics.FillEllipse(circleFill, circle);
 
-                Glyphs.Draw(graphics, glyph, stacked, glyphColor);
+            var iconColor = !IsUsable ? textColor : IsGreen ? OnGreenTextColor : RazerGreen;
+            var icon = RectangleF.Inflate(circle, -(CircleSize - StackedGlyphSize) / 2f, -(CircleSize - StackedGlyphSize) / 2f);
+            Glyphs.Draw(graphics, glyph, icon, iconColor);
 
-                var textArea = new Rectangle(textBounds.Left, top + StackedGlyphSize + StackedGlyphGap, textBounds.Width, textHeight);
-                TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
-                return;
-            }
-
-            var textWidth = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Width;
-            var groupWidth = Math.Min(GlyphSize + GlyphGap + textWidth, textBounds.Width);
-            var left = textBounds.Left + (textBounds.Width - groupWidth) / 2;
-
-            var inline = new RectangleF(left, (Height - GlyphSize) / 2f, GlyphSize, GlyphSize);
-
-            Glyphs.Draw(graphics, glyph, inline, glyphColor);
-
-            textBounds = new Rectangle(left + GlyphSize + GlyphGap, textBounds.Top, groupWidth - GlyphSize - GlyphGap, textBounds.Height);
-            TextRenderer.DrawText(graphics, Text, Font, textBounds, textColor,
-                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+            var textArea = new Rectangle(textBounds.Left, top + CircleSize + StackedGlyphGap, textBounds.Width, textHeight);
+            TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
             return;
         }
 
@@ -166,7 +121,7 @@ internal class RoundedButton : Button
             ToTextFlags(TextAlign) | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
     }
 
-    /// <summary>An optional icon drawn before the text, for example on the performance mode buttons.</summary>
+    /// <summary>An optional icon in a circle over the text, as on the performance mode buttons.</summary>
     [System.ComponentModel.Browsable(false)]
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public Glyph? Glyph
@@ -181,33 +136,9 @@ internal class RoundedButton : Button
 
     private Glyph? _glyph;
 
-    /// <summary>Draws the glyph larger, above the text, instead of beside it.</summary>
-    [System.ComponentModel.Browsable(false)]
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-    public bool GlyphAbove
-    {
-        get => _glyphAbove;
-        set
-        {
-            _glyphAbove = value;
-            Invalidate();
-        }
-    }
-
-    private bool _glyphAbove;
-
-    private static int StackedGlyphSize => S(24);
-    private static int StackedGlyphGap => S(6);
-
-    /// <summary>The size of a glyph beside the text; smaller on the small buttons, to match their text.</summary>
-    [System.ComponentModel.Browsable(false)]
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-    public int GlyphSize { get; set; } = S(16);
-
-    /// <summary>The space between a glyph beside the text and the text.</summary>
-    [System.ComponentModel.Browsable(false)]
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-    public int GlyphGap { get; set; } = S(6);
+    private static int StackedGlyphSize => S(30);
+    private static int CircleSize => S(64);
+    private static int StackedGlyphGap => S(8);
 
     protected override void OnMouseEnter(EventArgs e)
     {
@@ -243,8 +174,7 @@ internal class RoundedButton : Button
     }
 
     // Pressing lightens a button that can be used; one drawn as unavailable
-    // (a hand cursor is what marks the usable ones) stays flat. Hover changes
-    // only the bottom line and the icon, never the fill.
+    // (a hand cursor is what marks the usable ones) stays flat.
     private Color Pressed(Color color) => _pressed && IsUsable ? Lighten(color, 0.12f) : color;
 
     private bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();

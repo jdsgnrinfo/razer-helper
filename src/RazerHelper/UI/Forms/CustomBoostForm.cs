@@ -20,10 +20,13 @@ internal sealed class CustomBoostForm : Form
 {
     private const int RefreshIntervalMilliseconds = 2_000;
 
-    private static int ContentWidth => S(400);
+    private static int ContentWidth => S(512);
 
-    // A row of figures: 12px above, then each figure's name and value, 8px apart and around.
-    private static int StatsHeight => S(12 + 8 + 15 + 8 + 15 + 8);
+    // A row of figures: 16px above, then each figure's name and, under it, its value.
+    private static int StatsHeight => S(16 + 22 + 22);
+
+    // Four columns in every row of figures, so the CPU's three line up with the GPU's four.
+    private const int StatColumns = 4;
 
     private readonly CustomBoostSelectors _selectors;
     private readonly CpuStatsReader _cpuReader = new();
@@ -64,11 +67,11 @@ internal sealed class CustomBoostForm : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(20)),
+            Padding = S(new Padding(24)),
             WrapContents = false
         };
 
-        layout.Controls.Add(WindowTitleRow.Create(this, "Custom", Glyph.Custom, ContentWidth));
+        layout.Controls.Add(WindowTitleRow.Create(this, "Custom", ContentWidth));
 
         var cpuValues = CreateStatsRow(out var cpuStats, "Temperature", "Usage", "Speed");
         (_cpuTemperature, _cpuUsage, _cpuSpeed) = (cpuValues[0], cpuValues[1], cpuValues[2]);
@@ -76,20 +79,22 @@ internal sealed class CustomBoostForm : Form
         var gpuValues = CreateStatsRow(out var gpuStats, "Temperature", "Usage", "Core clock", "Memory clock");
         (_gpuTemperature, _gpuUsage, _gpuCoreClock, _gpuMemoryClock) = (gpuValues[0], gpuValues[1], gpuValues[2], gpuValues[3]);
 
-        // Each chip: 20px below what comes before, its selector, then its figures.
-        AddSelector(layout, _selectors.Cpu);
+        // Each chip: its selector, then its figures; a line between the two chips.
+        AddSelector(layout, _selectors.Cpu, S(20));
         layout.Controls.Add(cpuStats);
-        AddSelector(layout, _selectors.Gpu);
+        layout.Controls.Add(new Panel
+        {
+            BackColor = DividerColor,
+            Height = S(1),
+            Margin = new Padding(0, S(26), 0, 0),
+            Width = ContentWidth
+        });
+        AddSelector(layout, _selectors.Gpu, S(18));
         layout.Controls.Add(gpuStats);
 
-        layout.Controls.Add(new Label
+        layout.Controls.Add(new InfoNote(L.T("Boost levels apply right away and are saved in the current power profile."), ContentWidth)
         {
-            AutoSize = true,
-            Font = DesignFont(11),
-            ForeColor = Color.White,
-            Margin = new Padding(0, S(20), 0, 0),
-            MaximumSize = new Size(ContentWidth, 0),
-            Text = L.T("Boost levels apply right away and are saved in the current power profile.")
+            Margin = new Padding(0, S(24), 0, 0)
         });
 
         Controls.Add(layout);
@@ -170,10 +175,10 @@ internal sealed class CustomBoostForm : Form
         base.Dispose(disposing);
     }
 
-    private static void AddSelector(FlowLayoutPanel layout, Panel selector)
+    private static void AddSelector(FlowLayoutPanel layout, Panel selector, int gapAbove)
     {
         selector.Dock = DockStyle.None;
-        selector.Margin = new Padding(0, S(16), 0, 0);
+        selector.Margin = new Padding(0, gapAbove, 0, 0);
         selector.Width = ContentWidth;
         layout.Controls.Add(selector);
     }
@@ -206,36 +211,36 @@ internal sealed class CustomBoostForm : Form
         _gpuMemoryClock.Text = asleep ?? HardwareStatsText.Megahertz(gpu.MemoryMhz);
     }
 
-    // The figures side by side in equal columns: each one's name in bold and,
-    // under it, its value. Returns the value labels in the order of the names.
+    // The figures side by side in equal columns: each one's name in white and,
+    // under it, its value in grey. Returns the value labels in the order of the names.
     private static Label[] CreateStatsRow(out Control row, params string[] names)
     {
         var table = new TableLayoutPanel
         {
             BackColor = BackgroundColor,
-            ColumnCount = names.Length,
+            ColumnCount = StatColumns,
             Margin = Padding.Empty,
-            Padding = new Padding(0, S(12 + 8), 0, S(8)),
+            Padding = new Padding(0, S(16), 0, 0),
             RowCount = 2,
             Size = new Size(ContentWidth, StatsHeight)
         };
 
-        table.RowStyles.Add(new RowStyle(SizeType.Absolute, S(15 + 8)));
+        for (var index = 0; index < StatColumns; index++)
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / StatColumns));
+
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, S(22)));
         table.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         var values = new Label[names.Length];
 
         for (var index = 0; index < names.Length; index++)
         {
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / names.Length));
-
-            var name = CreateStatLabel(DesignFont(12, FontStyle.Bold));
+            var name = CreateStatLabel(SemiBoldFont(14));
             name.Text = L.T(names[index]);
-            name.Margin = new Padding(0, 0, 0, S(8));
             table.Controls.Add(name, index, 0);
 
             // The reading in grey under its white name, as in the design.
-            values[index] = CreateStatLabel(DesignFont(12));
+            values[index] = CreateStatLabel(DesignFont(14));
             values[index].ForeColor = SubtleTextColor;
             values[index].Text = HardwareStatsText.NoReading;
             table.Controls.Add(values[index], index, 1);

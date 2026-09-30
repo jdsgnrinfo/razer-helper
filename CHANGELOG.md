@@ -23,18 +23,19 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Interface
 
-- **Redesign** of every window: flat sections, square-cornered buttons with a thin border, pill sliders, grey and green switches, smaller type and spacing. The main window went from 616x962 to 500x686.
+- **Redesign** of every window: flat sections split by thin lines, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 640 wide.
+- **Performance modes** as large buttons, quietest first (Silent, Balanced, Custom), each with its icon in a circle.
+- **Fans** as two options with a line on what each does: Automatic RPM and Max RPM.
+- **Lighting** with the keyboard and the logo side by side.
+- **Header and footer:** the app's logo and name on the left and the close X on the right; the version and the System info, Free up GPU and Settings buttons at the bottom.
+- **Custom window:** the GPU's buttons line up with the CPU's, a line between the two, and the note in a green box.
+- **Battery details:** each figure under its name in grey, with lines between them, and flat green bars.
 - Every window takes its rounded corners and border from Windows 11.
-- **New icons** for the sections, the performance modes and Settings, from open icon sets (see the credits in the README).
+- **New icons** for the performance modes and the CPU and GPU, from open icon sets (see the credits in the README).
 - CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
-
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
-- **Gradients and bottom lines:** buttons keep only a 2.5px line along the bottom, showing under the button's face and curling up around its bottom corners (green when selected or under the pointer); the selected button fades from a faint to a soft green, with its icon in green, and its green grows stronger under the pointer; sliders and level bars fill with a dark-to-green gradient; switches fade from dark green to Razer green, with no outline and a square knob that turns from black to white when on; sliders have a thinner track and a white square thumb, all grey while unavailable.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
-- **Icons on the small buttons:** System info, Free up GPU and Settings show their icon before the text, and Close (an arrow leaving a box) joins them at the bottom, taking the place of the X at the top.
-- **New header:** the app's logo and name on the left, the recognised laptop model on the right.
-- **Rounder buttons, more air:** buttons and drop-downs have 6px corners, and the sections of the main window sit 24px apart instead of 16, which makes it 500x734.
 - **New typeface:** the interface is set in Titillium Web, which comes inside the app, so nothing needs installing; Segoe UI is the fallback.
 
 ### New windows

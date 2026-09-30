@@ -5,10 +5,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// An on/off switch: a softly rounded track with a square knob, black when
-/// off and white when on, where it sits right. On fades from dark green to Razer green; off is flat
-/// grey. No outline. A change slides the knob across and fades the
-/// colors rather than jumping. Everything else (Checked, events, Space to
+/// An on/off switch: a softly rounded track, Razer green when on and grey
+/// when off, with a white square knob that sits right when on. No outline.
+/// A change slides the knob across and fades the color rather than jumping. Everything else (Checked, events, Space to
 /// toggle) is the ordinary CheckBox.
 /// </summary>
 internal sealed class ToggleSwitch : CheckBox
@@ -16,9 +15,6 @@ internal sealed class ToggleSwitch : CheckBox
     private static int TrackWidth => S(48);
     private static int TrackHeight => S(24);
     private static int KnobInset => S(3);
-
-    private static readonly Color OffTrackColor = Color.FromArgb(0x68, 0x68, 0x68);
-    private static readonly Color SwitchGradientStart = Color.FromArgb(0x14, 0x32, 0x0E);
 
     private readonly System.Windows.Forms.Timer _animation = new() { Interval = 15 };
     private readonly Stopwatch _clock = new();
@@ -97,15 +93,12 @@ internal sealed class ToggleSwitch : CheckBox
             TrackHeight - 1);
         var radius = S(3f);
 
-        // Off: a flat grey track. On: dark on the left fading to green on the
-        // right. No outline either way. In between, one blends into the other.
-        var start = Enabled ? SwitchGradientStart : SystemColors.GrayText;
-        var end = Enabled ? RazerGreen : SystemColors.GrayText;
+        // Grey off, green on, blending in between; grey either way when disabled.
+        var on = Enabled ? RazerGreen : SystemColors.GrayText;
 
         using (var path = RoundedButton.RoundedPath(track, radius))
         {
-            using (var fill = new LinearGradientBrush(RectangleF.Inflate(track, 1, 0),
-                Blend(OffTrackColor, start, _position), Blend(OffTrackColor, end, _position), LinearGradientMode.Horizontal))
+            using (var fill = new SolidBrush(Blend(OffColor, on, _position)))
             {
                 graphics.FillPath(fill, path);
             }
@@ -119,14 +112,13 @@ internal sealed class ToggleSwitch : CheckBox
             }
         }
 
-        // The knob, a square with softened corners, slides from left to right,
-        // black when off and turning white as it goes on.
+        // The knob, a white square with softened corners, slides from left to right.
         var knob = TrackHeight - 2 * KnobInset;
         var left = track.Left + KnobInset;
         var right = track.Right - KnobInset - knob;
         var knobBounds = new RectangleF(left + (right - left) * _position, track.Top + (track.Height - knob) / 2f, knob, knob);
 
-        using var knobFill = new SolidBrush(Blend(Color.Black, Color.White, _position));
+        using var knobFill = new SolidBrush(Color.White);
         using var knobShape = RoundedButton.RoundedPath(knobBounds, S(2f));
         graphics.FillPath(knobFill, knobShape);
     }

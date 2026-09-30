@@ -76,12 +76,28 @@ internal sealed class FanSection : SectionPanel
         readings.Controls.Add(_cpuFanLabel, 0, 0);
         readings.Controls.Add(_gpuFanLabel, 1, 0);
 
-        // Auto | Max, as in Synapse's "Max Fan Speed Mode". Max is only offered in
-        // Custom mode, plugged in; Auto turns it off again.
-        var modeGrid = CreateButtonGrid(["Auto", "Max"], "FanModeButton");
-        _modeButtons = modeGrid.Controls.OfType<Button>().ToArray();
-        _autoButton = _modeButtons[0];
-        _maxButton = _modeButtons[1];
+        // Automatic | Max RPM, as in Synapse's "Max Fan Speed Mode", side by
+        // side as two options with a line each on what they do. Max is only
+        // offered when the laptop allows it; Automatic turns it off again.
+        _autoButton = new RadioOption(L.T("Automatic RPM"), L.T("The system picks the speed based on how it is used"))
+        {
+            Cursor = Cursors.Hand,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 0, S(12), 0),
+            Name = "AutoFanModeButton"
+        };
+        _maxButton = new RadioOption(L.T("Max RPM"), L.T("Always runs at 100%, however it is used"))
+        {
+            Cursor = Cursors.Hand,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(S(12), 0, 0, 0),
+            Name = "MaxFanModeButton"
+        };
+        _modeButtons = [_autoButton, _maxButton];
+
+        var modeGrid = CreateTwoColumnLayout(50F, 50F);
+        modeGrid.Controls.Add(_autoButton, 0, 0);
+        modeGrid.Controls.Add(_maxButton, 1, 0);
 
         _autoButton.Click += (_, _) => RequestMaxFan(false);
         _maxButton.Click += (_, _) => RequestMaxFan(true);
@@ -91,7 +107,7 @@ internal sealed class FanSection : SectionPanel
         // buttons fill what is left.
         Controls.Add(modeGrid);
         Controls.Add(readings);
-        Controls.Add(CreateSectionHeader("Fans", string.Empty, Glyph.Fans));
+        Controls.Add(CreateSectionHeader("Fans", string.Empty));
 
         _pollTimer.Tick += PollTimer_Tick;
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;

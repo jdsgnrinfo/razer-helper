@@ -12,7 +12,7 @@ namespace RazerHelper.UI.Sections;
 internal sealed class CustomBoostSelectors : IDisposable
 {
     /// <summary>One selector: its title row and its buttons.</summary>
-    public static int SelectorHeight => SectionHeaderHeight + S(40);
+    public static int SelectorHeight => SectionHeaderHeight + S(48);
 
     private readonly Dictionary<CpuBoost, Button> _cpuButtons = [];
     private readonly Dictionary<GpuBoost, Button> _gpuButtons = [];
@@ -79,7 +79,8 @@ internal sealed class CustomBoostSelectors : IDisposable
             Padding = Padding.Empty
         };
 
-        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton");
+        // Four slots each, so the GPU's three buttons are as wide as the CPU's four.
+        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton", slots: 4);
         grid.BackColor = BackgroundColor;
 
         foreach (var button in grid.Controls.OfType<Button>())

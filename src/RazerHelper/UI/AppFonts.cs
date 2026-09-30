@@ -15,6 +15,9 @@ internal static class AppFonts
     /// <summary>The family the interface uses: its Regular and Bold.</summary>
     public const string Family = "Titillium Web";
 
+    /// <summary>The semi-bold weight, loaded as a family of its own.</summary>
+    public const string SemiBoldFamily = "Titillium Web SemiBold";
+
     private static readonly string[] Files =
     [
         "TitilliumWeb-Regular.ttf",

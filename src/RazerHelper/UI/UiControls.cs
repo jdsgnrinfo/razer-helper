@@ -23,11 +23,11 @@ internal static class UiControls
         return layout;
     }
 
-    /// <summary>A section's title row: the 16px icon and 12px title, then the 8px gap before what the section shows.</summary>
-    public static int SectionHeaderHeight => S(19 + 8);
+    /// <summary>A section's title row: the 16px uppercase title, then the 12px gap before what the section shows.</summary>
+    public static int SectionHeaderHeight => S(24 + 12);
 
     /// <summary>The space between two buttons side by side.</summary>
-    public static int ButtonGap => S(8);
+    public static int ButtonGap => S(12);
 
     /// <summary>A title row, <see cref="SectionHeaderHeight"/> tall and docked to the top, with room below for its gap.</summary>
     public static TableLayoutPanel CreateHeaderLayout(float leftWidth = 60F, float rightWidth = 40F)
@@ -35,7 +35,7 @@ internal static class UiControls
         var header = CreateTwoColumnLayout(leftWidth, rightWidth);
         header.Dock = DockStyle.Top;
         header.Height = SectionHeaderHeight;
-        header.Padding = new Padding(0, 0, 0, S(8));
+        header.Padding = new Padding(0, 0, 0, S(12));
         return header;
     }
 
@@ -55,40 +55,31 @@ internal static class UiControls
         return header;
     }
 
-    /// <summary>A value at the right of a title row, such as the display's mode: bold white, like the title.</summary>
+    /// <summary>A value at the right of a title row, such as the display's mode: 16px bold white.</summary>
     public static Label CreateHeaderValueLabel() => new()
     {
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Right,
-        Font = DesignFont(12, FontStyle.Bold),
+        Font = DesignFont(16, FontStyle.Bold),
         ForeColor = Color.White,
         Margin = Padding.Empty,
         TextAlign = ContentAlignment.MiddleRight
     };
 
     /// <summary>
-    /// A small button sized to its text, such as "More info" or the footer's: 10px bold with 8px around it,
-    /// and an optional icon on the left, 12px to match the text, 3px before it.
+    /// A small button sized to its text, such as "More info" or the footer's: 14px text,
+    /// 10px each side, 30px tall.
     /// </summary>
-    public static Button CreateSmallButton(string text, Glyph? icon = null)
+    public static Button CreateSmallButton(string text)
     {
-        var button = (RoundedButton)CreateActionButton(text);
-        var font = button.Font = DesignFont(10, FontStyle.Bold);
+        var button = CreateActionButton(text);
+        var font = button.Font = DesignFont(14);
         var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
-        var iconWidth = 0;
-
-        if (icon is { } glyph)
-        {
-            button.Glyph = glyph;
-            button.GlyphSize = S(12);
-            button.GlyphGap = S(3);
-            iconWidth = button.GlyphSize + button.GlyphGap;
-        }
 
         button.Dock = DockStyle.None;
         button.Margin = Padding.Empty;
-        button.Size = new Size(iconWidth + textSize.Width + S(2 * 8), Math.Max(textSize.Height, S(12)) + S(2 * 6) + S(2));
+        button.Size = new Size(textSize.Width + S(2 * 10), S(30));
         return button;
     }
 
@@ -98,10 +89,11 @@ internal static class UiControls
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Left,
-        Font = DesignFont(12, FontStyle.Bold),
+        Font = DesignFont(16, FontStyle.Bold),
         Margin = Padding.Empty,
         ForeColor = Color.White,
-        Text = L.T(text),
+        // Titles are in capitals, as in the design.
+        Text = L.T(text).ToUpper(System.Globalization.CultureInfo.CurrentUICulture),
         TextAlign = ContentAlignment.MiddleLeft
     };
 
@@ -112,8 +104,8 @@ internal static class UiControls
     /// </summary>
     private sealed class SectionLabel : Label
     {
-        private static int IconSize => S(16);
-        private static int IconGap => S(6);
+        private static int IconSize => S(18);
+        private static int IconGap => S(10);
 
         private readonly Glyph? _icon;
         private readonly int _inset;
@@ -135,12 +127,14 @@ internal static class UiControls
         }
     }
 
-    public static Control CreateButtonGrid(IReadOnlyList<string> buttonNames, string nameSuffix)
+    /// <param name="slots">How many button widths the row is divided into; more than the buttons leaves the extra ones empty at the right, so rows of different lengths line up.</param>
+    public static Control CreateButtonGrid(IReadOnlyList<string> buttonNames, string nameSuffix, int slots = 0)
     {
+        var count = Math.Max(slots, buttonNames.Count);
         var grid = new TableLayoutPanel
         {
             BackColor = CardColor,
-            ColumnCount = buttonNames.Count,
+            ColumnCount = count,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
@@ -149,16 +143,17 @@ internal static class UiControls
 
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
+        for (var index = 0; index < count; index++)
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / count));
+
         for (var index = 0; index < buttonNames.Count; index++)
         {
-            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / buttonNames.Count));
 
             var name = buttonNames[index];
             var button = CreateActionButton(name);
 
             // ButtonGap between neighbours and none at the outer edges, split so
             // every button comes out the same width.
-            var count = buttonNames.Count;
             button.Margin = new Padding(ButtonGap * index / count, 0, ButtonGap * (count - 1 - index) / count, 0);
             button.Name = $"{name}{nameSuffix}";
             button.Tag = name;
@@ -204,7 +199,7 @@ internal static class UiControls
             BackColor = ButtonColor,
             Cursor = Cursors.Hand,
             Dock = DockStyle.Fill,
-            Font = DesignFont(11, FontStyle.Bold),
+            Font = DesignFont(16),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             Text = L.T(text)

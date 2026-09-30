@@ -85,6 +85,7 @@ internal sealed class BentoGrid : TableLayoutPanel
 
             var card = new BentoCard
             {
+                DividerAbove = row > 0,
                 Dock = DockStyle.Fill,
                 Height = BentoCard.HeightFor(spec),
                 Margin = Padding.Empty
@@ -119,19 +120,23 @@ internal sealed class BentoGrid : TableLayoutPanel
     }
 
     /// <summary>
-    /// One figure, flat on the window: the caption in bold, then the figure
-    /// (a wide card's note at the right of it, a narrow card's under it), and
-    /// an optional bar.
+    /// One figure, flat on the window: a divider line above it (but for the
+    /// first), the caption in quiet grey, then the figure in white (a wide
+    /// card's note at the right of it, a narrow card's under it), and an
+    /// optional bar.
     /// </summary>
     private sealed class BentoCard : Control
     {
-        private static readonly Font CaptionFont = DesignFont(12, FontStyle.Bold);
-        private static readonly Font ValueFont = DesignFont(16, FontStyle.Bold);
-        private static readonly Font DetailFont = DesignFont(12);
+        private static readonly Font CaptionFont = DesignFont(14);
+        private static readonly Font ValueFont = DesignFont(18);
+        private static readonly Font DetailFont = DesignFont(14);
 
-        /// <summary>How tall a card is: the gap above, the caption, the figure, and the bar or the space below.</summary>
+        private static int TopGap => S(18);
+        private static int BottomGap => S(18);
+
+        /// <summary>How tall a card is: the gap above, the caption, the figure, the bar or the note, and the gap below.</summary>
         public static int HeightFor(BentoCardSpec spec) =>
-            S(16 + 23 + 23) + (spec.Bar is null ? S(16) : S(8 + 6)) + (!spec.Wide && spec.Detail is not null ? S(20) : 0);
+            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (!spec.Wide && spec.Detail is not null ? S(20) : 0) + BottomGap;
 
         private BentoCardSpec? _spec;
 
@@ -139,6 +144,11 @@ internal sealed class BentoGrid : TableLayoutPanel
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         }
+
+        /// <summary>Whether a divider line runs along the top: every card but those in the first row.</summary>
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public bool DividerAbove { get; init; }
 
         public void Show(BentoCardSpec spec)
         {
@@ -156,19 +166,26 @@ internal sealed class BentoGrid : TableLayoutPanel
             graphics.Clear(Parent?.BackColor ?? BackgroundColor);
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
+            if (DividerAbove)
+            {
+                using var line = new SolidBrush(DividerColor);
+                graphics.FillRectangle(line, 0, 0, Width, S(1));
+            }
+
             if (_spec is not { } spec)
                 return;
 
             const TextFormatFlags Line = TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine;
 
             var width = Width - S(8); // Keeps a narrow card's text off its neighbour.
-            var y = S(16);
+            var y = TopGap;
 
-            TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(0, y, width, S(19)), Color.White, Line);
-            y += S(23);
+            TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
+            y += S(20 + 4);
 
-            var valueRow = new Rectangle(0, y, Width, S(23));
+            var valueRow = new Rectangle(0, y, Width, S(24));
             TextRenderer.DrawText(graphics, spec.Value, ValueFont, valueRow, Color.White, Line);
+            y += S(24);
 
             if (spec.Detail is { } detail)
             {
@@ -178,14 +195,14 @@ internal sealed class BentoGrid : TableLayoutPanel
                 }
                 else
                 {
-                    y += S(23);
                     TextRenderer.DrawText(graphics, detail, DetailFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
+                    y += S(20);
                 }
             }
 
             if (spec.Bar is { } fraction)
             {
-                var bar = new RectangleF(0, Height - S(6), Width, S(6));
+                var bar = new RectangleF(0, y + S(8), Width, S(6));
 
                 using (var track = new SolidBrush(TrackColor))
                 using (var trackShape = RoundedButton.RoundedPath(bar, S(3)))
@@ -195,9 +212,8 @@ internal sealed class BentoGrid : TableLayoutPanel
 
                 if (filled.Width >= S(6))
                 {
-                    // Dark on the left, the level's color at its end, as on the sliders.
-                    var end = spec.BarColor is { } color && color.ToArgb() != RazerGreen.ToArgb() ? color : FillGradientEnd;
-                    using var level = new LinearGradientBrush(RectangleF.Inflate(filled, 1, 0), GradientDark, end, LinearGradientMode.Horizontal);
+                    // Flat, in the level's color, as on the sliders.
+                    using var level = new SolidBrush(spec.BarColor ?? RazerGreen);
                     using var levelShape = RoundedButton.RoundedPath(filled, S(3));
                     graphics.FillPath(level, levelShape);
                 }

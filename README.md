@@ -208,11 +208,8 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 - [G-Helper](https://github.com/seerge/g-helper): inspiration for the approach to power profiles and service handling. No G-Helper code is used.
 - App icon and logo by [jdsgnrinfo](https://github.com/jdsgnrinfo).
 - Interface icons (this fork), drawn from their published SVG paths:
-  - [Boxicons](https://boxicons.com) (MIT): rocket, leaf and cog.
-  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, battery charging, frame corners and laptop.
-  - [Ionicons](https://ionic.io/ionicons) (MIT): game controller.
-  - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): twilight and cleaning services.
-  - [Heroicons](https://heroicons.com) (MIT): arrow leaving a box.
+  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, CPU and graphics card.
+  - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): speed and tune.
 - Typeface (this fork): [Titillium Web](https://fonts.google.com/specimen/Titillium+Web) by Accademia di Belle Arti di Urbino, under the [SIL Open Font License 1.1](https://openfontlicense.org). Its Light, Regular, SemiBold and Bold files ship inside the app.
 
 ## Disclaimer

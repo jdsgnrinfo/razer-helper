@@ -60,11 +60,11 @@ internal sealed class PerformanceSection : SectionPanel
             [false] = PowerProfileRules.Sanitize(onBatteryProfile ?? PowerProfile.DefaultOnBattery, pluggedIn: false)
         };
 
-        // Balanced, Silent and Custom on every model, in Synapse's order
+        // Silent, Balanced and Custom on every model, quietest first
         // (Enum.GetValues would sort by wire byte instead). Gaming is not
         // offered. A mode the firmware turns out not to take is marked as such
         // the first time it is tried.
-        PerformanceMode[] modes = [PerformanceMode.Balanced, PerformanceMode.Silent, PerformanceMode.Custom];
+        PerformanceMode[] modes = [PerformanceMode.Silent, PerformanceMode.Balanced, PerformanceMode.Custom];
         var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton");
 
         foreach (var button in grid.Controls.OfType<Button>())
@@ -82,10 +82,7 @@ internal sealed class PerformanceSection : SectionPanel
             };
 
             if (button is RoundedButton rounded)
-            {
-                rounded.GlyphAbove = true;
                 rounded.Glyph = GlyphFor(mode);
-            }
         }
 
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
@@ -94,7 +91,7 @@ internal sealed class PerformanceSection : SectionPanel
         // The title, and the temperatures on the right: empty (and taking no
         // room) until a reading arrives.
         var header = CreateHeaderLayout();
-        header.Controls.Add(CreateSectionLabel("Performance Mode", Glyph.Performance), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Performance Mode"), 0, 0);
         header.Controls.Add(_temperatureLabel, 1, 0);
 
         // Dock order: the header docks first, and the mode buttons fill whatever is left.

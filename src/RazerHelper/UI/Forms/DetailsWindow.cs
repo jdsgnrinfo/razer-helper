@@ -6,8 +6,8 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Forms;
 
 /// <summary>
-/// The shape shared by the details windows (Battery, System): a header with
-/// an icon and one bold line of text, the close X, then bento cards. Esc
+/// The shape shared by the details windows (Battery, System): a header of
+/// one bold line of capitals, the close X, then the figures. Esc
 /// closes; it opens beside the popup; and it reads its figures every couple of
 /// seconds, only while it is open.
 /// </summary>
@@ -15,18 +15,16 @@ internal abstract class DetailsWindow : Form
 {
     private const int RefreshIntervalMilliseconds = 2_000;
 
-    protected static int ContentWidth => S(400);
+    protected static int ContentWidth => S(512);
 
-    private readonly IconHeader _header;
+    private readonly TitleHeader _header = new();
     private readonly BentoGrid _cards = new(ContentWidth);
     private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = RefreshIntervalMilliseconds };
     private Form? _anchor;
     private bool _loggedFailure;
 
-    protected DetailsWindow(string title, Glyph icon)
+    protected DetailsWindow(string title)
     {
-        _header = new IconHeader(icon);
-
         AutoScaleMode = AutoScaleMode.None;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -46,7 +44,7 @@ internal abstract class DetailsWindow : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(20)),
+            Padding = S(new Padding(24)),
             WrapContents = false
         };
 
@@ -190,17 +188,15 @@ internal abstract class DetailsWindow : Form
         return row;
     }
 
-    /// <summary>The header: an icon, then one line of bold text in one color.</summary>
-    private sealed class IconHeader : Control
+    /// <summary>The header: one line of bold white capitals.</summary>
+    private sealed class TitleHeader : Control
     {
-        private static readonly Font HeaderFont = DesignFont(13, FontStyle.Bold);
+        private static readonly Font HeaderFont = DesignFont(16, FontStyle.Bold);
 
-        private readonly Glyph _icon;
         private string _text = string.Empty;
 
-        public IconHeader(Glyph icon)
+        public TitleHeader()
         {
-            _icon = icon;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         }
 
@@ -219,11 +215,7 @@ internal abstract class DetailsWindow : Form
             var graphics = e.Graphics;
             graphics.Clear(Parent?.BackColor ?? BackgroundColor);
 
-            var iconSize = S(16);
-            Glyphs.Draw(graphics, _icon, new RectangleF(0, (Height - iconSize) / 2f, iconSize, iconSize), Color.White);
-
-            var x = iconSize + S(6);
-            TextRenderer.DrawText(graphics, _text, HeaderFont, new Rectangle(x, 0, Width - x, Height), Color.White,
+            TextRenderer.DrawText(graphics, _text.ToUpper(System.Globalization.CultureInfo.CurrentUICulture), HeaderFont, new Rectangle(0, 0, Width, Height), Color.White,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
         }
     }

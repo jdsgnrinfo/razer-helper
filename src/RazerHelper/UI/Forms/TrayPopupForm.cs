@@ -21,23 +21,25 @@ public sealed class TrayPopupForm : Form
         Header,
         Performance,
         Fans,
-        Display,
         Battery,
+        Display,
         Lighting,
         Services,
         Footer
     }
 
-    // Each section row: its title row, what it shows, and the gap below it.
-    private static int HeaderRowHeight => S(24) + SectionPanel.GapBelow;
-    private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(84) + SectionPanel.GapBelow;
-    private static int ButtonRowHeight => UiControls.SectionHeaderHeight + S(40) + SectionPanel.GapBelow;
+    // Each section row: its title row, what it shows, and the gap below it
+    // (with the divider line in it; Lighting, the last, has a shorter gap and
+    // no line before the footer).
+    private static int HeaderRowHeight => S(28) + HeaderGap;
+    private static int HeaderGap => S(18);
+    private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(150) + SectionPanel.GapBelow;
+    private static int FanRowHeight => UiControls.SectionHeaderHeight + RadioOption.PreferredHeight + SectionPanel.GapBelow;
+    private static int ButtonRowHeight => UiControls.SectionHeaderHeight + S(56) + SectionPanel.GapBelow;
     private static int BatteryRowHeight => BatterySection.ContentHeight + SectionPanel.GapBelow;
-    private static int LightingRowHeight => LightingSection.ContentHeight + SectionPanel.GapBelow;
-    private static int FooterRowHeight => S(26);
-
-    // Set for real once CheckForSupportedDevice() runs; a generic label until then.
-    private string _modelText = DeviceSupportService.GenericModelName;
+    private static int LightingRowHeight => LightingSection.ContentHeight + LastGap;
+    private static int LastGap => S(28);
+    private static int FooterRowHeight => S(30);
 
     private bool _allowClose;
     private bool _isResetting;
@@ -65,7 +67,6 @@ public sealed class TrayPopupForm : Form
     private readonly SynchronizationContext _uiContext;
     private readonly Label _headerStatusLabel = CreateHeaderStatusLabel();
     // Set in CreateAppHeader; the model name is appended to the title once known.
-    private Label _modelLabel = null!;
     private readonly ThemedToolTip _toolTip = new();
     private readonly GlobalHotkey _hotkey = new();
     private readonly ProfileShortcuts _profileShortcuts = new();
@@ -397,8 +398,8 @@ public sealed class TrayPopupForm : Form
 
         // Every showing fades in from nothing (see OnFadeTick).
         Opacity = 0;
-        // The design's width: 552px of content inside a 32px margin.
-        ClientSize = S(new Size(500, 600));
+        // The design's width: 592px of content inside a 24px margin.
+        ClientSize = S(new Size(640, 600));
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 
@@ -414,7 +415,7 @@ public sealed class TrayPopupForm : Form
             ColumnCount = 1,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
-            Padding = S(new Padding(20)),
+            Padding = S(new Padding(24)),
             RowCount = Enum.GetValues<Row>().Length
         };
 
@@ -427,21 +428,43 @@ public sealed class TrayPopupForm : Form
         footer.SystemInfoRequested += (_, _) => ShowSystemInfo();
         footer.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
         footer.SettingsRequested += (_, _) => ShowSettings();
-        footer.CloseRequested += (_, _) => RequestHide();
-        _toolTip.SetToolTip(footer.CloseButton, L.T("Close (RazerHelper keeps running in the tray)"));
 
         AddRow(Row.Header, CreateAppHeader(), HeaderRowHeight);
         AddRow(Row.Performance, _performanceSection, PerformanceRowHeight);
-        AddRow(Row.Fans, _fanSection, ButtonRowHeight); // Sized in ResizeToFitRows.
-        AddRow(Row.Display, _displaySection, ButtonRowHeight);
+        AddRow(Row.Fans, _fanSection, FanRowHeight); // Sized in ResizeToFitRows.
         AddRow(Row.Battery, _batterySection, BatteryRowHeight);
+        AddRow(Row.Display, _displaySection, ButtonRowHeight);
+        _lightingSection.Margin = new Padding(0, 0, 0, LastGap);
         AddRow(Row.Lighting, _lightingSection, LightingRowHeight);
         AddRow(Row.Services, _servicesSection, 0); // Grows when Razer's software is installed.
         AddRow(Row.Footer, footer, FooterRowHeight);
 
+        _content.Paint += PaintDividers;
         Controls.Add(_content);
 
         ResizeToFitRows();
+    }
+
+    // A thin line across the gap under each section but the last, which the
+    // footer follows. A row with no height (Razer services, when absent) has none.
+    private void PaintDividers(object? sender, PaintEventArgs e)
+    {
+        using var line = new SolidBrush(DividerColor);
+        float top = _content.Padding.Top;
+
+        for (var index = 0; index < _content.RowStyles.Count; index++)
+        {
+            var height = _content.RowStyles[index].Height;
+            var row = (Row)index;
+
+            if (height > 0 && row is Row.Performance or Row.Fans or Row.Battery or Row.Display)
+            {
+                var y = top + height - SectionPanel.GapBelow + SectionPanel.DividerOffset;
+                e.Graphics.FillRectangle(line, _content.Padding.Left, y, _content.Width - _content.Padding.Horizontal, S(1));
+            }
+
+            top += height;
+        }
     }
 
     // Adds a row's height and its content together, so the two can never get out
@@ -463,7 +486,7 @@ public sealed class TrayPopupForm : Form
     private void ResizeToFitRows()
     {
         RowStyleOf(Row.Services).Height = _servicesRowShown ? ServicesSection.RowHeight : 0;
-        RowStyleOf(Row.Fans).Height = ButtonRowHeight +
+        RowStyleOf(Row.Fans).Height = FanRowHeight +
             (_fanSection.AreReadingsShown ? FanSection.ReadingsHeight : 0);
 
         var contentHeight = _content.Padding.Vertical +
@@ -476,8 +499,8 @@ public sealed class TrayPopupForm : Form
     }
 
     // Left: the app's logo and name. Middle: errors, in red, only while they
-    // last. Right: the laptop's model once it is identified. The bottom of the
-    // popup belongs to the buttons, so this is where status text lives.
+    // last. Right: Close. The bottom of the popup belongs to the buttons, so
+    // this is where status text lives.
     private Control CreateAppHeader()
     {
         var header = new TableLayoutPanel
@@ -485,12 +508,12 @@ public sealed class TrayPopupForm : Form
             BackColor = BackgroundColor,
             ColumnCount = 4,
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 0, 0, SectionPanel.GapBelow),
+            Margin = new Padding(0, 0, 0, HeaderGap),
             Padding = Padding.Empty,
             RowCount = 1
         };
 
-        // The logo and name hug the left; errors take the slack; the model hugs the right.
+        // The logo and name hug the left; errors take the slack; Close hugs the right.
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -501,9 +524,9 @@ public sealed class TrayPopupForm : Form
         {
             Anchor = AnchorStyles.Left,
             BackColor = BackgroundColor,
-            Image = LoadLogo(S(20)),
-            Margin = new Padding(0, 0, S(8), 0),
-            Size = S(new Size(20, 20)),
+            Image = LoadLogo(S(18)),
+            Margin = new Padding(0, 0, S(6), 0),
+            Size = S(new Size(18, 18)),
             SizeMode = PictureBoxSizeMode.CenterImage
         }, 0, 0);
 
@@ -511,25 +534,15 @@ public sealed class TrayPopupForm : Form
         {
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Font = DesignFont(13, FontStyle.Bold),
+            Font = SemiBoldFont(16),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             Text = "RazerHelper",
             TextAlign = ContentAlignment.MiddleLeft
         }, 1, 0);
 
-        _modelLabel = new Label
-        {
-            AutoSize = true,
-            Dock = DockStyle.Fill,
-            Font = DesignFont(13, FontStyle.Bold),
-            ForeColor = Color.White,
-            Margin = Padding.Empty,
-            TextAlign = ContentAlignment.MiddleRight
-        };
-        UpdateTitleText();
         header.Controls.Add(_headerStatusLabel, 2, 0);
-        header.Controls.Add(_modelLabel, 3, 0);
+        header.Controls.Add(CreateCloseButton(), 3, 0);
 
         return header;
     }
@@ -562,11 +575,24 @@ public sealed class TrayPopupForm : Form
         }
     }
 
-    // Empty until the laptop is identified, then its model.
-    private void UpdateTitleText() =>
-        _modelLabel.Text = _modelText == DeviceSupportService.GenericModelName
-            ? string.Empty
-            : _modelText;
+    // The top-right close button: an X in the icons' style, 18px in a 24px
+    // target. It hides the popup to the tray (fading out first); the app
+    // keeps running.
+    private GlyphButton CreateCloseButton()
+    {
+        var button = new GlyphButton(Glyph.Close, S(18))
+        {
+            AccessibleName = L.T("Close"),
+            Anchor = AnchorStyles.Right,
+            BackColor = BackgroundColor,
+            Margin = Padding.Empty,
+            Size = S(new Size(24, 24))
+        };
+
+        button.Click += (_, _) => RequestHide();
+        _toolTip.SetToolTip(button, L.T("Close (RazerHelper keeps running in the tray)"));
+        return button;
+    }
 
     // The user asked to close the apps keeping the dedicated GPU awake. The
     // list and the question come from the coordinator; this only tells them
@@ -793,15 +819,11 @@ public sealed class TrayPopupForm : Form
     };
 
     // Successes are visible in the controls themselves, so only failures are
-    // worth words. They replace the model name in red until the next result.
+    // worth words. They show in red at the top until the next result.
     private void ShowStatus(SectionStatus status)
     {
-        // The model name lives in the title; this line carries errors only.
         _headerStatusLabel.ForeColor = status.IsError ? Color.IndianRed : SubtleTextColor;
         _headerStatusLabel.Text = status.IsError ? status.Message : string.Empty;
-
-        if (!status.IsError)
-            UpdateTitleText();
 
         // The label cuts long text short with an ellipsis; the tooltip has the rest.
         _toolTip.SetToolTip(_headerStatusLabel, status.IsError ? status.Message : string.Empty);
@@ -811,7 +833,6 @@ public sealed class TrayPopupForm : Form
     {
         if (_model is RazerLaptopModel model)
         {
-            _modelText = model.Name;
             ShowStatus(new SectionStatus(model.Name));
 
             // Runs before RestoreAsync, so an ignored limit is never re-sent.

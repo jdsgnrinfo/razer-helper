@@ -21,7 +21,7 @@ internal sealed class SystemInfoForm : DetailsWindow
     private bool _loggedFailure;
 
     public SystemInfoForm(Func<SystemInfo> read)
-        : base("System information", Glyph.SystemInfo)
+        : base("System information")
     {
         _info = Task.Run(read);
     }

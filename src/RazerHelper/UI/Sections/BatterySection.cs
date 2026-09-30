@@ -15,10 +15,10 @@ namespace RazerHelper.UI.Sections;
 internal sealed class BatterySection : SectionPanel
 {
     /// <summary>The title row: taller than the others, to fit the "More info" button, then the 8px gap.</summary>
-    private static int HeaderHeight => S(26 + 8);
+    private static int HeaderHeight => S(30 + 10);
 
     /// <summary>The header and the slider with the chosen limit beside it.</summary>
-    public static int ContentHeight => HeaderHeight + S(20);
+    public static int ContentHeight => HeaderHeight + S(24);
 
     /// <summary>Raised when the user asks for the Battery details window. The host opens it.</summary>
     public event EventHandler? DetailsRequested;
@@ -48,13 +48,13 @@ internal sealed class BatterySection : SectionPanel
         // from ("84% (Plugged in)"), then More info, which opens the Battery
         // details window.
         _powerLabel = CreateHeaderValueLabel();
-        _powerLabel.Font = DesignFont(13, FontStyle.Bold);
+        _powerLabel.Font = DesignFont(16, FontStyle.Bold);
         _powerLabel.Dock = DockStyle.None;
         _powerLabel.Anchor = AnchorStyles.Right;
 
         var details = CreateSmallButton("More info");
         details.Anchor = AnchorStyles.Right;
-        details.Margin = new Padding(S(10), 0, 0, 0);
+        details.Margin = new Padding(S(12), 0, 0, 0);
         details.Click += (_, _) => DetailsRequested?.Invoke(this, EventArgs.Empty);
 
         var header = new TableLayoutPanel
@@ -64,7 +64,7 @@ internal sealed class BatterySection : SectionPanel
             Dock = DockStyle.Top,
             Height = HeaderHeight,
             Margin = Padding.Empty,
-            Padding = new Padding(0, 0, 0, S(8)),
+            Padding = new Padding(0, 0, 0, S(10)),
             RowCount = 1
         };
 
@@ -72,7 +72,7 @@ internal sealed class BatterySection : SectionPanel
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        header.Controls.Add(CreateSectionLabel("Battery Charge Limit", Glyph.Battery), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Battery Charge Limit"), 0, 0);
         header.Controls.Add(_powerLabel, 1, 0);
         header.Controls.Add(details, 2, 0);
 
@@ -87,7 +87,7 @@ internal sealed class BatterySection : SectionPanel
         {
             AutoSize = false,
             Dock = DockStyle.Fill,
-            Font = DesignFont(12, FontStyle.Bold),
+            Font = DesignFont(16, FontStyle.Bold),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             TextAlign = ContentAlignment.MiddleRight
@@ -98,9 +98,9 @@ internal sealed class BatterySection : SectionPanel
         _limitLabel.Text = $"{_slider.Value} %";
 
         var limit = CreateTwoColumnLayout(100F, 0F);
-        limit.ColumnStyles[1] = new ColumnStyle(SizeType.Absolute, S(56));
+        limit.ColumnStyles[1] = new ColumnStyle(SizeType.Absolute, S(68));
         limit.Dock = DockStyle.Top;
-        limit.Height = S(20);
+        limit.Height = S(24);
         limit.Controls.Add(_slider, 0, 0);
         limit.Controls.Add(_limitLabel, 1, 0);
 

@@ -5,8 +5,8 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// A dark, flat slider that snaps to fixed steps: a thin track filling with a
-/// dark-to-green gradient, and a white square thumb. The stock TrackBar ignores
+/// A dark, flat slider that snaps to fixed steps: a thin track filling in green,
+/// and a white square thumb. The stock TrackBar ignores
 /// the theme, so this draws the track and thumb itself.
 /// </summary>
 /// <remarks>
@@ -19,16 +19,16 @@ internal sealed class ThemedSlider : Control
     private static int ThumbRadius => S(8);
     private static int TrackHeight => S(6);
 
-    // Unavailable: the fill fades to a mid grey and the thumb is a lighter one.
-    private static readonly Color DisabledFillEnd = Color.FromArgb(0x6E, 0x6E, 0x6E);
-    private static readonly Color DisabledThumbColor = Color.FromArgb(0x8C, 0x8C, 0x8C);
+    // Unavailable: the filled part is a mid grey instead of green.
+    private static readonly Color DisabledFillColor = Color.FromArgb(0x78, 0x78, 0x78);
 
     // Drawing objects shared by every slider and reused on every repaint. A
     // slider repaints on each mouse move while dragging, so building these each
     // time was steady garbage for nothing.
     private static readonly SolidBrush TrackBrush = new(TrackColor);
+    private static readonly SolidBrush FillBrush = new(RazerGreen);
+    private static readonly SolidBrush DisabledFillBrush = new(DisabledFillColor);
     private static readonly SolidBrush ThumbBrush = new(Color.White);
-    private static readonly SolidBrush DisabledThumbBrush = new(DisabledThumbColor);
     private static readonly Pen FocusRingPen = new(RazerGreen, 2);
 
     private readonly int _minimum;
@@ -212,22 +212,15 @@ internal sealed class ThemedSlider : Control
         // Track, the full width with round ends, then the filled part up to the thumb.
         var top = TrackY - TrackHeight / 2f;
         FillPill(graphics, TrackBrush, new RectangleF(0, top, Width - 1, TrackHeight));
-        // The filled part fades from dark at the left to green at the thumb,
-        // or to grey while the slider cannot be used.
-        var filled = new RectangleF(0, top, thumbX, TrackHeight);
+        // The filled part is green up to the thumb, grey while the slider cannot be used.
+        FillPill(graphics, IsLive ? FillBrush : DisabledFillBrush, new RectangleF(0, top, thumbX, TrackHeight));
 
-        if (filled.Width > 0)
-        {
-            using var gradient = new LinearGradientBrush(RectangleF.Inflate(filled, 1, 0), GradientDark, IsLive ? FillGradientEnd : DisabledFillEnd, LinearGradientMode.Horizontal);
-            FillPill(graphics, gradient, filled);
-        }
-
-        // Thumb: a white square with softened corners (grey when unavailable),
+        // Thumb: a white square with softened corners,
         // with a green ring when the keyboard has focus.
         var thumb = new RectangleF(thumbX - ThumbRadius, TrackY - ThumbRadius, ThumbRadius * 2, ThumbRadius * 2);
 
         using (var thumbShape = RoundedButton.RoundedPath(thumb, S(2f)))
-            graphics.FillPath(IsLive ? ThumbBrush : DisabledThumbBrush, thumbShape);
+            graphics.FillPath(ThumbBrush, thumbShape);
 
         if (Focused && IsLive)
         {

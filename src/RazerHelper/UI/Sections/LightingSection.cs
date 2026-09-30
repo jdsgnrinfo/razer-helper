@@ -8,10 +8,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// Keyboard backlight and lid logo, each as a small stack: its name, then its
-/// effect drop-down (and the color list beside it where one applies), then
-/// its brightness slider. Stacked rather than side by side so the section
-/// fits a narrow window. Always available, on battery or plugged in (the
+/// Keyboard backlight and lid logo, side by side, each as a small stack: its
+/// name, then its effect drop-down (and the color list beside it where one
+/// applies), then its brightness slider. Always available, on battery or plugged in (the
 /// laptop has no power-source rule for lighting), and never part of the power
 /// profiles.
 /// </summary>
@@ -22,10 +21,10 @@ namespace RazerHelper.UI.Sections;
 /// </remarks>
 internal sealed class LightingSection : SectionPanel
 {
-    private static int LineGap => S(6);
+    private static int ColumnGap => S(24);
 
-    /// <summary>The header and the two stacks, the logo's a little below the keyboard's.</summary>
-    public static int ContentHeight => SectionHeaderHeight + 2 * Line.Height + LineGap;
+    /// <summary>The header and the two stacks side by side.</summary>
+    public static int ContentHeight => SectionHeaderHeight + Line.Height;
 
     // The effects offered, in the list's order. Wave only where the keyboard
     // has zones to move across (see RazerLaptopModel.HasWaveEffect).
@@ -113,24 +112,25 @@ internal sealed class LightingSection : SectionPanel
         var lines = new TableLayoutPanel
         {
             BackColor = CardColor,
-            ColumnCount = 1,
+            ColumnCount = 2,
             Dock = DockStyle.Fill,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
-            RowCount = 4
+            RowCount = 1
         };
 
-        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
-        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, LineGap));
-        lines.RowStyles.Add(new RowStyle(SizeType.Absolute, Line.Height));
-        lines.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Takes the spare height, so the two stacks keep their size.
+        // Two equal columns, 24px apart.
+        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        lines.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        lines.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        _keyboard.Panel.Margin = new Padding(0, 0, ColumnGap / 2, 0);
+        _logo.Panel.Margin = new Padding(ColumnGap / 2, 0, 0, 0);
         lines.Controls.Add(_keyboard.Panel, 0, 0);
-        lines.Controls.Add(_logo.Panel, 0, 2);
+        lines.Controls.Add(_logo.Panel, 1, 0);
 
         // Dock order: the header docks first, and the stacks fill what is left.
         Controls.Add(lines);
-        Controls.Add(CreateSectionHeader("Lighting", string.Empty, Glyph.Lighting));
+        Controls.Add(CreateSectionHeader("Lighting", string.Empty));
     }
 
     /// <summary>Raised with a user-facing message about the last operation.</summary>
@@ -293,9 +293,12 @@ internal sealed class LightingSection : SectionPanel
     /// </summary>
     private sealed class Line
     {
-        private static int NameHeight => S(16 + 6);
-        private static int ChoiceHeight => S(36 + 6);
-        private static int SliderHeight => S(20);
+        private static int NameHeight => S(20 + 6);
+        private static int ChoiceHeight => S(40 + 14);
+        private static int SliderHeight => S(24);
+
+        // Between the effect and the color list.
+        private static int PairGap => S(8);
 
         /// <summary>The whole stack's height.</summary>
         public static int Height => NameHeight + ChoiceHeight + SliderHeight;
@@ -307,7 +310,7 @@ internal sealed class LightingSection : SectionPanel
             Effect = new DropdownButton(effects.ToArray())
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(0, 0, companion is null ? 0 : ButtonGap / 2, S(6))
+                Margin = new Padding(0, 0, companion is null ? 0 : PairGap / 2, S(14))
             };
 
             Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 5)
@@ -320,7 +323,7 @@ internal sealed class LightingSection : SectionPanel
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Font = DesignFont(12, FontStyle.Bold),
+                Font = DesignFont(16, FontStyle.Bold),
                 ForeColor = Color.White,
                 Margin = Padding.Empty,
                 Text = "--",
@@ -350,7 +353,7 @@ internal sealed class LightingSection : SectionPanel
             if (companion is not null)
             {
                 companion.Dock = DockStyle.Fill;
-                companion.Margin = new Padding(ButtonGap / 2, 0, 0, S(6));
+                companion.Margin = new Padding(PairGap / 2, 0, 0, S(14));
                 choices.Controls.Add(companion, 1, 0);
             }
             else
@@ -370,7 +373,7 @@ internal sealed class LightingSection : SectionPanel
             };
 
             slider.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(56)));
+            slider.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, S(60)));
             slider.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             slider.Controls.Add(Brightness, 0, 0);
             slider.Controls.Add(_percent, 1, 0);
@@ -393,7 +396,7 @@ internal sealed class LightingSection : SectionPanel
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Font = DesignFont(11, FontStyle.Bold),
+                Font = SemiBoldFont(16),
                 ForeColor = Color.White,
                 Margin = new Padding(0, 0, 0, S(6)),
                 Text = L.T(name),

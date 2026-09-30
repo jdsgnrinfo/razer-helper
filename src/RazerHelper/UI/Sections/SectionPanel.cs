@@ -10,10 +10,14 @@ namespace RazerHelper.UI.Sections;
 internal abstract class SectionPanel : Panel
 {
     /// <summary>
-    /// The space below every section, which sets the sections apart. The host
-    /// adds it to each section's row height.
+    /// The space below every section, which sets the sections apart: 20px,
+    /// the 1px divider line (<see cref="DividerOffset"/>), then 16px to the
+    /// next title. The host adds it to each section's row height and draws the line.
     /// </summary>
-    public static int GapBelow => S(24);
+    public static int GapBelow => S(20 + 1 + 16);
+
+    /// <summary>How far below a section's content its divider line runs.</summary>
+    public static int DividerOffset => S(20);
 
     // Post through the UI thread's context instead of Control.BeginInvoke,
     // which needs a window handle. A tray popup has none until it is first

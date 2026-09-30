@@ -28,10 +28,18 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(0x14, 0x14, 0x14);
-    public static readonly Color ButtonColor = Color.FromArgb(0x1F, 0x1F, 0x1F);
+    public static readonly Color BackgroundColor = Color.FromArgb(0x18, 0x18, 0x18);
 
-    /// <summary>The 1px outline of an unselected button or drop-down.</summary>
+    /// <summary>An unselected button's or drop-down's flat fill.</summary>
+    public static readonly Color ButtonColor = Color.FromArgb(0x28, 0x28, 0x28);
+
+    /// <summary>A button's fill under the pointer: a touch lighter.</summary>
+    public static readonly Color ButtonHoverColor = Color.FromArgb(0x31, 0x31, 0x31);
+
+    /// <summary>The thin lines between sections and between rows.</summary>
+    public static readonly Color DividerColor = Color.FromArgb(0x28, 0x28, 0x28);
+
+    /// <summary>The 1px outline of menus and other quiet edges.</summary>
     public static readonly Color ButtonBorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
 
     /// <summary>
@@ -45,32 +53,24 @@ internal static class UiTheme
     public static readonly Color BorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
     public static readonly Color RazerGreen = Color.FromArgb(0x46, 0xD7, 0x2E);
 
-    /// <summary>Where every gradient starts: the dark end, nearly the button color with a hint of green.</summary>
-    public static readonly Color GradientDark = Color.FromArgb(0x17, 0x1C, 0x16);
+    /// <summary>A selected button's fill under the pointer: the green a touch lighter.</summary>
+    public static readonly Color RazerGreenHover = Color.FromArgb(0x5A, 0xE0, 0x44);
 
-    /// <summary>The top of a selected button's top-to-bottom gradient: Razer green at 2%.</summary>
-    public static readonly Color SelectedGradientStart = Color.FromArgb(5, RazerGreen);
+    /// <summary>The circle behind a performance mode's icon: darker green on the selected button, darker grey on the rest.</summary>
+    public static readonly Color SelectedIconCircleColor = Color.FromArgb(0x37, 0xAA, 0x24);
+    public static readonly Color IconCircleColor = Color.FromArgb(0x1F, 0x1F, 0x1F);
 
-    /// <summary>The bottom of a selected button's top-to-bottom gradient: Razer green at 35%.</summary>
-    public static readonly Color SelectedGradientEnd = Color.FromArgb(89, RazerGreen);
-
-    /// <summary>The bottom of the selected button's gradient under the pointer: Razer green at 50%.</summary>
-    public static readonly Color SelectedGradientHoverEnd = Color.FromArgb(128, RazerGreen);
-
-    /// <summary>The bright end of a slider's, switch's or bar's left-to-right gradient.</summary>
-    public static readonly Color FillGradientEnd = Color.FromArgb(0x1D, 0x80, 0x0D);
-
-    /// <summary>The line along the bottom of every button, drawn inside its shape.</summary>
-    public static float ButtonStroke => S(2.5f);
-
-    /// <summary>The text on a green (selected) button.</summary>
-    public static readonly Color OnGreenTextColor = Color.FromArgb(0x1E, 0x1E, 0x1E);
+    /// <summary>The text and icons on a green (selected) button: nearly the window's own dark.</summary>
+    public static readonly Color OnGreenTextColor = Color.FromArgb(0x18, 0x18, 0x18);
 
     /// <summary>The unfilled part of a slider or a bar.</summary>
-    public static readonly Color TrackColor = Color.FromArgb(0x33, 0x33, 0x33);
+    public static readonly Color TrackColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
 
-    /// <summary>Quiet secondary text: the model name, hints and notes.</summary>
-    public static readonly Color SubtleTextColor = Color.FromArgb(145, 145, 145);
+    /// <summary>An off switch's track, and an unavailable radio option's dot.</summary>
+    public static readonly Color OffColor = Color.FromArgb(0x5F, 0x5F, 0x5F);
+
+    /// <summary>Quiet secondary text: descriptions, hints and values.</summary>
+    public static readonly Color SubtleTextColor = Color.FromArgb(0x9D, 0x9D, 0x9D);
 
     /// <summary>
     /// The design's typeface, Titillium Web, which comes inside the exe;
@@ -81,6 +81,12 @@ internal static class UiTheme
     /// <summary>A font of the design's sizes, which are in pixels: 14px is 10.5pt.</summary>
     public static Font DesignFont(float pixels, FontStyle style = FontStyle.Regular) =>
         GetDesignFont(FontFamilyName, pixels * 0.75F, style);
+
+    /// <summary>A semi-bold font of the design's sizes, for labels a step below titles; bold where the semi-bold weight is missing.</summary>
+    public static Font SemiBoldFont(float pixels) =>
+        AppFonts.Find(AppFonts.SemiBoldFamily) is not null
+            ? GetDesignFont(AppFonts.SemiBoldFamily, pixels * 0.75F)
+            : DesignFont(pixels, FontStyle.Bold);
 
     // The app only ever uses a handful of distinct fonts, and controls never
     // dispose a font they are handed, so each look is created once and shared.

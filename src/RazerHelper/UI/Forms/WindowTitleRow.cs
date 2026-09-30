@@ -5,7 +5,7 @@ namespace RazerHelper.UI.Forms;
 
 /// <summary>
 /// The top of the small windows beside the popup (Settings, Custom): the
-/// icon and the title in bold white on the left, the close X on the right.
+/// title in bold white capitals on the left, the close X on the right.
 /// </summary>
 internal static class WindowTitleRow
 {
@@ -13,7 +13,7 @@ internal static class WindowTitleRow
     public static int Height => S(24);
 
     /// <param name="title">English text; translated here.</param>
-    public static Control Create(Form window, string title, Glyph icon, int width)
+    public static Control Create(Form window, string title, int width)
     {
         var row = new TableLayoutPanel
         {
@@ -30,9 +30,9 @@ internal static class WindowTitleRow
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-        var heading = UiControls.CreateSectionLabel(title, icon);
+        var heading = UiControls.CreateSectionLabel(title);
         heading.BackColor = BackgroundColor;
-        heading.Font = DesignFont(13, FontStyle.Bold);
+        heading.Font = DesignFont(16, FontStyle.Bold);
         row.Controls.Add(heading, 0, 0);
 
         var close = new GlyphButton(Glyph.Close, S(18))

@@ -15,8 +15,8 @@ namespace RazerHelper.UI;
 /// </remarks>
 internal sealed class DropdownButton : RoundedButton
 {
-    private static readonly Color HoverColor = Color.FromArgb(0x33, 0x33, 0x33);
-    private static readonly SolidBrush ArrowBrush = new(Color.Silver);
+    private static readonly Color HoverColor = ButtonHoverColor;
+    private static readonly SolidBrush ArrowBrush = new(Color.White);
     private static readonly SolidBrush DisabledArrowBrush = new(SystemColors.GrayText);
 
     private readonly string[] _items;
@@ -38,7 +38,7 @@ internal sealed class DropdownButton : RoundedButton
 
         BackColor = ButtonColor;
         Cursor = Cursors.Hand;
-        Font = DesignFont(11, FontStyle.Bold);
+        Font = DesignFont(16);
         ForeColor = Color.White;
         Padding = S(new Padding(_swatches is null ? 12 : 12 + 16 + 8, 0, 12 + 16 + 8, 0));
         TextAlign = ContentAlignment.MiddleLeft;

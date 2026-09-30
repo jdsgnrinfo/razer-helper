@@ -10,7 +10,7 @@ namespace RazerHelper.UI.Forms;
 /// "55% (Charging)", then cards for power in or out, time left or to full,
 /// charge and health (each with a bar), voltage and the battery itself.
 /// </summary>
-internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWindow("Battery", Glyph.Battery)
+internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWindow("Battery")
 {
     private static readonly Color HealthFair = Color.FromArgb(230, 170, 40);
 

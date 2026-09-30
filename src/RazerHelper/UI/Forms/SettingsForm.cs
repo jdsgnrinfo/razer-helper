@@ -15,11 +15,10 @@ namespace RazerHelper.UI.Forms;
 /// </summary>
 internal sealed class SettingsForm : Form
 {
-    private static int ContentWidth => S(400);
-    private static int TextColumnWidth => S(260);
-    private static int RowGap => S(16);
-    private static int ActionButtonHeight => S(36);
-    private static int ActionButtonGap => S(7);
+    private static int ContentWidth => S(512);
+    private static int RowPadding => S(8);
+    private static int ActionButtonHeight => S(40);
+    private static int ActionButtonGap => S(8);
 
     private readonly IStartupRegistration _startupRegistration;
     private readonly CheckBox _startAtLoginBox;
@@ -57,11 +56,11 @@ internal sealed class SettingsForm : Form
             BackColor = BackgroundColor,
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
-            Padding = S(new Padding(20)),
+            Padding = S(new Padding(24)),
             WrapContents = false
         };
 
-        layout.Controls.Add(WindowTitleRow.Create(this, "Settings", Glyph.Settings, ContentWidth));
+        layout.Controls.Add(WindowTitleRow.Create(this, "Settings", ContentWidth));
         layout.Controls.Add(CreateLanguageRow());
 
         _startAtLoginBox = AddOption(layout, "Start at login", "Opens in the tray when you sign in.");
@@ -76,7 +75,7 @@ internal sealed class SettingsForm : Form
         {
             AutoSize = true,
             ForeColor = Color.IndianRed,
-            Margin = new Padding(0, RowGap, 0, 0),
+            Margin = new Padding(0, RowPadding, 0, 0),
             MaximumSize = new Size(ContentWidth, 0),
             Visible = false
         };
@@ -215,13 +214,14 @@ internal sealed class SettingsForm : Form
             part.Cursor = Cursors.Hand;
         }
 
+        layout.Controls.Add(CreateDivider());
         layout.Controls.Add(card);
         return toggle;
     }
 
-    // A setting's row, 24px below the one before: a bold title and, 8px under
-    // it, what it does, in a 260px column on the left, however long the texts
-    // run; the control at the right edge.
+    // A setting's row, 12px above and below: the title and, under it, what it
+    // does in quiet grey, on the left, however long the texts run; the control
+    // at the right edge, 24px clear of them.
     private static TableLayoutPanel CreateCard(string text, string hint, Control control)
     {
         control.Margin = Padding.Empty;
@@ -240,20 +240,20 @@ internal sealed class SettingsForm : Form
         words.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = DesignFont(12, FontStyle.Bold),
+            Font = SemiBoldFont(16),
             ForeColor = Color.White,
             Margin = Padding.Empty,
-            MaximumSize = new Size(TextColumnWidth, 0),
+            MaximumSize = new Size(ContentWidth - control.Width - S(24), 0),
             Text = L.T(text)
         });
 
         words.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = DesignFont(10),
-            ForeColor = Color.White,
-            Margin = new Padding(0, S(6), 0, 0),
-            MaximumSize = new Size(TextColumnWidth, 0),
+            Font = DesignFont(14),
+            ForeColor = SubtleTextColor,
+            Margin = new Padding(0, S(2), 0, 0),
+            MaximumSize = new Size(ContentWidth - control.Width - S(24), 0),
             Text = L.T(hint)
         });
 
@@ -263,8 +263,8 @@ internal sealed class SettingsForm : Form
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = BackgroundColor,
             ColumnCount = 2,
-            Margin = new Padding(0, RowGap, 0, 0),
-            Padding = Padding.Empty,
+            Margin = Padding.Empty,
+            Padding = new Padding(0, RowPadding, 0, RowPadding),
             RowCount = 1
         };
 
@@ -274,6 +274,15 @@ internal sealed class SettingsForm : Form
         row.Controls.Add(control, 1, 0);
         return row;
     }
+
+    // The thin line between two settings.
+    private static Control CreateDivider() => new Panel
+    {
+        BackColor = DividerColor,
+        Height = S(1),
+        Margin = Padding.Empty,
+        Width = ContentWidth
+    };
 
     // "Language" on the left and the list on the right. Each language is named
     // in itself, so it can be found whatever the current one is. Picking a
@@ -285,8 +294,8 @@ internal sealed class SettingsForm : Form
         var dropdown = new DropdownButton([.. languages.Select(LanguageName)])
         {
             Anchor = AnchorStyles.Right,
-            Font = DesignFont(10, FontStyle.Bold),
-            Size = S(new Size(150, 34))
+            Font = DesignFont(16, FontStyle.Bold),
+            Size = S(new Size(116, 38))
         };
 
         dropdown.Select(Array.IndexOf(languages, L.Current));
@@ -301,7 +310,9 @@ internal sealed class SettingsForm : Form
             Close();
         };
 
-        return CreateCard("Language", "RazerHelper restarts to change the language.", dropdown);
+        var card = CreateCard("Language", "RazerHelper restarts to change the language.", dropdown);
+        card.Margin = new Padding(0, S(12), 0, 0);
+        return card;
     }
 
     private static string LanguageName(AppLanguage language) => language switch
@@ -311,7 +322,7 @@ internal sealed class SettingsForm : Form
     };
 
     // One row of the app's buttons, each taking its share of the content
-    // width (a weight of 2 is twice as wide as 1), 7px apart.
+    // width (a weight of 2 is twice as wide as 1), 8px apart.
     private static Control CreateActionRow(params (string Text, Action Open, int Weight)[] actions)
     {
         var row = new TableLayoutPanel
@@ -319,7 +330,7 @@ internal sealed class SettingsForm : Form
             BackColor = BackgroundColor,
             ColumnCount = actions.Length,
             Height = ActionButtonHeight,
-            Margin = new Padding(0, S(18), 0, 0),
+            Margin = new Padding(0, S(8), 0, 0),
             Padding = Padding.Empty,
             RowCount = 1,
             Width = ContentWidth
@@ -340,7 +351,6 @@ internal sealed class SettingsForm : Form
                 : new ColumnStyle(SizeType.Absolute, share * weight + ActionButtonGap));
 
             var button = CreateActionButton(text);
-            button.Font = DesignFont(10, FontStyle.Bold);
             button.Margin = new Padding(0, 0, last ? 0 : ActionButtonGap, 0);
             button.Click += (_, _) => open();
             row.Controls.Add(button, index, 0);
