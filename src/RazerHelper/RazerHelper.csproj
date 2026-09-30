@@ -26,6 +26,8 @@
   <ItemGroup>
     <!-- The same icon, inside the exe, for the tray. -->
     <EmbeddedResource Include="Assets\RazerHelper.ico" LogicalName="RazerHelper.ico" />
+    <!-- The interface's typeface, Titillium Web, inside the exe: nothing is installed in Windows. -->
+    <EmbeddedResource Include="Assets\Fonts\*.ttf" LogicalName="Fonts.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

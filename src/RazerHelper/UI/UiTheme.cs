@@ -73,20 +73,14 @@ internal static class UiTheme
     public static readonly Color SubtleTextColor = Color.FromArgb(145, 145, 145);
 
     /// <summary>
-    /// The design's typeface, Inter, when it is installed; otherwise Segoe
-    /// UI, Windows' own, which is close in shape and always there.
+    /// The design's typeface, Titillium Web, which comes inside the exe;
+    /// should it fail to load, Segoe UI, Windows' own, which is always there.
     /// </summary>
-    public static readonly string FontFamilyName = IsInstalled("Inter") ? "Inter" : "Segoe UI";
+    public static readonly string FontFamilyName = AppFonts.IsLoaded ? AppFonts.Family : "Segoe UI";
 
     /// <summary>A font of the design's sizes, which are in pixels: 14px is 10.5pt.</summary>
     public static Font DesignFont(float pixels, FontStyle style = FontStyle.Regular) =>
         GetDesignFont(FontFamilyName, pixels * 0.75F, style);
-
-    private static bool IsInstalled(string family)
-    {
-        using var fonts = new System.Drawing.Text.InstalledFontCollection();
-        return fonts.Families.Any(installed => string.Equals(installed.Name, family, StringComparison.OrdinalIgnoreCase));
-    }
 
     // The app only ever uses a handful of distinct fonts, and controls never
     // dispose a font they are handed, so each look is created once and shared.
@@ -111,7 +105,14 @@ internal static class UiTheme
             var key = (familyName, pointSize, style);
 
             if (!DesignFonts.TryGetValue(key, out var font))
-                DesignFonts[key] = font = new Font(familyName, pointSize * Scale / DpiScale, style, GraphicsUnit.Point);
+            {
+                var size = pointSize * Scale / DpiScale;
+
+                // One of the exe's own families is only reachable as an object; a name finds installed fonts.
+                DesignFonts[key] = font = AppFonts.Find(familyName) is { } family
+                    ? new Font(family, size, style, GraphicsUnit.Point)
+                    : new Font(familyName, size, style, GraphicsUnit.Point);
+            }
 
             return font;
         }
