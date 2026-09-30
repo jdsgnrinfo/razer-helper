@@ -15,7 +15,7 @@ namespace RazerHelper.UI;
 internal class RoundedButton : Button
 {
     // Base-design pixels, scaled like everything else.
-    internal const int CornerRadius = 6;
+    internal const int CornerRadius = 12;
 
     private readonly System.Windows.Forms.Timer _hoverAnimation = new() { Interval = 15 };
     private readonly System.Diagnostics.Stopwatch _hoverClock = new();

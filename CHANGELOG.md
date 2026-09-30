@@ -34,7 +34,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
 - **Icons on the small buttons:** System info, Free up GPU and Settings show their icon before the text, and Close (an arrow leaving a box) joins them at the bottom, taking the place of the X at the top.
 - **New header:** the app's logo and name on the left, the recognised laptop model on the right.
-- **Rounder buttons, more air:** buttons have 6px corners, and the sections of the main window sit 24px apart instead of 16, which makes it 500x734.
+- **Rounder buttons, more air:** buttons and drop-downs have 12px corners, and the sections of the main window sit 24px apart instead of 16, which makes it 500x734.
 
 ### New windows
 
