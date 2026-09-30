@@ -4,8 +4,8 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI;
 
 /// <summary>
-/// The app's button: a filled shape with rounded corners and a 2.5px line (inside the shape)
-/// along the bottom only. WinForms' flat button can only draw square corners,
+/// The app's button: a filled shape with rounded corners and a 2.5px line along
+/// the bottom only, which curls up around the bottom corners. WinForms' flat button can only draw square corners,
 /// so this paints itself: the fill (a dark-to-green gradient when selected, a
 /// little lighter while pressed), the bottom line (green when selected or
 /// under the pointer), then the icon and text. A green BackColor is what marks
@@ -61,35 +61,48 @@ internal class RoundedButton : Button
     {
         var graphics = pevent.Graphics;
 
+        var parentColor = Parent?.BackColor ?? BackgroundColor;
+
         // Outside the corners the parent shows through.
-        graphics.Clear(Parent?.BackColor ?? BackgroundColor);
+        graphics.Clear(parentColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        using (var path = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
+        // The only outline is a line along the bottom: the button's whole
+        // shape in the line's color, with the face laid over it a little
+        // shorter, so the line shows under the face and curls up around its
+        // bottom corners. Green on the selected button and on any other under
+        // the pointer, quiet otherwise, silver while it has keyboard focus (Tab).
+        var stroke = Focused && ShowFocusCues ? Color.Silver
+            : IsGreen && IsUsable ? RazerGreen
+            : Motion.Blend(ButtonBorderColor, RazerGreen, Hover);
+
+        // Only its bottom part is painted: higher up the face's edge lies
+        // exactly on it, and the line's color would fringe the face.
+        using (var shape = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
+        using (var line = new SolidBrush(stroke))
+        {
+            var lineTop = Height - ButtonStroke - S(CornerRadius);
+            graphics.SetClip(new RectangleF(0, lineTop, Width, Height - lineTop));
+            graphics.FillPath(line, shape);
+            graphics.ResetClip();
+        }
+
+        using (var face = RoundedPath(new RectangleF(0, 0, Width, Height - ButtonStroke), S(CornerRadius)))
         {
             // A selected button fades from a faint green at the top to a soft
-            // green at the bottom, stronger under the pointer; the others are flat.
-            using (Brush fill = IsGreen
-                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(SelectedGradientStart), Pressed(Motion.Blend(SelectedGradientEnd, SelectedGradientHoverEnd, Hover)), LinearGradientMode.Vertical)
-                : new SolidBrush(Pressed(BackColor)))
+            // green at the bottom, stronger under the pointer, over the
+            // parent's color (the greens are see-through); the others are flat.
+            if (IsGreen)
             {
-                graphics.FillPath(fill, path);
+                using var under = new SolidBrush(parentColor);
+                graphics.FillPath(under, face);
             }
 
-            // The only outline is a line along the bottom, following the
-            // corners and drawn inside the shape: green on the selected button
-            // and on any other under the pointer, quiet otherwise, silver while it has keyboard focus (Tab).
-            var stroke = Focused && ShowFocusCues ? Color.Silver
-                : IsGreen && IsUsable ? RazerGreen
-                : Motion.Blend(ButtonBorderColor, RazerGreen, Hover);
+            using Brush fill = IsGreen
+                ? new LinearGradientBrush(new RectangleF(0, -1, Width, Height + 2), Pressed(SelectedGradientStart), Pressed(Motion.Blend(SelectedGradientEnd, SelectedGradientHoverEnd, Hover)), LinearGradientMode.Vertical)
+                : new SolidBrush(Pressed(BackColor));
 
-            var clip = graphics.Clip;
-            graphics.SetClip(path, CombineMode.Intersect);
-
-            using (var line = new SolidBrush(stroke))
-                graphics.FillRectangle(line, 0, Height - ButtonStroke, Width, ButtonStroke);
-
-            graphics.Clip = clip;
+            graphics.FillPath(fill, face);
         }
 
         var textBounds = new Rectangle(

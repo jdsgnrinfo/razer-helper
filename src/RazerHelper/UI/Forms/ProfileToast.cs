@@ -118,18 +118,26 @@ internal sealed class ProfileToast : Form
         var padding = (Height - IconBox) / 2;
         var box = new Rectangle(padding, padding, IconBox, IconBox);
 
+        // The line's color fills the whole square; the face, a little shorter,
+        // goes over it, so the line shows along the bottom and around its corners.
+        RectangleF face = new(box.X, box.Y, box.Width, box.Height - ButtonStroke);
+
         using (Brush fill = _applied
             ? new System.Drawing.Drawing2D.LinearGradientBrush(Rectangle.Inflate(box, 0, 1), SelectedGradientStart, SelectedGradientEnd, System.Drawing.Drawing2D.LinearGradientMode.Vertical)
             : new SolidBrush(TrackColor))
         using (var shape = RoundedButton.RoundedPath(box, S(RoundedButton.CornerRadius)))
+        using (var faceShape = RoundedButton.RoundedPath(face, S(RoundedButton.CornerRadius)))
         using (var line = new SolidBrush(_applied ? RazerGreen : ButtonBorderColor))
+        using (var under = new SolidBrush(BackColor))
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            graphics.FillPath(fill, shape);
-
-            graphics.SetClip(shape);
-            graphics.FillRectangle(line, box.X, box.Bottom - ButtonStroke, box.Width, ButtonStroke);
+            // Only the bottom of the line's shape: higher up it would fringe the face.
+            var lineTop = face.Bottom - S(RoundedButton.CornerRadius);
+            graphics.SetClip(new RectangleF(box.X, lineTop, box.Width, box.Bottom - lineTop));
+            graphics.FillPath(line, shape);
             graphics.ResetClip();
+            graphics.FillPath(under, faceShape);
+            graphics.FillPath(fill, faceShape);
         }
 
         var glyph = S(24);
