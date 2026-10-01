@@ -48,7 +48,8 @@ internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWi
                 $"{health}%",
                 BatteryDetailsText.HealthCaption(battery),
                 Bar: Math.Min(1.0, health / 100.0),
-                BarColor: health >= 80 ? RazerGreen : health >= 60 ? HealthFair : Color.IndianRed));
+                BarColor: health >= 80 ? RazerGreen : health >= 60 ? HealthFair : Color.IndianRed,
+                DetailBeside: true));
         }
 
         if (BatteryDetailsText.Voltage(battery) is { } voltage)

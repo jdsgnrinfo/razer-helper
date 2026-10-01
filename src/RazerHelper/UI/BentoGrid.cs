@@ -4,14 +4,15 @@ using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
-/// <summary>One bento card's content: a small caption, the figure, a note under it, and an optional bar (0 to 1). Wide cards take a whole row.</summary>
+/// <summary>One bento card's content: a small caption, the figure, a note, and an optional bar (0 to 1). Wide cards take a whole row. A narrow card's note goes under the figure, or at the right of it with DetailBeside.</summary>
 internal sealed record BentoCardSpec(
     string Caption,
     string Value,
     string? Detail,
     bool Wide = false,
     double? Bar = null,
-    Color? BarColor = null);
+    Color? BarColor = null,
+    bool DetailBeside = false);
 
 /// <summary>
 /// Figures two to a row. A wide card takes a row of its own, and a narrow
@@ -146,7 +147,7 @@ internal sealed class BentoGrid : TableLayoutPanel
 
         /// <summary>How tall a card is: the gap above, the caption, the figure, the bar or the note, and the gap below.</summary>
         public static int HeightFor(BentoCardSpec spec) =>
-            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (!spec.Wide && spec.Detail is not null ? S(20) : 0) + BottomGap;
+            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (!spec.Wide && !spec.DetailBeside && spec.Detail is not null ? S(20) : 0) + BottomGap;
 
         private BentoCardSpec? _spec;
 
@@ -210,6 +211,11 @@ internal sealed class BentoGrid : TableLayoutPanel
                 if (spec.Wide)
                 {
                     TextRenderer.DrawText(graphics, detail, _valueFont, valueRow, Color.White, Line | TextFormatFlags.Right);
+                }
+                else if (spec.DetailBeside)
+                {
+                    // The note at its own size, at the right of the figure's row.
+                    TextRenderer.DrawText(graphics, detail, DetailFont, valueRow, SubtleTextColor, Line | TextFormatFlags.Right);
                 }
                 else
                 {
