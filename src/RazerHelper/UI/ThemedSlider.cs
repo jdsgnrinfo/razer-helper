@@ -8,6 +8,9 @@ namespace RazerHelper.UI;
 /// A dark, flat slider that snaps to fixed steps: a thin track filling in green,
 /// and a white square thumb. The stock TrackBar ignores
 /// the theme, so this draws the track and thumb itself.
+/// While dragging, the thumb follows the pointer freely and the value moves
+/// in steps under it; on release, or after a click or a key, the thumb glides
+/// to the step instead of jumping there.
 /// </summary>
 /// <remarks>
 /// <see cref="ValueChanged"/> fires on every step while dragging;
@@ -37,6 +40,14 @@ internal sealed class ThemedSlider : Control
 
     private int _value;
     private bool _dragging;
+
+    // Where the thumb is drawn. It follows the pointer while dragging and
+    // eases towards the value's place otherwise.
+    private float _thumbX = float.NaN;
+    // How far from the thumb's centre it was grabbed, so it does not jump
+    // under the pointer.
+    private float _grabOffset;
+    private readonly System.Windows.Forms.Timer _glide = new() { Interval = 15 };
     private bool _keyMovedValue;
 
     public ThemedSlider(int minimum, int maximum, int step)
@@ -60,6 +71,8 @@ internal sealed class ThemedSlider : Control
         TabStop = true;
         BackColor = CardColor;
         Height = S(20);
+        Cursor = Cursors.Hand;
+        _glide.Tick += (_, _) => GlideStep();
     }
 
     public event EventHandler? ValueChanged;
@@ -82,6 +95,8 @@ internal sealed class ThemedSlider : Control
             _available = value;
             TabStop = value;
             _dragging = false;
+            Cursor = value ? Cursors.Hand : Cursors.Default;
+            SettleThumb();
             Invalidate();
         }
     }
@@ -104,6 +119,11 @@ internal sealed class ThemedSlider : Control
                 return;
 
             _value = snapped;
+
+            // Set from outside (a refresh, say), the thumb goes straight there.
+            if (!_dragging && !_glide.Enabled)
+                SettleThumb();
+
             Invalidate();
             ValueChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -122,7 +142,13 @@ internal sealed class ThemedSlider : Control
 
         Focus();
         _dragging = true;
-        Value = ValueAt(e.X);
+        _glide.Stop();
+
+        // Grabbing the thumb keeps it where it is under the pointer; a click on
+        // the track brings it to the pointer.
+        var thumbX = CurrentThumbX;
+        _grabOffset = Math.Abs(e.X - thumbX) <= ThumbRadius + S(2) ? e.X - thumbX : 0;
+        DragTo(e.X);
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -130,7 +156,7 @@ internal sealed class ThemedSlider : Control
         base.OnMouseMove(e);
 
         if (_dragging)
-            Value = ValueAt(e.X);
+            DragTo(e.X);
     }
 
     protected override void OnMouseUp(MouseEventArgs e)
@@ -141,6 +167,7 @@ internal sealed class ThemedSlider : Control
             return;
 
         _dragging = false;
+        GlideToValue();
         Committed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -166,7 +193,12 @@ internal sealed class ThemedSlider : Control
         e.Handled = true;
 
         var before = _value;
+        // The thumb glides from where it is; starting the timer first keeps the
+        // value's setter from putting it straight in place.
+        _thumbX = CurrentThumbX;
+        _glide.Start();
         Value = target.Value;
+        GlideToValue();
         _keyMovedValue |= _value != before;
     }
 
@@ -207,7 +239,7 @@ internal sealed class ThemedSlider : Control
         graphics.Clear(BackColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var thumbX = XAt(_value);
+        var thumbX = CurrentThumbX;
 
         // Track, the full width with round ends, then the filled part up to the thumb.
         var top = TrackY - TrackHeight / 2f;
@@ -227,6 +259,60 @@ internal sealed class ThemedSlider : Control
             using var ring = RoundedButton.RoundedPath(RectangleF.Inflate(thumb, 2, 2), S(3f));
             graphics.DrawPath(FocusRingPen, ring);
         }
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        SettleThumb();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            _glide.Dispose();
+
+        base.Dispose(disposing);
+    }
+
+    private float CurrentThumbX => float.IsNaN(_thumbX) ? XAt(_value) : _thumbX;
+
+    // The thumb under the pointer, kept on the track; the value takes the nearest step.
+    private void DragTo(int x)
+    {
+        _thumbX = Math.Clamp(x - _grabOffset, ThumbRadius, ThumbRadius + TrackWidth);
+        Value = ValueAt((int)Math.Round(_thumbX));
+        Invalidate();
+    }
+
+    private void SettleThumb()
+    {
+        _glide.Stop();
+        _thumbX = float.NaN;
+        Invalidate();
+    }
+
+    private void GlideToValue()
+    {
+        if (float.IsNaN(_thumbX) || Math.Abs(_thumbX - XAt(_value)) < 0.5f)
+        {
+            SettleThumb();
+            return;
+        }
+
+        _glide.Start();
+    }
+
+    // Each tick covers a share of what is left, so the thumb slows as it lands.
+    private void GlideStep()
+    {
+        var target = XAt(_value);
+        _thumbX += (target - _thumbX) * 0.35f;
+
+        if (Math.Abs(target - _thumbX) < 0.5f)
+            SettleThumb();
+        else
+            Invalidate();
     }
 
     // A bar with fully rounded ends.
