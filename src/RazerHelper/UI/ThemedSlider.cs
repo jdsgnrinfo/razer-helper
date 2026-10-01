@@ -32,7 +32,6 @@ internal sealed class ThemedSlider : Control
     private static readonly SolidBrush FillBrush = new(RazerGreen);
     private static readonly SolidBrush DisabledFillBrush = new(DisabledFillColor);
     private static readonly SolidBrush ThumbBrush = new(Color.White);
-    private static readonly Pen FocusRingPen = new(RazerGreen, 2);
 
     private readonly int _minimum;
     private readonly int _maximum;
@@ -236,18 +235,6 @@ internal sealed class ThemedSlider : Control
         Invalidate();
     }
 
-    protected override void OnGotFocus(EventArgs e)
-    {
-        base.OnGotFocus(e);
-        Invalidate();
-    }
-
-    protected override void OnLostFocus(EventArgs e)
-    {
-        base.OnLostFocus(e);
-        Invalidate();
-    }
-
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = e.Graphics;
@@ -262,18 +249,11 @@ internal sealed class ThemedSlider : Control
         // The filled part is green up to the thumb, grey while the slider cannot be used.
         FillPill(graphics, IsLive ? FillBrush : DisabledFillBrush, new RectangleF(0, top, thumbX, TrackHeight));
 
-        // Thumb: a white square with softened corners,
-        // with a green ring when the keyboard has focus.
+        // Thumb: a white square with softened corners, with no outline.
         var thumb = new RectangleF(thumbX - ThumbRadius, TrackY - ThumbRadius, ThumbRadius * 2, ThumbRadius * 2);
 
         using (var thumbShape = RoundedButton.RoundedPath(thumb, S(2f)))
             graphics.FillPath(ThumbBrush, thumbShape);
-
-        if (Focused && IsLive)
-        {
-            using var ring = RoundedButton.RoundedPath(RectangleF.Inflate(thumb, 2, 2), S(3f));
-            graphics.DrawPath(FocusRingPen, ring);
-        }
     }
 
     protected override void OnResize(EventArgs e)
