@@ -15,7 +15,7 @@ namespace RazerHelper.UI.Sections;
 internal sealed class BatterySection : SectionPanel
 {
     /// <summary>The title row: taller than the others, to fit the "More info" button, then the 8px gap.</summary>
-    private static int HeaderHeight => S(30 + 6);
+    private static int HeaderHeight => S(30 + 8);
 
     /// <summary>The header and the slider with the chosen limit beside it.</summary>
     public static int ContentHeight => HeaderHeight + S(24);
@@ -64,7 +64,7 @@ internal sealed class BatterySection : SectionPanel
             Dock = DockStyle.Top,
             Height = HeaderHeight,
             Margin = Padding.Empty,
-            Padding = new Padding(0, 0, 0, S(6)),
+            Padding = new Padding(0, 0, 0, S(8)),
             RowCount = 1
         };
 
