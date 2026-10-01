@@ -61,7 +61,7 @@ Everything the original does still works the same way; on top of it:
 
 - **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom, on every model.
 - **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
-- **Battery charge limit:** 60%, 80% or 100% (no limit).
+- **Battery charge limit:** any percentage from 60% to 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
 - **Temperatures:** CPU and GPU, shown at the top to the left of the power source, only while the window is open. The GPU reading comes from the graphics driver (the same source Task Manager uses). The CPU reading comes from the laptop's own controller. Compared with MSI Afterburner under load on the developer's laptop it was very close, but it updates more slowly, so Afterburner's number moves faster (hover it for a reminder). It is not read from the CPU die itself. The GPU is read every 2 seconds and the CPU every 4, and nothing is read while the window is closed.
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.

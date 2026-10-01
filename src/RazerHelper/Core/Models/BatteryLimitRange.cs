@@ -9,7 +9,7 @@ internal static class BatteryLimitRange
 {
     public const int Minimum = 60;
     public const int Maximum = 100;
-    public const int Step = 20;
+    public const int Step = 1;
 
     /// <summary>100% means "charge without a limit".</summary>
     public const int NoLimit = Maximum;

@@ -5,11 +5,11 @@ namespace RazerHelper.Tests.Models;
 public class BatteryLimitRangeTests
 {
     [Fact]
-    public void TheOfferedRangeIsSixtyToOneHundredInStepsOfTwenty()
+    public void TheOfferedRangeIsSixtyToOneHundred_AnyWholePercent()
     {
         Assert.Equal(60, BatteryLimitRange.Minimum);
         Assert.Equal(100, BatteryLimitRange.Maximum);
-        Assert.Equal(20, BatteryLimitRange.Step);
+        Assert.Equal(1, BatteryLimitRange.Step);
     }
 
     [Fact]
@@ -20,6 +20,8 @@ public class BatteryLimitRangeTests
 
     [Theory]
     [InlineData(60)]
+    [InlineData(61)]
+    [InlineData(73)]
     [InlineData(80)]
     [InlineData(100)]
     public void IsValid_AcceptsTheOfferedSteps(int percent)
@@ -32,9 +34,6 @@ public class BatteryLimitRangeTests
     [InlineData(-20)]
     [InlineData(50)]   // the EC accepts it, but this range does not offer it
     [InlineData(59)]
-    [InlineData(61)]
-    [InlineData(70)]
-    [InlineData(90)]
     [InlineData(101)]
     [InlineData(120)]
     public void IsValid_RejectsAnythingElse(int percent)
@@ -44,14 +43,10 @@ public class BatteryLimitRangeTests
 
     [Theory]
     [InlineData(60, 60)]
-    [InlineData(69, 60)]
-    [InlineData(70, 80)]    // halfway rounds up
-    [InlineData(79, 80)]
-    [InlineData(80, 80)]
-    [InlineData(89, 80)]
-    [InlineData(90, 100)]   // halfway rounds up
+    [InlineData(69, 69)]
+    [InlineData(87, 87)]
     [InlineData(100, 100)]
-    public void Normalize_SnapsToTheNearestStep(int input, int expected)
+    public void Normalize_KeepsAnyPercentInTheRange(int input, int expected)
     {
         Assert.Equal(expected, BatteryLimitRange.Normalize(input));
     }

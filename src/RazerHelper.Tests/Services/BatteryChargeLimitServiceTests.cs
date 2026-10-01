@@ -9,6 +9,7 @@ public class BatteryChargeLimitServiceTests
     [Theory]
     [InlineData(60, 0xBC)]    // 0x80 | 60
     [InlineData(80, 0xD0)]    // matches the byte in Synapse's own capture for an 80% limit
+    [InlineData(73, 0xC9)]    // 0x80 | 73
     [InlineData(100, 0x50)]   // no limit: bit 7 clear
     public void ToWireValue_EncodesTheLimitTheWayTheEcExpects(int percent, byte expected)
     {
@@ -20,9 +21,6 @@ public class BatteryChargeLimitServiceTests
     [InlineData(-1)]
     [InlineData(50)]
     [InlineData(59)]
-    [InlineData(61)]
-    [InlineData(70)]
-    [InlineData(90)]
     [InlineData(101)]
     public void ToWireValue_RejectsALimitTheAppDoesNotOffer(int percent)
     {
@@ -60,7 +58,7 @@ public class BatteryChargeLimitServiceTests
         var ec = new FakeEc();
         var service = new BatteryChargeLimitService(ec);
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.SetChargeLimitAsync(70));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.SetChargeLimitAsync(50));
 
         Assert.Empty(ec.Log);
     }

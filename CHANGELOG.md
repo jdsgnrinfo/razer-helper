@@ -36,6 +36,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **New icons** for the performance modes and the CPU and GPU, from open icon sets (see the credits in the README).
 - CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
+- **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
 - **New typeface:** the interface is set in Titillium Web, which comes inside the app, so nothing needs installing; Segoe UI is the fallback.
