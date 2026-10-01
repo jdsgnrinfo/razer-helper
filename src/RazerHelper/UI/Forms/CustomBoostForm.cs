@@ -137,7 +137,7 @@ internal sealed class CustomBoostForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, BorderColor);
+        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

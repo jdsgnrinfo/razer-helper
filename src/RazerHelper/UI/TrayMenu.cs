@@ -43,11 +43,11 @@ internal sealed class TrayMenu : ContextMenuStrip
 
     public void AddSeparator() => Items.Add(new ToolStripSeparator { Margin = new Padding(0, S(3), 0, S(3)) });
 
-    // Rounded corners and the thin border, as the app's windows have.
+    // Rounded corners, as the app's windows have.
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, BorderColor);
+        WindowChrome.Apply(Handle, null); // No outline: only the main window and the ones beside it have one.
     }
 
     private sealed class DarkRenderer : ToolStripProfessionalRenderer

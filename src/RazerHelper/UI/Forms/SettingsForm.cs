@@ -402,6 +402,6 @@ internal sealed class SettingsForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, BorderColor);
+        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
     }
 }

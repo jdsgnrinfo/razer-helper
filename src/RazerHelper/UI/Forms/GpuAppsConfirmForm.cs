@@ -119,7 +119,7 @@ internal sealed class GpuAppsConfirmForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, BorderColor);
+        WindowChrome.Apply(Handle, null); // No outline: only the main window and the ones beside it have one.
     }
 
     protected override void Dispose(bool disposing)
