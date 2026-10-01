@@ -73,6 +73,7 @@ public sealed class TrayPopupForm : Form
     private readonly ProfileToast _profileToast = new();
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
+    private readonly SilentTurboService _silentTurbo;
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -93,7 +94,8 @@ public sealed class TrayPopupForm : Form
             loginEntries: new RunKeyLoginEntries(),
             razerApps: new WindowsRazerApps(),
             gpuTemperature: new D3dkmtGpuTemperature(),
-            fullscreenDetector: new WindowsFullscreenDetector())
+            fullscreenDetector: new WindowsFullscreenDetector(),
+            cpuBoost: new PowerPlanCpuBoost())
     {
     }
 
@@ -113,7 +115,8 @@ public sealed class TrayPopupForm : Form
         ILoginEntries? loginEntries = null,
         IRazerApps? razerApps = null,
         IGpuTemperatureSource? gpuTemperature = null,
-        IFullscreenDetector? fullscreenDetector = null)
+        IFullscreenDetector? fullscreenDetector = null,
+        ICpuBoostSetting? cpuBoost = null)
     {
         _transport = transport;
         _powerSource = powerSource;
@@ -183,6 +186,14 @@ public sealed class TrayPopupForm : Form
         _keyboardScreenOff = new KeyboardScreenOffService(lightingService);
         _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
         _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
+
+        // Silent keeps the CPU at its base frequency; Balanced and Custom give
+        // the boost back. Left out (tests, previews), the power plan is not touched.
+        _silentTurbo = new SilentTurboService(
+            cpuBoost ?? new NoCpuBoost(),
+            _settings.CpuBoostBeforeSilent,
+            saved => SaveSettings(_settings with { CpuBoostBeforeSilent = saved }));
+        _silentTurbo.SetEnabled(_settings.SilentWithoutTurbo);
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
             new RazerSoftwareManager(
@@ -722,6 +733,12 @@ public sealed class TrayPopupForm : Form
             AppLog.Info("Performance mode shortcuts are off.");
         };
 
+        settingsForm.SilentWithoutTurboChanged += (_, enabled) =>
+        {
+            SaveSettings(_settings with { SilentWithoutTurbo = enabled });
+            _silentTurbo.SetEnabled(enabled);
+        };
+
         settingsForm.KeyboardOffWithScreenChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
@@ -769,6 +786,9 @@ public sealed class TrayPopupForm : Form
     // reported, but never stops the rest or the restart.
     private async Task ResetToDefaultsAsync()
     {
+        // Before the settings holding it are cleared: the CPU boost Silent took away comes back.
+        _silentTurbo.Restore();
+
         _isResetting = true;
         using var hold = KeepOpen(); // The message boxes below must not hide the popup.
 
@@ -897,6 +917,7 @@ public sealed class TrayPopupForm : Form
     {
         _fanSection.ShowPerformanceState(state);
         PerformanceModeChanged?.Invoke(this, state.Mode);
+        _silentTurbo.OnModeChanged(state.Mode);
 
         // The levels only mean something in Custom (the charger switching
         // profiles, or the Fn keys, can leave it while the window is open).
@@ -914,6 +935,16 @@ public sealed class TrayPopupForm : Form
     // with it) unless auto-hide is held off. Hold it for as long as the
     // returned value is not disposed.
     private OpenHold KeepOpen() => new(this);
+
+    // No power plan to change, for tests and previews.
+    private sealed class NoCpuBoost : ICpuBoostSetting
+    {
+        public SavedCpuBoost Read() => new(Guid.Empty, 0, 0);
+
+        public void Write(Guid scheme, uint pluggedIn, uint onBattery)
+        {
+        }
+    }
 
     private sealed class OpenHold : IDisposable
     {

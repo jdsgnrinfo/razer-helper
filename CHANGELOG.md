@@ -15,6 +15,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Silent)".
 - **Shortcuts:** Ctrl+Shift+F1 and F2 switch to Balanced and Silent from any program, even a game. A small notice at the top right shows the mode's icon, name and status without taking the focus, then fades out. A switch in Settings, on by default, turns them off for anyone who does not want them or has another program using those keys.
+- **Silent without turbo:** Silent keeps the CPU at its base frequency by turning off Windows' processor boost in the active power plan. The previous setting is saved and comes back when the laptop goes to Balanced or Custom, not when the app closes. A switch in Settings turns it off; on by default.
 - **Balanced, Silent and Custom on every model.** Gaming is no longer offered, and Custom takes its game controller icon; a profile saved with Gaming is applied as Custom. A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
 
 ### Language

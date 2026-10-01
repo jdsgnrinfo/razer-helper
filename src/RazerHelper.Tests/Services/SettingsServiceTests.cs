@@ -105,6 +105,30 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Load_FromAnOlderFile_TurnsSilentWithoutTurboOn_WithNothingSaved()
+    {
+        WriteSettings("""{ "DisplayMode": "Auto" }""");
+
+        var settings = new SettingsService(_directory).Load();
+
+        Assert.True(settings.SilentWithoutTurbo);
+        Assert.Null(settings.CpuBoostBeforeSilent);
+    }
+
+    [Fact]
+    public void Save_ThenLoad_KeepsTheBoostSilentReplaced()
+    {
+        var service = new SettingsService(_directory);
+        var saved = new SavedCpuBoost(new Guid("381b4222-f694-41f0-9685-ff5bb260df2e"), 2, 1);
+
+        service.Save(new AppSettings(SilentWithoutTurbo: false, CpuBoostBeforeSilent: saved));
+        var settings = service.Load();
+
+        Assert.False(settings.SilentWithoutTurbo);
+        Assert.Equal(saved, settings.CpuBoostBeforeSilent);
+    }
+
+    [Fact]
     public void Load_FromAnOlderFile_LeavesTheWindowSizeAutomatic()
     {
         WriteSettings("""{ "DisplayMode": "Auto" }""");

@@ -26,6 +26,7 @@ internal sealed class SettingsForm : Form
     private readonly CheckBox _hideWhenClickedAwayBox;
     private readonly CheckBox _alwaysOnTopBox;
     private readonly CheckBox _profileShortcutsBox;
+    private readonly CheckBox _silentWithoutTurboBox;
     private readonly CheckBox _closeGpuAppsBox;
     private readonly CheckBox _keyboardOffWithScreenBox;
     private readonly Label _errorLabel;
@@ -68,6 +69,7 @@ internal sealed class SettingsForm : Form
         _hideWhenClickedAwayBox = AddOption(layout, "Hide when clicking away", "Off, it stays open until you click the tray icon.");
         _alwaysOnTopBox = AddOption(layout, "Always on top", L.F("Stays above other windows and games. {0} shows or hides it.", GlobalHotkey.Text));
         _profileShortcutsBox = AddOption(layout, "Performance mode shortcuts", "Ctrl+Shift+F1 and F2 switch to Balanced and Silent.");
+        _silentWithoutTurboBox = AddOption(layout, "Silent without turbo", "In Silent, the CPU stays at its base frequency: cooler and quieter.");
         _closeGpuAppsBox = AddOption(layout, "Free up GPU when unplugged", "Offers to close apps using the dedicated GPU, to save battery.");
         _keyboardOffWithScreenBox = AddOption(layout, "Keyboard off with the screen", "Turns the lighting off and back on with the screen.");
 
@@ -94,6 +96,7 @@ internal sealed class SettingsForm : Form
         _hideWhenClickedAwayBox.Checked = settings.HideWhenClickedAway;
         _alwaysOnTopBox.Checked = settings.AlwaysOnTop;
         _profileShortcutsBox.Checked = settings.ProfileShortcuts;
+        _silentWithoutTurboBox.Checked = settings.SilentWithoutTurbo;
         _closeGpuAppsBox.Checked = settings.CloseGpuAppsOnUnplug;
         _keyboardOffWithScreenBox.Checked = settings.KeyboardOffWithScreen;
         _startAtLoginBox.Checked = ReadStartAtLogin();
@@ -103,6 +106,7 @@ internal sealed class SettingsForm : Form
         _hideWhenClickedAwayBox.CheckedChanged += (_, _) => HideWhenClickedAwayChanged?.Invoke(this, _hideWhenClickedAwayBox.Checked);
         _alwaysOnTopBox.CheckedChanged += (_, _) => AlwaysOnTopChanged?.Invoke(this, _alwaysOnTopBox.Checked);
         _profileShortcutsBox.CheckedChanged += (_, _) => ProfileShortcutsChanged?.Invoke(this, _profileShortcutsBox.Checked);
+        _silentWithoutTurboBox.CheckedChanged += (_, _) => SilentWithoutTurboChanged?.Invoke(this, _silentWithoutTurboBox.Checked);
         _closeGpuAppsBox.CheckedChanged += (_, _) => CloseGpuAppsOnUnplugChanged?.Invoke(this, _closeGpuAppsBox.Checked);
         _keyboardOffWithScreenBox.CheckedChanged += (_, _) => KeyboardOffWithScreenChanged?.Invoke(this, _keyboardOffWithScreenBox.Checked);
 
@@ -118,6 +122,8 @@ internal sealed class SettingsForm : Form
     public event EventHandler<bool>? AlwaysOnTopChanged;
 
     public event EventHandler<bool>? ProfileShortcutsChanged;
+
+    public event EventHandler<bool>? SilentWithoutTurboChanged;
 
     public event EventHandler<bool>? KeyboardOffWithScreenChanged;
 
