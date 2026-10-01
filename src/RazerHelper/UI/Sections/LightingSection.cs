@@ -396,7 +396,7 @@ internal sealed class LightingSection : SectionPanel
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
-                Font = SemiBoldFont(16),
+                Font = SemiBoldTitleFont(16), // A point under the body text, like a title.
                 ForeColor = Color.White,
                 Margin = new Padding(0, 0, 0, S(6)),
                 Text = L.T(name),
