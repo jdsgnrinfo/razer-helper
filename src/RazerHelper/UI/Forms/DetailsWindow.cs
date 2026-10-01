@@ -195,7 +195,7 @@ internal abstract class DetailsWindow : Form
     /// <summary>The header: one line of bold white capitals.</summary>
     private sealed class TitleHeader : Control
     {
-        private static readonly Font HeaderFont = TitleFont(16, FontStyle.Bold);
+        private static readonly Font HeaderFont = CapsTitleFont();
 
         private string _text = string.Empty;
 

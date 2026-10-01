@@ -28,16 +28,16 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(0x18, 0x18, 0x18);
+    public static readonly Color BackgroundColor = Color.FromArgb(0x15, 0x15, 0x15);
 
     /// <summary>An unselected button's or drop-down's flat fill.</summary>
-    public static readonly Color ButtonColor = Color.FromArgb(0x28, 0x28, 0x28);
+    public static readonly Color ButtonColor = Color.FromArgb(0x24, 0x24, 0x24);
 
     /// <summary>A button's fill under the pointer: a touch lighter.</summary>
-    public static readonly Color ButtonHoverColor = Color.FromArgb(0x31, 0x31, 0x31);
+    public static readonly Color ButtonHoverColor = Color.FromArgb(0x30, 0x30, 0x30);
 
     /// <summary>The thin lines between sections and between rows.</summary>
-    public static readonly Color DividerColor = Color.FromArgb(0x28, 0x28, 0x28);
+    public static readonly Color DividerColor = Color.FromArgb(0x20, 0x20, 0x20);
 
     /// <summary>The 1px outline of menus and other quiet edges.</summary>
     public static readonly Color ButtonBorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
@@ -90,6 +90,9 @@ internal static class UiTheme
 
     /// <summary>The semi-bold <see cref="TitleFont"/>.</summary>
     public static Font SemiBoldTitleFont(float pixels) => SemiBoldFont(pixels - OnePoint);
+
+    /// <summary>The capitalised titles (sections, windows) and the figures beside them: 16px bold, a point over the other titles.</summary>
+    public static Font CapsTitleFont() => DesignFont(16, FontStyle.Bold);
 
     /// <summary>A semi-bold font of the design's sizes, for labels a step below titles; bold where the semi-bold weight is missing.</summary>
     public static Font SemiBoldFont(float pixels) =>

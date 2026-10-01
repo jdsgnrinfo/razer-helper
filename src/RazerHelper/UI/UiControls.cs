@@ -67,7 +67,7 @@ internal static class UiControls
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Right,
-        Font = TitleFont(16, FontStyle.Bold),
+        Font = CapsTitleFont(),
         ForeColor = Color.White,
         Margin = Padding.Empty,
         TextAlign = ContentAlignment.MiddleRight
@@ -95,7 +95,7 @@ internal static class UiControls
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Left,
-        Font = TitleFont(16, FontStyle.Bold),
+        Font = CapsTitleFont(),
         Margin = Padding.Empty,
         ForeColor = Color.White,
         // Titles are in capitals, as in the design.

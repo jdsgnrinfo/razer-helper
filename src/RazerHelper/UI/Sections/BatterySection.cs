@@ -48,7 +48,7 @@ internal sealed class BatterySection : SectionPanel
         // from ("84% (Plugged in)"), then More info, which opens the Battery
         // details window.
         _powerLabel = CreateHeaderValueLabel();
-        _powerLabel.Font = TitleFont(16, FontStyle.Bold);
+        _powerLabel.Font = CapsTitleFont();
         _powerLabel.Dock = DockStyle.None;
         _powerLabel.Anchor = AnchorStyles.Right;
 
