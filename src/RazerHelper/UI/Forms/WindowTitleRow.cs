@@ -32,7 +32,7 @@ internal static class WindowTitleRow
 
         var heading = UiControls.CreateSectionLabel(title);
         heading.BackColor = BackgroundColor;
-        heading.Font = DesignFont(16, FontStyle.Bold);
+        heading.Font = TitleFont(16, FontStyle.Bold);
         row.Controls.Add(heading, 0, 0);
 
         var close = new GlyphButton(Glyph.Close, S(18))

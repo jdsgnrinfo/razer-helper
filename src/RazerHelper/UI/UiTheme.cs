@@ -82,6 +82,15 @@ internal static class UiTheme
     public static Font DesignFont(float pixels, FontStyle style = FontStyle.Regular) =>
         GetDesignFont(FontFamilyName, pixels * 0.75F, style);
 
+    // One point, in the design's pixels.
+    private const float OnePoint = 4F / 3;
+
+    /// <summary>A title's or a button's font: one point smaller again than other text of its size.</summary>
+    public static Font TitleFont(float pixels, FontStyle style = FontStyle.Regular) => DesignFont(pixels - OnePoint, style);
+
+    /// <summary>The semi-bold <see cref="TitleFont"/>.</summary>
+    public static Font SemiBoldTitleFont(float pixels) => SemiBoldFont(pixels - OnePoint);
+
     /// <summary>A semi-bold font of the design's sizes, for labels a step below titles; bold where the semi-bold weight is missing.</summary>
     public static Font SemiBoldFont(float pixels) =>
         AppFonts.Find(AppFonts.SemiBoldFamily) is not null
@@ -93,7 +102,7 @@ internal static class UiTheme
     private static readonly Dictionary<(string Family, float Size, FontStyle Style), Font> DesignFonts = [];
 
     // Taken off every font size; see GetDesignFont.
-    private const float TextSizeOffsetPoints = 2F;
+    private const float TextSizeOffsetPoints = 1F;
 
     /// <summary>
     /// The shared font for this look, created the first time it is asked for.
@@ -115,7 +124,7 @@ internal static class UiTheme
 
             if (!DesignFonts.TryGetValue(key, out var font))
             {
-                // Every text two points smaller than the design's sizes, for a tighter look.
+                // Every text one point smaller than the design's sizes (titles and buttons one more; see TitleFont).
                 var size = (pointSize - TextSizeOffsetPoints) * Scale / DpiScale;
 
                 // One of the exe's own families is only reachable as an object; a name finds installed fonts.

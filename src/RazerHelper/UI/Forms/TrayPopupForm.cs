@@ -563,7 +563,7 @@ public sealed class TrayPopupForm : Form
         {
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Font = SemiBoldFont(16),
+            Font = SemiBoldTitleFont(16),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             Text = "RazerHelper",

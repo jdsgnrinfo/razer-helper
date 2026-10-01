@@ -30,7 +30,7 @@ internal static class UiControls
     /// The text of the performance mode and display buttons: a step bolder
     /// than the other buttons' and 1pt larger (1pt is 1.33px).
     /// </summary>
-    public static Font ProfileButtonFont => SemiBoldFont(16 + 1 / 0.75F);
+    public static Font ProfileButtonFont => SemiBoldTitleFont(16 + 1 / 0.75F);
 
     /// <summary>The space between two buttons side by side.</summary>
     public static int ButtonGap => S(12);
@@ -67,7 +67,7 @@ internal static class UiControls
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Right,
-        Font = DesignFont(16, FontStyle.Bold),
+        Font = TitleFont(16, FontStyle.Bold),
         ForeColor = Color.White,
         Margin = Padding.Empty,
         TextAlign = ContentAlignment.MiddleRight
@@ -80,7 +80,7 @@ internal static class UiControls
     public static Button CreateSmallButton(string text)
     {
         var button = CreateActionButton(text);
-        var font = button.Font = DesignFont(14);
+        var font = button.Font = TitleFont(14);
         var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
 
         button.Dock = DockStyle.None;
@@ -95,7 +95,7 @@ internal static class UiControls
         AutoSize = true,
         BackColor = CardColor,
         Dock = DockStyle.Left,
-        Font = DesignFont(16, FontStyle.Bold),
+        Font = TitleFont(16, FontStyle.Bold),
         Margin = Padding.Empty,
         ForeColor = Color.White,
         // Titles are in capitals, as in the design.
@@ -205,7 +205,7 @@ internal static class UiControls
             BackColor = ButtonColor,
             Cursor = Cursors.Hand,
             Dock = DockStyle.Fill,
-            Font = DesignFont(16),
+            Font = TitleFont(16),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             Text = L.T(text)
