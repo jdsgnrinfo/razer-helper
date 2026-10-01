@@ -74,13 +74,13 @@ internal static class UiControls
     };
 
     /// <summary>
-    /// A small button sized to its text, such as "More info" or the footer's: 14px text,
+    /// A small button sized to its text, such as "More info" or the footer's: 14px semi-bold text,
     /// 10px each side, 30px tall.
     /// </summary>
     public static Button CreateSmallButton(string text)
     {
         var button = CreateActionButton(text);
-        var font = button.Font = TitleFont(14);
+        var font = button.Font = SemiBoldTitleFont(14);
         var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
 
         button.Dock = DockStyle.None;
