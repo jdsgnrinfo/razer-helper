@@ -81,6 +81,9 @@ internal sealed class PerformanceSection : SectionPanel
                     CustomBoostRequested?.Invoke(this, EventArgs.Empty);
             };
 
+            // The mode names a step bolder than the other buttons' text.
+            button.Font = SemiBoldFont(16);
+
             if (button is RoundedButton rounded)
                 rounded.Glyph = GlyphFor(mode);
         }
