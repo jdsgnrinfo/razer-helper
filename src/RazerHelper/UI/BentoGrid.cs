@@ -22,9 +22,13 @@ internal sealed record BentoCardSpec(
 internal sealed class BentoGrid : TableLayoutPanel
 {
     private string _layoutKey = string.Empty;
+    private readonly Font _valueFont;
 
-    public BentoGrid(int width)
+    /// <param name="semiBoldValues">Sets the figures in semi-bold, as in System information.</param>
+    public BentoGrid(int width, bool semiBoldValues = false)
     {
+        _valueFont = semiBoldValues ? SemiBoldFont(18) : DesignFont(18);
+
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
@@ -83,7 +87,7 @@ internal sealed class BentoGrid : TableLayoutPanel
                 column = 0;
             }
 
-            var card = new BentoCard
+            var card = new BentoCard(_valueFont)
             {
                 DividerAbove = row > 0,
                 Dock = DockStyle.Fill,
@@ -128,7 +132,6 @@ internal sealed class BentoGrid : TableLayoutPanel
     private sealed class BentoCard : Control
     {
         private static readonly Font CaptionFont = DesignFont(14);
-        private static readonly Font ValueFont = DesignFont(18);
         private static readonly Font DetailFont = DesignFont(14);
 
         private static int TopGap => S(18);
@@ -140,8 +143,11 @@ internal sealed class BentoGrid : TableLayoutPanel
 
         private BentoCardSpec? _spec;
 
-        public BentoCard()
+        private readonly Font _valueFont;
+
+        public BentoCard(Font valueFont)
         {
+            _valueFont = valueFont;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         }
 
@@ -184,14 +190,14 @@ internal sealed class BentoGrid : TableLayoutPanel
             y += S(20 + 4);
 
             var valueRow = new Rectangle(0, y, Width, S(24));
-            TextRenderer.DrawText(graphics, spec.Value, ValueFont, valueRow, Color.White, Line);
+            TextRenderer.DrawText(graphics, spec.Value, _valueFont, valueRow, Color.White, Line);
             y += S(24);
 
             if (spec.Detail is { } detail)
             {
                 if (spec.Wide)
                 {
-                    TextRenderer.DrawText(graphics, detail, ValueFont, valueRow, Color.White, Line | TextFormatFlags.Right);
+                    TextRenderer.DrawText(graphics, detail, _valueFont, valueRow, Color.White, Line | TextFormatFlags.Right);
                 }
                 else
                 {

@@ -18,13 +18,16 @@ internal abstract class DetailsWindow : Form
     protected static int ContentWidth => S(512);
 
     private readonly TitleHeader _header = new();
-    private readonly BentoGrid _cards = new(ContentWidth);
+    private readonly BentoGrid _cards;
     private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = RefreshIntervalMilliseconds };
     private Form? _anchor;
     private bool _loggedFailure;
 
-    protected DetailsWindow(string title)
+    /// <param name="semiBoldValues">Sets the figures in semi-bold.</param>
+    protected DetailsWindow(string title, bool semiBoldValues = false)
     {
+        _cards = new BentoGrid(ContentWidth, semiBoldValues);
+
         AutoScaleMode = AutoScaleMode.None;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
