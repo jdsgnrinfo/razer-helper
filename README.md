@@ -15,17 +15,21 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 ## Preview
 
 <p align="center">
-  <img src="docs/images/preview-main.png" width="800" alt="RazerHelper on the desktop above the tray: performance modes (Balanced selected), fans, display refresh rate, battery charge limit, lighting with keyboard and logo, and the footer buttons">
+  <img src="docs/images/preview-main.png" width="800" alt="RazerHelper on the desktop above the tray: performance modes (Balanced selected) with CPU and GPU temperatures, fans, battery charge limit, display refresh rate, lighting with keyboard and logo, and the footer buttons">
 </p>
 
-On the desktop, with the Custom mode's CPU and GPU levels open beside the window, and with Settings:
+On the desktop, with the Custom mode's CPU and GPU levels open beside the window, with Settings, and with System information:
 
 <p align="center">
   <img src="docs/images/preview-custom.png" width="800" alt="RazerHelper on the desktop with Custom selected and the Custom window beside it: CPU and GPU boost levels with their temperature, usage and clock speeds">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, free up GPU when unplugged and keyboard off with the screen">
+  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, performance mode shortcuts, Silent without turbo, Efficient Silent, free up GPU when unplugged and keyboard off with the screen">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-system-info.png" width="800" alt="RazerHelper on the desktop with the System information window beside it: model, operating system, CPU, integrated and dedicated GPU, RAM, BIOS and disk space">
 </p>
 
 The tray icon takes the color of the current performance mode, and hovering it names the mode, as in "RazerHelper (Silent)":
