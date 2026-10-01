@@ -93,7 +93,7 @@ internal static class UiTheme
     private static readonly Dictionary<(string Family, float Size, FontStyle Style), Font> DesignFonts = [];
 
     // Taken off every font size; see GetDesignFont.
-    private const float TextSizeOffsetPoints = 3F;
+    private const float TextSizeOffsetPoints = 2F;
 
     /// <summary>
     /// The shared font for this look, created the first time it is asked for.
@@ -115,7 +115,7 @@ internal static class UiTheme
 
             if (!DesignFonts.TryGetValue(key, out var font))
             {
-                // Every text three points smaller than the design's sizes, for a tighter look.
+                // Every text two points smaller than the design's sizes, for a tighter look.
                 var size = (pointSize - TextSizeOffsetPoints) * Scale / DpiScale;
 
                 // One of the exe's own families is only reachable as an object; a name finds installed fonts.
