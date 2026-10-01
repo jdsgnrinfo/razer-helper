@@ -471,6 +471,7 @@ public sealed class TrayPopupForm : Form
         AddRow(Row.Footer, footer, FooterRowHeight);
 
         _content.Paint += PaintDividers;
+        WindowOutline.Attach(_content);
         Controls.Add(_content);
 
         ResizeToFitRows();
@@ -1052,7 +1053,7 @@ public sealed class TrayPopupForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
+        WindowChrome.Apply(Handle, null); // The outline is drawn by WindowOutline instead.
     }
 
     protected override void Dispose(bool disposing)

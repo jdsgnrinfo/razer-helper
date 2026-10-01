@@ -97,6 +97,7 @@ internal sealed class CustomBoostForm : Form
             Margin = new Padding(0, S(24), 0, 0)
         });
 
+        WindowOutline.Attach(layout);
         Controls.Add(layout);
 
         _refreshTimer.Tick += (_, _) => StartRead();
@@ -137,7 +138,7 @@ internal sealed class CustomBoostForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
+        WindowChrome.Apply(Handle, null); // The outline is drawn by WindowOutline instead.
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

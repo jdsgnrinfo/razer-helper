@@ -53,6 +53,7 @@ internal abstract class DetailsWindow : Form
 
         layout.Controls.Add(CreateTitleRow());
         layout.Controls.Add(_cards);
+        WindowOutline.Attach(layout);
         Controls.Add(layout);
 
         _refreshTimer.Tick += (_, _) => Refresh();
@@ -133,7 +134,7 @@ internal abstract class DetailsWindow : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
+        WindowChrome.Apply(Handle, null); // The outline is drawn by WindowOutline instead.
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

@@ -92,6 +92,7 @@ internal sealed class SettingsForm : Form
             ("Logs", ExternalLinks.OpenLogFolder, 1),
             ("Reset", ConfirmReset, 1)));
 
+        WindowOutline.Attach(layout);
         Controls.Add(layout);
 
         _autoSwitchBox.Checked = settings.AutoSwitchProfiles;
@@ -402,6 +403,6 @@ internal sealed class SettingsForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        WindowChrome.Apply(Handle, DividerColor); // Outlined in the dividers' color.
+        WindowChrome.Apply(Handle, null); // The outline is drawn by WindowOutline instead.
     }
 }
