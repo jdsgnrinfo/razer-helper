@@ -313,7 +313,7 @@ internal sealed class LightingSection : SectionPanel
                 Margin = new Padding(0, 0, companion is null ? 0 : PairGap / 2, S(14))
             };
 
-            Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 5)
+            Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 1)
             {
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty
