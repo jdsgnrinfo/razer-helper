@@ -3,27 +3,27 @@ using RazerHelper.Core.Services;
 
 namespace RazerHelper.Tests.Services;
 
-public class SilentTurboServiceTests
+public class SilentPlanOverrideTests
 {
     private static readonly Guid Plan = new("381b4222-f694-41f0-9685-ff5bb260df2e");
 
     // A power plan with boost Aggressive (2) plugged in and Enabled (1) on battery.
-    private sealed class Rig : ICpuBoostSetting
+    private sealed class Rig : IPowerPlanValue
     {
         public uint PluggedIn = 2;
         public uint OnBattery = 1;
         public bool Fail;
         public int Writes;
-        public SavedCpuBoost? Persisted;
-        public SilentTurboService Service { get; }
+        public SavedPlanValue? Persisted;
+        public SilentPlanOverride Service { get; }
 
-        public Rig(SavedCpuBoost? saved = null)
+        public Rig(SavedPlanValue? saved = null, uint silentValue = 0)
         {
             Persisted = saved;
-            Service = new SilentTurboService(this, saved, value => Persisted = value);
+            Service = new SilentPlanOverride(this, silentValue, "CPU boost", saved, value => Persisted = value);
         }
 
-        public SavedCpuBoost Read() => new(Plan, PluggedIn, OnBattery);
+        public SavedPlanValue Read() => new(Plan, PluggedIn, OnBattery);
 
         public void Write(Guid scheme, uint pluggedIn, uint onBattery)
         {
@@ -43,7 +43,7 @@ public class SilentTurboServiceTests
         rig.Service.OnModeChanged(PerformanceMode.Silent);
 
         Assert.Equal((0u, 0u), (rig.PluggedIn, rig.OnBattery));
-        Assert.Equal(new SavedCpuBoost(Plan, 2, 1), rig.Persisted);
+        Assert.Equal(new SavedPlanValue(Plan, 2, 1), rig.Persisted);
     }
 
     [Theory]
@@ -88,7 +88,7 @@ public class SilentTurboServiceTests
     public void AfterARestart_TheSavedValuesStillComeBackWithBalanced()
     {
         // The app was closed in Silent: the plan was left with the boost off.
-        var rig = new Rig(saved: new SavedCpuBoost(Plan, 3, 1)) { PluggedIn = 0, OnBattery = 0 };
+        var rig = new Rig(saved: new SavedPlanValue(Plan, 3, 1)) { PluggedIn = 0, OnBattery = 0 };
 
         rig.Service.OnModeChanged(PerformanceMode.Balanced);
 
@@ -136,6 +136,19 @@ public class SilentTurboServiceTests
 
         Assert.Equal((2u, 1u), (rig.PluggedIn, rig.OnBattery));
         Assert.Null(rig.Persisted);
+    }
+
+    [Fact]
+    public void Silent_WritesItsOwnValue_ForEachPowerSource()
+    {
+        // The energy preference: 80 leans towards efficiency.
+        var rig = new Rig(silentValue: 80);
+
+        rig.Service.OnModeChanged(PerformanceMode.Silent);
+        Assert.Equal((80u, 80u), (rig.PluggedIn, rig.OnBattery));
+
+        rig.Service.OnModeChanged(PerformanceMode.Balanced);
+        Assert.Equal((2u, 1u), (rig.PluggedIn, rig.OnBattery));
     }
 
     [Fact]

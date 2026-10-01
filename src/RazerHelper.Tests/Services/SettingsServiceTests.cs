@@ -105,7 +105,7 @@ public sealed class SettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public void Load_FromAnOlderFile_TurnsSilentWithoutTurboOn_WithNothingSaved()
+    public void Load_FromAnOlderFile_TurnsBothSilentOptionsOn_WithNothingSaved()
     {
         WriteSettings("""{ "DisplayMode": "Auto" }""");
 
@@ -113,13 +113,15 @@ public sealed class SettingsServiceTests : IDisposable
 
         Assert.True(settings.SilentWithoutTurbo);
         Assert.Null(settings.CpuBoostBeforeSilent);
+        Assert.True(settings.SilentEfficiency);
+        Assert.Null(settings.CpuEfficiencyBeforeSilent);
     }
 
     [Fact]
     public void Save_ThenLoad_KeepsTheBoostSilentReplaced()
     {
         var service = new SettingsService(_directory);
-        var saved = new SavedCpuBoost(new Guid("381b4222-f694-41f0-9685-ff5bb260df2e"), 2, 1);
+        var saved = new SavedPlanValue(new Guid("381b4222-f694-41f0-9685-ff5bb260df2e"), 2, 1);
 
         service.Save(new AppSettings(SilentWithoutTurbo: false, CpuBoostBeforeSilent: saved));
         var settings = service.Load();

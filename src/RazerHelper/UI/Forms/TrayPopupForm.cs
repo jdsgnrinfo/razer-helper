@@ -41,6 +41,9 @@ public sealed class TrayPopupForm : Form
     private static int LastGap => S(26);
     private static int FooterRowHeight => S(30);
 
+    // The CPU's energy preference in Silent: 0 is all performance, 100 all efficiency.
+    private const uint SilentEfficiencyPercent = 80;
+
     private bool _allowClose;
     private bool _isResetting;
     private int _modalDepth;
@@ -73,7 +76,8 @@ public sealed class TrayPopupForm : Form
     private readonly ProfileToast _profileToast = new();
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
-    private readonly SilentTurboService _silentTurbo;
+    private readonly SilentPlanOverride _silentTurbo;
+    private readonly SilentPlanOverride _silentEfficiency;
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -95,7 +99,8 @@ public sealed class TrayPopupForm : Form
             razerApps: new WindowsRazerApps(),
             gpuTemperature: new D3dkmtGpuTemperature(),
             fullscreenDetector: new WindowsFullscreenDetector(),
-            cpuBoost: new PowerPlanCpuBoost())
+            cpuBoost: PowerPlanValue.BoostMode(),
+            cpuEfficiency: PowerPlanValue.EfficiencyPreference())
     {
     }
 
@@ -116,7 +121,8 @@ public sealed class TrayPopupForm : Form
         IRazerApps? razerApps = null,
         IGpuTemperatureSource? gpuTemperature = null,
         IFullscreenDetector? fullscreenDetector = null,
-        ICpuBoostSetting? cpuBoost = null)
+        IPowerPlanValue? cpuBoost = null,
+        IPowerPlanValue? cpuEfficiency = null)
     {
         _transport = transport;
         _powerSource = powerSource;
@@ -187,13 +193,25 @@ public sealed class TrayPopupForm : Form
         _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
         _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
 
-        // Silent keeps the CPU at its base frequency; Balanced and Custom give
-        // the boost back. Left out (tests, previews), the power plan is not touched.
-        _silentTurbo = new SilentTurboService(
-            cpuBoost ?? new NoCpuBoost(),
+        // Silent keeps the CPU at its base frequency and leans it towards
+        // efficiency; Balanced and Custom give both back. Left out (tests,
+        // previews), the power plan is not touched.
+        _silentTurbo = new SilentPlanOverride(
+            cpuBoost ?? new NoPowerPlan(),
+            0, // Boost off.
+            "CPU boost",
             _settings.CpuBoostBeforeSilent,
             saved => SaveSettings(_settings with { CpuBoostBeforeSilent = saved }));
         _silentTurbo.SetEnabled(_settings.SilentWithoutTurbo);
+
+        _silentEfficiency = new SilentPlanOverride(
+            cpuEfficiency ?? new NoPowerPlan(),
+            SilentEfficiencyPercent,
+            "CPU energy preference",
+            _settings.CpuEfficiencyBeforeSilent,
+            saved => SaveSettings(_settings with { CpuEfficiencyBeforeSilent = saved }));
+        _silentEfficiency.SetEnabled(_settings.SilentEfficiency);
+
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
             new RazerSoftwareManager(
@@ -739,6 +757,12 @@ public sealed class TrayPopupForm : Form
             _silentTurbo.SetEnabled(enabled);
         };
 
+        settingsForm.SilentEfficiencyChanged += (_, enabled) =>
+        {
+            SaveSettings(_settings with { SilentEfficiency = enabled });
+            _silentEfficiency.SetEnabled(enabled);
+        };
+
         settingsForm.KeyboardOffWithScreenChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
@@ -788,6 +812,7 @@ public sealed class TrayPopupForm : Form
     {
         // Before the settings holding it are cleared: the CPU boost Silent took away comes back.
         _silentTurbo.Restore();
+        _silentEfficiency.Restore();
 
         _isResetting = true;
         using var hold = KeepOpen(); // The message boxes below must not hide the popup.
@@ -918,6 +943,7 @@ public sealed class TrayPopupForm : Form
         _fanSection.ShowPerformanceState(state);
         PerformanceModeChanged?.Invoke(this, state.Mode);
         _silentTurbo.OnModeChanged(state.Mode);
+        _silentEfficiency.OnModeChanged(state.Mode);
 
         // The levels only mean something in Custom (the charger switching
         // profiles, or the Fn keys, can leave it while the window is open).
@@ -937,9 +963,9 @@ public sealed class TrayPopupForm : Form
     private OpenHold KeepOpen() => new(this);
 
     // No power plan to change, for tests and previews.
-    private sealed class NoCpuBoost : ICpuBoostSetting
+    private sealed class NoPowerPlan : IPowerPlanValue
     {
-        public SavedCpuBoost Read() => new(Guid.Empty, 0, 0);
+        public SavedPlanValue Read() => new(Guid.Empty, 0, 0);
 
         public void Write(Guid scheme, uint pluggedIn, uint onBattery)
         {

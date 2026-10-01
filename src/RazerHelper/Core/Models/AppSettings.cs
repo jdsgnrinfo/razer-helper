@@ -46,7 +46,13 @@ internal sealed record AppSettings(
     bool SilentWithoutTurbo = true,
     // The boost setting Silent replaced, kept until Balanced or Custom gives
     // it back (closing the app does not); null when Silent has not changed it.
-    SavedCpuBoost? CpuBoostBeforeSilent = null,
+    SavedPlanValue? CpuBoostBeforeSilent = null,
+    // On unless the user turns it off: Silent sets the CPU's energy
+    // preference towards efficiency.
+    bool SilentEfficiency = true,
+    // The preference Silent replaced, kept until Balanced or Custom gives it
+    // back; null when Silent has not changed it.
+    SavedPlanValue? CpuEfficiencyBeforeSilent = null,
     // The interface language: "en" or "es". Null follows the Windows display
     // language. Changing it restarts the app.
     string? Language = null);

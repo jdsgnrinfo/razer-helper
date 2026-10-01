@@ -42,6 +42,7 @@ Everything the original does still works the same way; on top of it:
 - **Spanish translation**, chosen in Settings (English stays the default).
 - **Performance mode shortcuts:** Ctrl+Shift+F1/F2 switch to Balanced and Silent from any program, with a small notice at the top right.
 - **Silent without turbo:** in Silent the CPU stays at its base frequency (Windows' processor boost is turned off in the active power plan), cooler and quieter; Balanced or Custom give the boost back, closing the app leaves it as it is. A switch in Settings, on by default.
+- **Efficient Silent:** in Silent the CPU's energy preference leans towards efficiency (80 out of 100 in the active power plan); given back the same way. Its own switch in Settings, on by default.
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, and "RazerHelper (Silent)" on hover.
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
