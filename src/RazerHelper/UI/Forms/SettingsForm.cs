@@ -306,7 +306,7 @@ internal sealed class SettingsForm : Form
         var dropdown = new DropdownButton([.. languages.Select(LanguageName)])
         {
             Anchor = AnchorStyles.Right,
-            Font = TitleFont(16, FontStyle.Bold),
+            Font = SemiBoldTitleFont(16),
             Size = S(new Size(116, 38))
         };
 

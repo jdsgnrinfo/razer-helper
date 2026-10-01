@@ -16,7 +16,7 @@ internal sealed class RadioOption : Button
     private static int MarkerSize => S(20);
     private static int TextLeft => S(32);
 
-    private static readonly Font TitleFont = DesignFont(16);
+    private static readonly Font TitleFont = SemiBoldFont(16);
     private static readonly Font DescriptionFont = DesignFont(13);
 
     private bool _hovered;
