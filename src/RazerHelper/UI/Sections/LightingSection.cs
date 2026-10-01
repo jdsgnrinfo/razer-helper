@@ -61,6 +61,13 @@ internal sealed class LightingSection : SectionPanel
 
     private bool _busy;
 
+    // While the window is open, the keyboard brightness is read every few
+    // tenths of a second, so the slider follows the Fn brightness keys (the
+    // laptop handles those itself and tells nobody).
+    private const int BrightnessWatchMilliseconds = 300;
+    private readonly System.Windows.Forms.Timer _brightnessWatch = new() { Interval = BrightnessWatchMilliseconds };
+    private bool _readingBrightness;
+
     public LightingSection(LightingService lightingService, bool offersColor = false, bool offersWave = true)
     {
         _lightingService = lightingService;
@@ -131,6 +138,48 @@ internal sealed class LightingSection : SectionPanel
         // Dock order: the header docks first, and the stacks fill what is left.
         Controls.Add(lines);
         Controls.Add(CreateSectionHeader("Lighting", string.Empty));
+
+        _brightnessWatch.Tick += async (_, _) => await ReadKeyboardBrightnessAsync();
+    }
+
+    /// <summary>Starts following the keyboard brightness, for while the window is open.</summary>
+    public void StartWatchingBrightness() => _brightnessWatch.Start();
+
+    public void StopWatchingBrightness() => _brightnessWatch.Stop();
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            _brightnessWatch.Dispose();
+
+        base.Dispose(disposing);
+    }
+
+    // One quick read; the slider glides to it unless the user is moving it or a
+    // change is on its way to the laptop.
+    private async Task ReadKeyboardBrightnessAsync()
+    {
+        if (_busy || _readingBrightness || _keyboard.Brightness.IsBeingMoved)
+            return;
+
+        _readingBrightness = true;
+
+        try
+        {
+            var percent = await _lightingService.ReadKeyboardBrightnessAsync();
+
+            if (!_busy && _brightnessWatch.Enabled)
+                _keyboard.Brightness.GlideTo(percent);
+        }
+        catch
+        {
+            // A missed reading is fine: the next one is a moment away, and
+            // RefreshAsync logs real trouble.
+        }
+        finally
+        {
+            _readingBrightness = false;
+        }
     }
 
     /// <summary>Raised with a user-facing message about the last operation.</summary>

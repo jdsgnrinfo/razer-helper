@@ -1118,11 +1118,15 @@ public sealed class TrayPopupForm : Form
 
             // Lighting can be changed with the Fn keys or by other software.
             _ = _lightingSection.RefreshAsync();
+            _lightingSection.StartWatchingBrightness();
 
             // Razer's services can be started or stopped from outside the app.
             _ = _servicesSection.RefreshAsync();
         }
         else
+        {
             _fanSection.StopPolling();
+            _lightingSection.StopWatchingBrightness();
+        }
     }
 }

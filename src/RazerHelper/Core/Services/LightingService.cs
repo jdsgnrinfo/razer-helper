@@ -54,6 +54,8 @@ internal sealed class LightingService(IRazerTransport transport, bool offersColo
 
     public Task SetKeyboardBrightnessAsync(int percent) => Task.Run(() => SetKeyboardBrightness(percent));
 
+    public Task<int> ReadKeyboardBrightnessAsync() => Task.Run(ReadKeyboardBrightness);
+
     public Task SetLogoAsync(LogoMode mode) => Task.Run(() => SetLogo(mode));
 
     public Task SetLogoBrightnessAsync(int percent) => Task.Run(() => SetLogoBrightness(percent));

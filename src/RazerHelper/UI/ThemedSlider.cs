@@ -75,6 +75,9 @@ internal sealed class ThemedSlider : Control
         _glide.Tick += (_, _) => GlideStep();
     }
 
+    /// <summary>True while the user is moving it, with the mouse or a held key.</summary>
+    public bool IsBeingMoved => _dragging || _keyMovedValue;
+
     public event EventHandler? ValueChanged;
 
     public event EventHandler? Committed;
@@ -127,6 +130,18 @@ internal sealed class ThemedSlider : Control
             Invalidate();
             ValueChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>Sets the value from outside and lets the thumb glide there, unless the user is moving it.</summary>
+    public void GlideTo(int value)
+    {
+        if (IsBeingMoved)
+            return;
+
+        _thumbX = CurrentThumbX;
+        _glide.Start(); // So the value's setter leaves the thumb to glide.
+        Value = value;
+        GlideToValue();
     }
 
     protected override bool IsInputKey(Keys keyData) =>
