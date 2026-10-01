@@ -92,6 +92,9 @@ internal static class UiTheme
     // dispose a font they are handed, so each look is created once and shared.
     private static readonly Dictionary<(string Family, float Size, FontStyle Style), Font> DesignFonts = [];
 
+    // Taken off every font size; see GetDesignFont.
+    private const float TextSizeOffsetPoints = 1F;
+
     /// <summary>
     /// The shared font for this look, created the first time it is asked for.
     /// Never dispose it: every control that uses it shares the same object.
@@ -112,7 +115,8 @@ internal static class UiTheme
 
             if (!DesignFonts.TryGetValue(key, out var font))
             {
-                var size = pointSize * Scale / DpiScale;
+                // Every text one point smaller than the design's sizes, for a slightly tighter look.
+                var size = (pointSize - TextSizeOffsetPoints) * Scale / DpiScale;
 
                 // One of the exe's own families is only reachable as an object; a name finds installed fonts.
                 DesignFonts[key] = font = AppFonts.Find(familyName) is { } family
