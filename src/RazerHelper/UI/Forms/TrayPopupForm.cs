@@ -48,8 +48,10 @@ public sealed class TrayPopupForm : Form
     private bool _isResetting;
     private int _modalDepth;
     private bool _servicesRowShown;
-    // The Custom window while it is open, so leaving Custom can close it.
-    private CustomBoostForm? _customBoostForm;
+    // The one window open beside the popup (Battery, System information, Custom
+    // or Settings). The popup stays usable meanwhile, and opening another one
+    // closes this one first.
+    private Form? _sideWindow;
     private readonly SettingsService _settingsService;
     // One EC connection shared by every service that talks to the hardware.
     private readonly IRazerTransport _transport;
@@ -658,63 +660,86 @@ public sealed class TrayPopupForm : Form
         return answer.Task;
     }
 
-    // Beside the popup and in front of it, like Settings, and the popup stays
-    // open meanwhile. The window reads the battery only while it is open.
-    private void ShowBatteryDetails()
+    /// <summary>
+    /// Opens a window beside the popup and in front of it, without blocking
+    /// the popup. Only one is open at a time: another one closes first, and
+    /// asking for the one already open brings it to the front.
+    /// </summary>
+    private void ShowBeside<T>(Func<T> create, Action<T>? whenClosed = null) where T : Form
     {
-        using var detailsForm = new BatteryDetailsForm(BatteryReader.Read);
+        if (_sideWindow is T open)
+        {
+            open.Activate();
+            return;
+        }
 
+        _sideWindow?.Close();
+
+        var window = create();
+        window.TopMost = TopMost;
+        _sideWindow = window;
+
+        // The popup stays open while the window is, even when it has the focus.
+        var hold = KeepOpen();
+
+        window.FormClosed += (_, _) =>
+        {
+            hold.Dispose();
+
+            if (_sideWindow == window)
+                _sideWindow = null;
+
+            whenClosed?.Invoke(window);
+        };
+
+        window.Show(this);
+    }
+
+    // The window reads the battery only while it is open.
+    private void ShowBatteryDetails() => ShowBeside(() =>
+    {
+        var detailsForm = new BatteryDetailsForm(BatteryReader.Read);
         detailsForm.PlaceBeside(this);
-        detailsForm.TopMost = TopMost;
+        return detailsForm;
+    });
 
-        using (KeepOpen())
-            detailsForm.ShowDialog(this);
-    }
-
-    // The System information window, beside the popup like the Battery details.
-    private void ShowSystemInfo()
+    private void ShowSystemInfo() => ShowBeside(() =>
     {
-        using var infoForm = new SystemInfoForm(SystemInfoReader.Read);
-
+        var infoForm = new SystemInfoForm(SystemInfoReader.Read);
         infoForm.PlaceBeside(this);
-        infoForm.TopMost = TopMost;
+        return infoForm;
+    });
 
-        using (KeepOpen())
-            infoForm.ShowDialog(this);
-    }
-
-    // Custom's CPU and GPU levels, beside the popup like Settings. Only one
-    // at a time; it closes by itself if the laptop leaves Custom meanwhile.
+    // Custom's CPU and GPU levels. It closes by itself if the laptop leaves
+    // Custom meanwhile.
     private void ShowCustomBoost()
     {
-        if (_customBoostForm is not null)
-            return;
-
-        using var boostForm = new CustomBoostForm(_performanceSection.BoostSelectors);
-
-        boostForm.PlaceBeside(this);
-        boostForm.TopMost = TopMost;
-        _customBoostForm = boostForm;
-
         // The fan poll already reads the CPU temperature for the header; pass it on too.
-        void ShowTemperature(object? sender, TemperatureReading reading) => boostForm.ShowCpuTemperature(reading.CpuCelsius);
-        _fanSection.TemperaturesRead += ShowTemperature;
+        void ShowTemperature(object? sender, TemperatureReading reading) =>
+            (_sideWindow as CustomBoostForm)?.ShowCpuTemperature(reading.CpuCelsius);
 
-        try
-        {
-            using (KeepOpen())
-                boostForm.ShowDialog(this);
-        }
-        finally
-        {
-            _fanSection.TemperaturesRead -= ShowTemperature;
-            _customBoostForm = null;
-        }
+        ShowBeside(
+            () =>
+            {
+                var boostForm = new CustomBoostForm(_performanceSection.BoostSelectors);
+                boostForm.PlaceBeside(this);
+                _fanSection.TemperaturesRead += ShowTemperature;
+                return boostForm;
+            },
+            _ => _fanSection.TemperaturesRead -= ShowTemperature);
     }
 
-    private void ShowSettings()
+    private void ShowSettings() => ShowBeside(CreateSettingsForm, settingsForm =>
     {
-        using var settingsForm = new SettingsForm(_settings, _startupRegistration);
+        if (settingsForm.ResetConfirmed)
+            _ = ResetToDefaultsAsync();
+        else if (settingsForm.LanguageChosen is { } language)
+            RestartInLanguage(language);
+    });
+
+    private SettingsForm CreateSettingsForm()
+    {
+        var settingsForm = new SettingsForm(_settings, _startupRegistration);
 
         settingsForm.AutoSwitchProfilesChanged += (_, enabled) =>
         {
@@ -769,18 +794,9 @@ public sealed class TrayPopupForm : Form
             _keyboardScreenOff.SetEnabled(enabled);
         };
 
-        // Next to the popup, not over it, and in front of it: a popup that is
-        // above other windows would otherwise hide the dialog it opened.
+        // Next to the popup, not over it.
         settingsForm.PlaceBeside(this);
-        settingsForm.TopMost = TopMost;
-
-        using (KeepOpen())
-            settingsForm.ShowDialog(this);
-
-        if (settingsForm.ResetConfirmed)
-            _ = ResetToDefaultsAsync();
-        else if (settingsForm.LanguageChosen is { } language)
-            RestartInLanguage(language);
+        return settingsForm;
     }
 
     // Every text is set as a window is built, so a new language needs a fresh start.
@@ -948,7 +964,7 @@ public sealed class TrayPopupForm : Form
         // The levels only mean something in Custom (the charger switching
         // profiles, or the Fn keys, can leave it while the window is open).
         if (state.Mode is PerformanceMode known && known != PerformanceMode.Custom)
-            _customBoostForm?.Close();
+            (_sideWindow as CustomBoostForm)?.Close();
     }
 
     private void ServicesSection_HasServicesChanged(object? sender, bool hasServices)
@@ -1097,6 +1113,9 @@ public sealed class TrayPopupForm : Form
         if (!Visible)
         {
             _hiddenAtTicks = Environment.TickCount64;
+
+            // A window beside the popup goes with it.
+            _sideWindow?.Close();
 
             // A showing by shortcut may have raised it above everything; back to the setting.
             TopMost = _settings.AlwaysOnTop;
