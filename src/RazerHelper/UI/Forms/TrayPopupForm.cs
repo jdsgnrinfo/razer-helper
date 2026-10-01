@@ -33,7 +33,7 @@ public sealed class TrayPopupForm : Form
     // no line before the footer).
     private static int HeaderRowHeight => S(28) + HeaderGap;
     private static int HeaderGap => S(16);
-    private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(150) + SectionPanel.GapBelow;
+    private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(136) + SectionPanel.GapBelow;
     private static int FanRowHeight => UiControls.SectionHeaderHeight + RadioOption.PreferredHeight + SectionPanel.GapBelow;
     private static int ButtonRowHeight => UiControls.SectionHeaderHeight + S(56) + SectionPanel.GapBelow;
     private static int BatteryRowHeight => BatterySection.ContentHeight + SectionPanel.GapBelow;
