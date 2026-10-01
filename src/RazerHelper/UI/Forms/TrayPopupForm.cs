@@ -683,14 +683,25 @@ public sealed class TrayPopupForm : Form
         // The popup stays open while the window is, even when it has the focus.
         var hold = KeepOpen();
 
+        var closed = false;
+
         window.FormClosed += (_, _) =>
         {
+            // Closing the popup closes the windows it owns, which can report
+            // closing a second time; act on the first only.
+            if (closed)
+                return;
+
+            closed = true;
             hold.Dispose();
 
             if (_sideWindow == window)
                 _sideWindow = null;
 
-            whenClosed?.Invoke(window);
+            // After the window has finished closing: what follows (a restart
+            // in a new language, a reset) may close the popup too.
+            if (whenClosed is not null && !IsDisposed)
+                BeginInvoke(() => whenClosed(window));
         };
 
         window.Show(this);

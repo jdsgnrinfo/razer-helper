@@ -164,7 +164,9 @@ internal static class SystemInfoReader
         {
             using var adapters = Registry.LocalMachine.OpenSubKey(DisplayAdaptersKey);
 
-            foreach (var name in adapters?.GetSubKeyNames() ?? [])
+            // Adapters are the numbered keys (0000, 0001...); the others, such as
+            // Properties, are not adapters and refuse to be opened.
+            foreach (var name in (adapters?.GetSubKeyNames() ?? []).Where(name => name.All(char.IsAsciiDigit)))
             {
                 using var adapter = adapters!.OpenSubKey(name);
 
