@@ -18,7 +18,7 @@ internal sealed class TrayMenu : ContextMenuStrip
     {
         BackColor = ButtonColor;
         ForeColor = Color.White;
-        Font = DesignFont(12);
+        Font = SemiBoldFont(12 + 2 / 0.75F); // 2pt over the body text (2pt is 2.67px).
         Padding = new Padding(0, ListInset, 0, ListInset);
         Renderer = new DarkRenderer();
         ShowCheckMargin = false;
