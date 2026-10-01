@@ -427,8 +427,8 @@ public sealed class TrayPopupForm : Form
 
         // Every showing fades in from nothing (see OnFadeTick).
         Opacity = 0;
-        // The design's width: 592px of content inside a 24px margin.
-        ClientSize = S(new Size(640, 600));
+        // 552px of content inside a 24px margin (the design has 640).
+        ClientSize = S(new Size(600, 600));
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 

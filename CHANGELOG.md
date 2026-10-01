@@ -25,7 +25,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Interface
 
-- **Redesign** of every window: flat sections split by thin lines, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 640 wide.
+- **Redesign** of every window: flat sections split by thin lines, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 600 wide.
 - **Performance modes** as large buttons, quietest first (Silent, Balanced, Custom), each with its icon in a circle.
 - **Fans** as two options with a line on what each does: Automatic RPM and Max RPM.
 - **Lighting** with the keyboard and the logo side by side.
