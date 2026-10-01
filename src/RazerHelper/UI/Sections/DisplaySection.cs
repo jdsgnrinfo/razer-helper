@@ -60,6 +60,7 @@ internal sealed class DisplaySection : SectionPanel
         {
             var mode = modes.First(candidate => candidate.Label == (string)button.Tag!);
             _buttons[mode] = button;
+            button.Font = ProfileButtonFont;
             button.Click += (_, _) => SelectMode(mode);
         }
 

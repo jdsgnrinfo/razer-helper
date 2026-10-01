@@ -81,8 +81,7 @@ internal sealed class PerformanceSection : SectionPanel
                     CustomBoostRequested?.Invoke(this, EventArgs.Empty);
             };
 
-            // The mode names a step bolder than the other buttons' text, and 2pt larger (2pt is 2.67px).
-            button.Font = SemiBoldFont(16 + 2 / 0.75F);
+            button.Font = ProfileButtonFont;
 
             if (button is RoundedButton rounded)
                 rounded.Glyph = GlyphFor(mode);

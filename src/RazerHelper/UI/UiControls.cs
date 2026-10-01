@@ -26,6 +26,12 @@ internal static class UiControls
     /// <summary>A section's title row: the 16px uppercase title, then the 12px gap before what the section shows.</summary>
     public static int SectionHeaderHeight => S(24 + 12);
 
+    /// <summary>
+    /// The text of the performance mode and display buttons: a step bolder
+    /// than the other buttons' and 1pt larger (1pt is 1.33px).
+    /// </summary>
+    public static Font ProfileButtonFont => SemiBoldFont(16 + 1 / 0.75F);
+
     /// <summary>The space between two buttons side by side.</summary>
     public static int ButtonGap => S(12);
 
