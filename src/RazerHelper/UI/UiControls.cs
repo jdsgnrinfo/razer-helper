@@ -23,8 +23,8 @@ internal static class UiControls
         return layout;
     }
 
-    /// <summary>A section's title row: the 16px uppercase title, then the 10px gap before what the section shows.</summary>
-    public static int SectionHeaderHeight => S(24 + 10);
+    /// <summary>A section's title row: the 16px uppercase title, then the 12px gap before what the section shows.</summary>
+    public static int SectionHeaderHeight => S(24 + 12);
 
     /// <summary>The space between two buttons side by side.</summary>
     public static int ButtonGap => S(12);
@@ -35,7 +35,7 @@ internal static class UiControls
         var header = CreateTwoColumnLayout(leftWidth, rightWidth);
         header.Dock = DockStyle.Top;
         header.Height = SectionHeaderHeight;
-        header.Padding = new Padding(0, 0, 0, S(10));
+        header.Padding = new Padding(0, 0, 0, S(12));
         return header;
     }
 
