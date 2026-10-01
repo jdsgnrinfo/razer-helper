@@ -38,7 +38,7 @@ internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWi
         if (BatteryDetailsText.ChargeParts(battery) is var (stored, outOf))
         {
             var percent = BatteryDetailsText.ChargePercent(battery);
-            cards.Add(new BentoCardSpec("Charge", outOf is null ? stored : $"{stored} {outOf}", null, Wide: true, Bar: percent / 100.0, BarColor: RazerGreen));
+            cards.Add(new BentoCardSpec("Charge", outOf is null ? stored : $"{stored} {outOf}", null, Bar: percent / 100.0, BarColor: RazerGreen));
         }
 
         if (BatteryDetailsText.HealthPercent(battery) is { } health)
@@ -47,7 +47,6 @@ internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWi
                 "Health",
                 $"{health}%",
                 BatteryDetailsText.HealthCaption(battery),
-                Wide: true,
                 Bar: Math.Min(1.0, health / 100.0),
                 BarColor: health >= 80 ? RazerGreen : health >= 60 ? HealthFair : Color.IndianRed));
         }

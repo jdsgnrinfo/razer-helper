@@ -21,6 +21,9 @@ internal sealed record BentoCardSpec(
 /// </summary>
 internal sealed class BentoGrid : TableLayoutPanel
 {
+    /// <summary>The space between a pair's figures and bars.</summary>
+    private static int ColumnGap => S(24);
+
     private string _layoutKey = string.Empty;
     private readonly Font _valueFont;
 
@@ -37,8 +40,11 @@ internal sealed class BentoGrid : TableLayoutPanel
         Padding = Padding.Empty;
         Width = width;
 
-        ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, width / 2));
-        ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, width - width / 2));
+        // The left column takes the gap, so both figures and bars are as wide and
+        // the divider above a pair still runs unbroken.
+        var right = (width - ColumnGap) / 2;
+        ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, width - right));
+        ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, right));
     }
 
     public void ShowCards(IReadOnlyList<BentoCardSpec> specs)
@@ -90,6 +96,7 @@ internal sealed class BentoGrid : TableLayoutPanel
             var card = new BentoCard(_valueFont)
             {
                 DividerAbove = row > 0,
+                GapRight = !spec.Wide && column == 0 ? ColumnGap : 0,
                 Dock = DockStyle.Fill,
                 Height = BentoCard.HeightFor(spec),
                 Margin = Padding.Empty
@@ -156,6 +163,11 @@ internal sealed class BentoGrid : TableLayoutPanel
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool DividerAbove { get; init; }
 
+        /// <summary>Room kept clear at the right, for the gap to a right-hand neighbour; the divider still runs through it.</summary>
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public int GapRight { get; init; }
+
         public void Show(BentoCardSpec spec)
         {
             if (spec == _spec)
@@ -183,13 +195,13 @@ internal sealed class BentoGrid : TableLayoutPanel
 
             const TextFormatFlags Line = TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine;
 
-            var width = Width - S(8); // Keeps a narrow card's text off its neighbour.
+            var width = Width - GapRight;
             var y = TopGap;
 
             TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
             y += S(20 + 4);
 
-            var valueRow = new Rectangle(0, y, Width, S(24));
+            var valueRow = new Rectangle(0, y, width, S(24));
             TextRenderer.DrawText(graphics, spec.Value, _valueFont, valueRow, Color.White, Line);
             y += S(24);
 
@@ -208,7 +220,7 @@ internal sealed class BentoGrid : TableLayoutPanel
 
             if (spec.Bar is { } fraction)
             {
-                var bar = new RectangleF(0, y + S(8), Width, S(6));
+                var bar = new RectangleF(0, y + S(8), width, S(6));
 
                 using (var track = new SolidBrush(TrackColor))
                 using (var trackShape = RoundedButton.RoundedPath(bar, S(3)))
