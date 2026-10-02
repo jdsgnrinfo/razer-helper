@@ -13,6 +13,8 @@
       Maximum processor state         100 %
       Processor boost (turbo)         Aggressive plugged in; on battery
                                       Efficient Enabled, only when it pays off
+      Cores kept unparked             All plugged in; half on battery, so
+                                      loads still start without a stall
 
     Everything else (screen, sleep, brightness) stays as Windows' Balanced
     has it. Running it again updates the plan instead of adding another.
@@ -81,7 +83,8 @@ $values = @(
     @('PERFEPP1', 33, 80),         # The same, for the efficiency cores of newer CPUs
     @('PROCTHROTTLEMIN', 5, 5),    # Minimum processor state, %
     @('PROCTHROTTLEMAX', 100, 100),# Maximum processor state, %
-    @('PERFBOOSTMODE', 2, 3)       # Processor boost: Aggressive plugged in, Efficient Enabled on battery
+    @('PERFBOOSTMODE', 2, 3),      # Processor boost: Aggressive plugged in, Efficient Enabled on battery
+    @('CPMINCORES', 100, 50)       # Cores kept unparked, %: all plugged in, half on battery
 )
 
 foreach ($value in $values) {
