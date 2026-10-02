@@ -93,7 +93,7 @@ internal class RoundedButton : Button
         // With a glyph: a larger icon in a circle over the text, the pair
         // centered in the button. The icon is green on grey, dark on the selected
         // green (whose circle is a deeper green), grey when unavailable.
-        if (Glyph is { } glyph)
+        if (Glyph is not null || Icon is not null)
         {
             var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
             var top = textBounds.Top + (textBounds.Height - (CircleSize + StackedGlyphGap + textHeight)) / 2;
@@ -104,7 +104,10 @@ internal class RoundedButton : Button
 
             var iconColor = !IsUsable ? textColor : IsGreen ? OnGreenTextColor : RazerGreen;
             var icon = RectangleF.Inflate(circle, -(CircleSize - StackedGlyphSize) / 2f, -(CircleSize - StackedGlyphSize) / 2f);
-            Glyphs.Draw(graphics, glyph, icon, iconColor);
+            if (Glyph is { } glyph)
+                Glyphs.Draw(graphics, glyph, icon, iconColor);
+            else
+                Icon!(graphics, icon, iconColor);
 
             var textArea = new Rectangle(textBounds.Left, top + CircleSize + StackedGlyphGap, textBounds.Width, textHeight);
             TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
@@ -135,6 +138,21 @@ internal class RoundedButton : Button
     }
 
     private Glyph? _glyph;
+
+    /// <summary>An icon the caller draws in place of a Glyph, in the same circle and colours (the refresh rates).</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public Action<Graphics, RectangleF, Color>? Icon
+    {
+        get => _icon;
+        set
+        {
+            _icon = value;
+            Invalidate();
+        }
+    }
+
+    private Action<Graphics, RectangleF, Color>? _icon;
 
     private static int StackedGlyphSize => S(30);
     private static int CircleSize => S(64);

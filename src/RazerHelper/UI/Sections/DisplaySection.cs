@@ -62,6 +62,9 @@ internal sealed class DisplaySection : SectionPanel
             _buttons[mode] = button;
             button.Font = ProfileButtonFont;
             button.Click += (_, _) => SelectMode(mode);
+
+            if (button is RoundedButton rounded)
+                rounded.Icon = RefreshRateIcon.For(mode.FixedHz);
         }
 
         Controls.Add(grid);
