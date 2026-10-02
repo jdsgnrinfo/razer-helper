@@ -273,6 +273,7 @@ public sealed class TrayPopupForm : Form
 
         ApplyTheme();
         BuildView();
+        Glass.Apply(this); // The frosted background; see Glass.
         CheckForSupportedDevice();
 
         _displaySection.Restore();

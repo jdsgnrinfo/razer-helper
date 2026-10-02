@@ -35,7 +35,7 @@ internal sealed class GlyphButton : Control
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        e.Graphics.Clear(Parent?.BackColor ?? BackgroundColor);
+        Glass.Clear(e.Graphics, Parent?.BackColor ?? BackgroundColor);
 
         Glyphs.Draw(
             e.Graphics,
