@@ -431,3 +431,6 @@ FodyWeavers.xsd
 # Installer build outputs
 /publish/
 /dist/
+
+# Personal notes, kept out of the repository
+/Cambios futuros Razer Helper.md
