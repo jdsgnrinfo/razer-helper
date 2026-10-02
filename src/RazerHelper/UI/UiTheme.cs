@@ -58,7 +58,7 @@ internal static class UiTheme
 
     /// <summary>The circle behind a performance mode's icon: darker green on the selected button, darker grey on the rest.</summary>
     public static readonly Color SelectedIconCircleColor = Color.FromArgb(0x37, 0xAA, 0x24);
-    public static readonly Color IconCircleColor = Color.FromArgb(0x1F, 0x1F, 0x1F);
+    public static readonly Color IconCircleColor = Color.FromArgb(0x19, 0x19, 0x19);
 
     /// <summary>The text and icons on a green (selected) button: nearly the window's own dark.</summary>
     public static readonly Color OnGreenTextColor = Color.FromArgb(0x18, 0x18, 0x18);
