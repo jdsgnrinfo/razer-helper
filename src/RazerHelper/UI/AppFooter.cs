@@ -6,7 +6,7 @@ namespace RazerHelper.UI;
 
 /// <summary>
 /// The very bottom of the popup: the app version (just its number) on the
-/// left, then the "System info", "Free up GPU" and Settings buttons on the
+/// left, then the "System info", "Free up GPU", Idle and Settings buttons on the
 /// right. It only reports clicks; the popup decides what they do.
 /// </summary>
 internal sealed class AppFooter : TableLayoutPanel
@@ -17,13 +17,14 @@ internal sealed class AppFooter : TableLayoutPanel
     public AppFooter()
     {
         BackColor = BackgroundColor;
-        ColumnCount = 4;
+        ColumnCount = 5;
         Dock = DockStyle.Fill;
         Margin = Padding.Empty;
         Padding = Padding.Empty;
         RowCount = 1;
 
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -52,15 +53,23 @@ internal sealed class AppFooter : TableLayoutPanel
         freeUpButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(freeUpButton, 2, 0);
 
+        var idleButton = CreateSmallButton("Idle");
+        idleButton.Anchor = AnchorStyles.Right;
+        idleButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
+        idleButton.Click += (_, _) => IdleRequested?.Invoke(this, EventArgs.Empty);
+        Controls.Add(idleButton, 3, 0);
+
         var settingsButton = CreateSmallButton("Settings");
         settingsButton.Anchor = AnchorStyles.Right;
         settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(settingsButton, 3, 0);
+        Controls.Add(settingsButton, 4, 0);
     }
 
     public event EventHandler? SystemInfoRequested;
 
     public event EventHandler? FreeUpGpuRequested;
+
+    public event EventHandler? IdleRequested;
 
     public event EventHandler? SettingsRequested;
 }

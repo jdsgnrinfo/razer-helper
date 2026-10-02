@@ -235,7 +235,7 @@ internal sealed class SettingsForm : Form
     // A setting's row, 12px above and below: the title and, under it, what it
     // does in quiet grey, on the left, however long the texts run; the control
     // at the right edge, 24px clear of them.
-    private static TableLayoutPanel CreateCard(string text, string hint, Control control)
+    internal static TableLayoutPanel CreateCard(string text, string hint, Control control)
     {
         control.Margin = Padding.Empty;
 
@@ -289,7 +289,7 @@ internal sealed class SettingsForm : Form
     }
 
     // The thin line between two settings.
-    private static Control CreateDivider() => new Panel
+    internal static Control CreateDivider() => new Panel
     {
         BackColor = DividerColor,
         Height = S(1),

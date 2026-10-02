@@ -79,6 +79,10 @@ public sealed class TrayPopupForm : Form
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
     private readonly SilentPlanOverride _silentTurbo;
+    // The Idle option, checked every couple of seconds whatever the window does.
+    private readonly IPowerPlans _powerPlans;
+    private readonly IdlePlanSwitcher _idleSwitcher;
+    private readonly System.Windows.Forms.Timer _idleTimer = new() { Interval = 2_000 };
     private readonly SilentPlanOverride _silentEfficiency;
 
     // The popup fades in on every showing and fades out before hiding
@@ -102,7 +106,9 @@ public sealed class TrayPopupForm : Form
             gpuTemperature: new D3dkmtGpuTemperature(),
             fullscreenDetector: new WindowsFullscreenDetector(),
             cpuBoost: PowerPlanValue.BoostMode(),
-            cpuEfficiency: PowerPlanValue.EfficiencyPreference())
+            cpuEfficiency: PowerPlanValue.EfficiencyPreference(),
+            powerPlans: new WindowsPowerPlans(),
+            idleClock: new WindowsIdleClock())
     {
     }
 
@@ -124,7 +130,9 @@ public sealed class TrayPopupForm : Form
         IGpuTemperatureSource? gpuTemperature = null,
         IFullscreenDetector? fullscreenDetector = null,
         IPowerPlanValue? cpuBoost = null,
-        IPowerPlanValue? cpuEfficiency = null)
+        IPowerPlanValue? cpuEfficiency = null,
+        IPowerPlans? powerPlans = null,
+        IIdleClock? idleClock = null)
     {
         _transport = transport;
         _powerSource = powerSource;
@@ -213,6 +221,20 @@ public sealed class TrayPopupForm : Form
             _settings.CpuEfficiencyBeforeSilent,
             saved => SaveSettings(_settings with { CpuEfficiencyBeforeSilent = saved }));
         _silentEfficiency.SetEnabled(_settings.SilentEfficiency);
+
+        // Off until the user turns it on in the Idle window. A plan a crash or
+        // restart left switched comes back first. Left out (tests, previews),
+        // no plan is touched.
+        _powerPlans = powerPlans ?? new NoPowerPlans();
+        _idleSwitcher = new IdlePlanSwitcher(
+            _powerPlans,
+            idleClock ?? new NeverIdle(),
+            _settings.PlanBeforeIdle,
+            saved => SaveSettings(_settings with { PlanBeforeIdle = saved }));
+        _idleSwitcher.Restore();
+        _idleSwitcher.Configure(_settings.IdleSwitch, _settings.IdleMinutes, _settings.IdlePlan);
+        _idleTimer.Tick += (_, _) => _idleSwitcher.Tick();
+        _idleTimer.Start();
 
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
@@ -414,6 +436,8 @@ public sealed class TrayPopupForm : Form
         // Nothing is left watching the fans once the app is gone.
         _performanceSection.TurnOffMaxFanBeforeExit();
         _keyboardScreenOff.Restore(); // Never leave the keyboard dark behind.
+        _idleTimer.Stop();
+        _idleSwitcher.Restore(); // Whoever closes the app is at the keyboard.
 
         _allowClose = true;
         Close();
@@ -458,6 +482,7 @@ public sealed class TrayPopupForm : Form
         var footer = new AppFooter();
         footer.SystemInfoRequested += (_, _) => ShowSystemInfo();
         footer.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
+        footer.IdleRequested += (_, _) => ShowIdle();
         footer.SettingsRequested += (_, _) => ShowSettings();
 
         AddRow(Row.Header, CreateAppHeader(), HeaderRowHeight);
@@ -722,6 +747,33 @@ public sealed class TrayPopupForm : Form
         return infoForm;
     });
 
+    // The Idle option: every choice is saved and applied at once.
+    private void ShowIdle() => ShowBeside(() =>
+    {
+        IReadOnlyList<PowerPlan> plans;
+
+        try
+        {
+            plans = _powerPlans.List();
+        }
+        catch (System.ComponentModel.Win32Exception exception)
+        {
+            AppLog.Error("Could not list the power plans.", exception);
+            plans = [];
+        }
+
+        var idleForm = new IdleForm(_settings.IdleSwitch, _settings.IdleMinutes, _settings.IdlePlan, plans);
+
+        idleForm.Changed += (_, choice) =>
+        {
+            SaveSettings(_settings with { IdleSwitch = choice.Enabled, IdleMinutes = choice.Minutes, IdlePlan = choice.Plan });
+            _idleSwitcher.Configure(choice.Enabled, choice.Minutes, choice.Plan);
+        };
+
+        idleForm.PlaceBeside(this);
+        return idleForm;
+    });
+
     // Custom's CPU and GPU levels. It closes by itself if the laptop leaves
     // Custom meanwhile.
     private void ShowCustomBoost()
@@ -841,6 +893,7 @@ public sealed class TrayPopupForm : Form
         // Before the settings holding it are cleared: the CPU boost Silent took away comes back.
         _silentTurbo.Restore();
         _silentEfficiency.Restore();
+        _idleSwitcher.Restore();
 
         _isResetting = true;
         using var hold = KeepOpen(); // The message boxes below must not hide the popup.
@@ -990,6 +1043,25 @@ public sealed class TrayPopupForm : Form
     // returned value is not disposed.
     private OpenHold KeepOpen() => new(this);
 
+    // No power plans and nobody ever away, for tests and previews.
+    private sealed class NoPowerPlans : IPowerPlans
+    {
+        public IReadOnlyList<PowerPlan> List() => [];
+
+        public Guid Active() => Guid.Empty;
+
+        public void Activate(Guid plan)
+        {
+        }
+    }
+
+    private sealed class NeverIdle : IIdleClock
+    {
+        public TimeSpan SinceLastInput() => TimeSpan.Zero;
+
+        public bool ScreenKeptOn() => false;
+    }
+
     // No power plan to change, for tests and previews.
     private sealed class NoPowerPlan : IPowerPlanValue
     {
@@ -1081,6 +1153,7 @@ public sealed class TrayPopupForm : Form
             _profileToast.Dispose();
             _displayWatcher.Dispose();
             _fadeTimer.Dispose();
+            _idleTimer.Dispose();
             _dgpuCoordinator.Dispose();
 
             // Only what the form created itself; supplied dependencies belong to the caller.

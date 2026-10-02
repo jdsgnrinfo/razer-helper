@@ -53,6 +53,18 @@ internal static class L
         ["Close"] = "Cerrar",
         ["Close (RazerHelper keeps running in the tray)"] = "Cerrar (RazerHelper sigue en la bandeja)",
         ["RazerHelper Settings"] = "Ajustes de RazerHelper",
+
+        // Idle window.
+        ["Idle"] = "Inactividad",
+        ["RazerHelper Idle"] = "Inactividad de RazerHelper",
+        ["Change the power plan when idle"] = "Cambiar el plan al estar inactivo",
+        ["Your plan comes back as soon as you use the laptop."] = "Tu plan vuelve en cuanto usas el portátil.",
+        ["{0} min"] = "{0} min",
+        ["Idle for"] = "Inactivo durante",
+        ["Without touching the keyboard or the mouse."] = "Sin tocar el teclado ni el ratón.",
+        ["Power plan"] = "Plan de energía",
+        ["Applied once that time has passed."] = "Se aplica cuando pasa ese tiempo.",
+        ["A video or a game that keeps the screen on counts as using the laptop."] = "Un vídeo o un juego que mantiene la pantalla encendida cuenta como usar el portátil.",
         ["{0} shortcut is used by another program."] = "Otro programa ya usa el atajo {0}.",
         ["{0} control interface found."] = "Control de {0} encontrado.",
         ["{0} control interface found (community-reported product id, not verified on this model)."] =
