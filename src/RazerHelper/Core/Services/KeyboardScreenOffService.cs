@@ -9,16 +9,16 @@ namespace RazerHelper.Core.Services;
 /// display on and off notices Windows sends. "Off" is brightness 0, so the
 /// effect and color are kept.
 ///
-/// The light fades out rather than snapping off: a few steps down over most
-/// of a second, on a worker thread, so the window never waits on it. The
-/// screen coming back mid-fade stops the fade and puts the brightness back.
-/// Every write to the keyboard runs in turn on one queue, so a fade and the
-/// restore after it never cross.
+/// The light fades rather than snapping, both ways: a few steps over about
+/// half a second, on a worker thread, so the window never waits on it. The
+/// screen changing its mind mid-fade turns the fade around from wherever it
+/// got to. Every write to the keyboard runs in turn on one queue, so two
+/// fades never cross.
 /// </summary>
 internal sealed class KeyboardScreenOffService
 {
-    // About 0.8 s in all.
-    internal const int FadeSteps = 16;
+    // About 0.45 s each way.
+    internal const int FadeSteps = 10;
     private static readonly TimeSpan FadeStepDelay = TimeSpan.FromMilliseconds(50);
 
     private readonly Func<int> _readBrightness;
@@ -32,10 +32,13 @@ internal sealed class KeyboardScreenOffService
 
     // Set from the screen going off until it comes back (or the option is turned off).
     private bool _dimmed;
+
+    // The fade under way or queued, either way; a new one stops it.
     private CancellationTokenSource? _fade;
 
-    // The brightness to bring back, and what the fade last left the keyboard
-    // at: anything else when the screen comes on means the Fn keys changed it.
+    // The brightness to bring back, kept until the fade back up has finished;
+    // and what the last write left the keyboard at: anything else when the
+    // screen comes on means the Fn keys changed it.
     private int? _restoreTo;
     private int _left;
 
@@ -83,8 +86,7 @@ internal sealed class KeyboardScreenOffService
                 return;
 
             _dimmed = true;
-            _fade = new CancellationTokenSource();
-            var token = _fade.Token;
+            var token = StartFade();
             Queue(() => FadeOut(token));
         }
     }
@@ -107,37 +109,25 @@ internal sealed class KeyboardScreenOffService
     {
         try
         {
-            var brightness = _readBrightness();
-
-            // Already dark (dimmed to 0 by hand): nothing to do or undo.
-            if (brightness <= 0)
-                return;
+            var from = _readBrightness();
 
             lock (_sync)
             {
-                _restoreTo = brightness;
-                _left = brightness;
+                // A fade back up cut short already holds the brightness to bring back.
+                if (_restoreTo is null)
+                {
+                    // Already dark (dimmed to 0 by hand): nothing to do or undo.
+                    if (from <= 0)
+                        return;
+
+                    _restoreTo = from;
+                }
+
+                _left = from;
             }
 
-            for (var step = 1; step <= FadeSteps; step++)
-            {
-                if (token.IsCancellationRequested)
-                    return;
-
-                // Eased: quick at first, softer as it reaches dark.
-                var remaining = 1 - (double)step / FadeSteps;
-                var value = (int)Math.Round(brightness * remaining * remaining);
-
-                _setBrightness(value);
-
-                lock (_sync)
-                    _left = value;
-
-                if (step < FadeSteps)
-                    _pause(FadeStepDelay);
-            }
-
-            AppLog.Info("Keyboard backlight faded out with the screen.");
+            if (Fade(from, 0, token))
+                AppLog.Info("Keyboard backlight faded out with the screen.");
         }
         catch (Exception exception)
         {
@@ -145,16 +135,15 @@ internal sealed class KeyboardScreenOffService
         }
     }
 
-    // Stops a fade under way and queues the restore after it.
+    // Stops a fade under way and queues the fade back up after it.
     private void QueueRestore(string reason)
     {
-        _fade?.Cancel();
-        _fade = null;
         _dimmed = false;
-        Queue(() => RestoreNow(reason));
+        var token = StartFade();
+        Queue(() => RestoreNow(reason, token));
     }
 
-    private void RestoreNow(string reason)
+    private void RestoreNow(string reason, CancellationToken token)
     {
         int brightness;
         int left;
@@ -166,22 +155,66 @@ internal sealed class KeyboardScreenOffService
 
             brightness = saved;
             left = _left;
-            _restoreTo = null;
         }
 
         try
         {
             // Changed while the screen was off (the Fn keys): that wins.
             if (_readBrightness() != left)
-                return;
+            {
+                lock (_sync)
+                    _restoreTo = null;
 
-            _setBrightness(brightness);
+                return;
+            }
+
+            if (!Fade(left, brightness, token))
+                return; // Turned around: the fade down that stopped it keeps what to bring back.
+
+            lock (_sync)
+                _restoreTo = null;
+
             AppLog.Info($"Keyboard backlight turned back on ({reason}).");
         }
         catch (Exception exception)
         {
+            lock (_sync)
+                _restoreTo = null;
+
             AppLog.Error("Could not turn the keyboard backlight back on.", exception);
         }
+    }
+
+    // Steps from one brightness to another, eased: quick at first, softer at
+    // the end. False when stopped part way.
+    private bool Fade(int from, int to, CancellationToken token)
+    {
+        for (var step = 1; step <= FadeSteps; step++)
+        {
+            if (token.IsCancellationRequested)
+                return false;
+
+            var remaining = 1 - (double)step / FadeSteps;
+            var value = (int)Math.Round(to + (from - to) * remaining * remaining);
+
+            _setBrightness(value);
+
+            lock (_sync)
+                _left = value;
+
+            if (step < FadeSteps)
+                _pause(FadeStepDelay);
+        }
+
+        return true;
+    }
+
+    // A fresh token for the next fade, stopping the one before.
+    private CancellationToken StartFade()
+    {
+        _fade?.Cancel();
+        _fade = new CancellationTokenSource();
+        return _fade.Token;
     }
 
     private void Queue(Action work)

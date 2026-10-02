@@ -51,7 +51,47 @@ public class KeyboardScreenOffServiceTests
         rig.Service.OnDisplayChanged(on: false);
 
         Assert.Equal(80, rig.Brightness);
-        Assert.Equal(5, rig.Writes.Count); // Four steps down, then back up; nothing after.
+        Assert.Equal(4 + KeyboardScreenOffService.FadeSteps, rig.Writes.Count); // Four steps down, then the whole way back up; nothing after.
+        Assert.True(rig.Writes.Skip(4).Zip(rig.Writes.Skip(5)).All(pair => pair.First <= pair.Second), "Straight back up from where it got to.");
+    }
+
+    [Fact]
+    public void ScreenOn_FadesTheKeyboardBackUpInSteps()
+    {
+        var rig = new Rig();
+        rig.Service.OnDisplayChanged(on: false);
+        rig.Writes.Clear();
+
+        rig.Service.OnDisplayChanged(on: true);
+
+        Assert.Equal(KeyboardScreenOffService.FadeSteps, rig.Writes.Count);
+        Assert.Equal(80, rig.Writes[^1]);
+        Assert.True(rig.Writes.Zip(rig.Writes.Skip(1)).All(pair => pair.First <= pair.Second), "Never darker on the way up.");
+        Assert.True(rig.Writes[0] is > 0 and < 80, "The first step is part of the way, not straight to full.");
+    }
+
+    [Fact]
+    public void TheScreenGoingOffMidFadeUp_FadesDown_AndStillBringsTheOriginalBrightnessBack()
+    {
+        var rig = new Rig();
+        rig.Service.OnDisplayChanged(on: false);
+
+        var turned = false;
+        rig.DuringFade = _ =>
+        {
+            if (!turned && rig.Brightness > 0)
+            {
+                turned = true;
+                rig.Service.OnDisplayChanged(on: false);
+            }
+        };
+
+        rig.Service.OnDisplayChanged(on: true);
+        Assert.Equal(0, rig.Brightness);
+
+        rig.DuringFade = null;
+        rig.Service.OnDisplayChanged(on: true);
+        Assert.Equal(80, rig.Brightness);
     }
 
     [Fact]
@@ -76,7 +116,7 @@ public class KeyboardScreenOffServiceTests
         rig.Service.OnDisplayChanged(on: true);
 
         Assert.Equal(80, rig.Brightness);
-        Assert.Equal(KeyboardScreenOffService.FadeSteps + 1, rig.Writes.Count); // One fade, one restore.
+        Assert.Equal(KeyboardScreenOffService.FadeSteps * 2, rig.Writes.Count); // One fade down, one back up.
     }
 
     [Fact]

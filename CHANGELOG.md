@@ -56,7 +56,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Other
 
-- **Keyboard off with the screen** (optional): the lighting fades out over most of a second as the display turns off, and comes back as it was when it turns on.
+- **Keyboard off with the screen** (optional): the lighting fades out in about half a second as the display turns off, and fades back in to where it was when it turns on.
 - **Experimental:** Max fan on the Blade 15 Base (2020) asks for 10000 RPM instead of 7000. The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## 1.0.0
