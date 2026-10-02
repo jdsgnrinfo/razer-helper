@@ -76,15 +76,44 @@ internal sealed class SilentPlanOverride(
             RestoreLocked("of a reset");
     }
 
+    /// <summary>
+    /// Makes sure Silent's value is still in the active plan, for a check
+    /// every few seconds: Windows, Razer's software or the Idle option can
+    /// switch plans or put the value back while the laptop stays in Silent.
+    /// </summary>
+    public void Recheck()
+    {
+        lock (_sync)
+        {
+            if (_mode == PerformanceMode.Silent && Enabled)
+                ApplyLocked();
+        }
+    }
+
     private void ApplyLocked()
     {
-        // Already changed by us: what we saved is what to give back later.
-        if (_saved is not null)
-            return;
-
         try
         {
             var current = setting.Read();
+
+            if (_saved is { } saved)
+            {
+                // Still ours: nothing to do.
+                if (current.Scheme == saved.Scheme && current.PluggedIn == silentValue && current.OnBattery == silentValue)
+                    return;
+
+                if (current.Scheme == saved.Scheme)
+                {
+                    // Put back by someone else in the same plan: take it away again, keeping the value saved first.
+                    setting.Write(current.Scheme, silentValue, silentValue);
+                    AppLog.Info($"Silent: {name} set to {silentValue} again (it had been changed back to {current.PluggedIn} plugged in, {current.OnBattery} on battery).");
+                    return;
+                }
+
+                // Another plan is active now: the one we changed gets its value back, and this one is changed instead.
+                setting.Write(saved.Scheme, saved.PluggedIn, saved.OnBattery);
+                AppLog.Info($"{name} given back to the plan Silent changed before, as another plan is now active.");
+            }
 
             _saved = current;
             persist(current);

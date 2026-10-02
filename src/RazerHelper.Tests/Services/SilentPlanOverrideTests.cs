@@ -23,7 +23,12 @@ public class SilentPlanOverrideTests
             Service = new SilentPlanOverride(this, silentValue, "CPU boost", saved, value => Persisted = value);
         }
 
-        public SavedPlanValue Read() => new(Plan, PluggedIn, OnBattery);
+        // The plan Windows has active; Plan's values are PluggedIn and OnBattery, any other's are in Others.
+        public Guid Active = Plan;
+        public Dictionary<Guid, (uint PluggedIn, uint OnBattery)> Others { get; } = [];
+
+        public SavedPlanValue Read() =>
+            Active == Plan ? new(Plan, PluggedIn, OnBattery) : new(Active, Others[Active].PluggedIn, Others[Active].OnBattery);
 
         public void Write(Guid scheme, uint pluggedIn, uint onBattery)
         {
@@ -31,8 +36,67 @@ public class SilentPlanOverrideTests
                 throw new InvalidOperationException("The plan could not be written.");
 
             Writes++;
-            (PluggedIn, OnBattery) = (pluggedIn, onBattery);
+
+            if (scheme == Plan)
+                (PluggedIn, OnBattery) = (pluggedIn, onBattery);
+            else
+                Others[scheme] = (pluggedIn, onBattery);
         }
+    }
+
+    [Fact]
+    public void ABoostPutBackWhileInSilent_IsTakenAwayAgain_AndTheOriginalStillComesBack()
+    {
+        var rig = new Rig();
+        rig.Service.OnModeChanged(PerformanceMode.Silent);
+
+        (rig.PluggedIn, rig.OnBattery) = (2, 2); // Windows or Razer's software, meanwhile.
+        rig.Service.Recheck();
+        Assert.Equal((0u, 0u), (rig.PluggedIn, rig.OnBattery));
+
+        rig.Service.OnModeChanged(PerformanceMode.Balanced);
+        Assert.Equal((2u, 1u), (rig.PluggedIn, rig.OnBattery));
+    }
+
+    [Fact]
+    public void AnotherPlanBecomingActiveInSilent_LosesItsBoost_AndTheFirstPlanGetsItsBack()
+    {
+        var other = new Guid("27b6984e-62f8-4534-b530-b5c18eb33484");
+        var rig = new Rig();
+        rig.Others[other] = (2, 2);
+        rig.Service.OnModeChanged(PerformanceMode.Silent);
+
+        rig.Active = other; // The Idle option, say.
+        rig.Service.Recheck();
+
+        Assert.Equal((0u, 0u), rig.Others[other]);
+        Assert.Equal((2u, 1u), (rig.PluggedIn, rig.OnBattery));
+
+        rig.Service.OnModeChanged(PerformanceMode.Balanced);
+        Assert.Equal((2u, 2u), rig.Others[other]);
+    }
+
+    [Fact]
+    public void Recheck_OutsideSilent_ChangesNothing()
+    {
+        var rig = new Rig();
+
+        rig.Service.OnModeChanged(PerformanceMode.Balanced);
+        rig.Service.Recheck();
+
+        Assert.Equal(0, rig.Writes);
+    }
+
+    [Fact]
+    public void Recheck_WhenTheBoostIsStillOff_WritesNothing()
+    {
+        var rig = new Rig();
+        rig.Service.OnModeChanged(PerformanceMode.Silent);
+        var writes = rig.Writes;
+
+        rig.Service.Recheck();
+
+        Assert.Equal(writes, rig.Writes);
     }
 
     [Fact]

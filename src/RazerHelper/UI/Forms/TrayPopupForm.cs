@@ -222,7 +222,13 @@ public sealed class TrayPopupForm : Form
             saved => SaveSettings(_settings with { PlanBeforeIdle = saved }));
         _idleSwitcher.Restore();
         _idleSwitcher.Configure(_settings.IdleSwitch, _settings.IdleMinutes, _settings.IdlePlan);
-        _idleTimer.Tick += (_, _) => _idleSwitcher.Tick();
+        _idleTimer.Tick += (_, _) =>
+        {
+            _idleSwitcher.Tick();
+
+            // In Silent, the boost stays off in whatever plan is active.
+            _silentTurbo.Recheck();
+        };
         _idleTimer.Start();
 
         // Left out (tests, previews) they are inert: no login entries, no programs.
