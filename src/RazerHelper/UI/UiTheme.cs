@@ -37,7 +37,7 @@ internal static class UiTheme
     public static readonly Color ButtonHoverColor = Color.FromArgb(0x30, 0x30, 0x30);
 
     /// <summary>The thin lines between sections and between rows.</summary>
-    public static readonly Color DividerColor = Color.FromArgb(0x20, 0x20, 0x20);
+    public static readonly Color DividerColor = Color.FromArgb(0x22, 0x22, 0x22);
 
     /// <summary>The 1px outline of menus and other quiet edges.</summary>
     public static readonly Color ButtonBorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
