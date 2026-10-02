@@ -83,7 +83,7 @@ internal sealed class ToggleSwitch : CheckBox
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = e.Graphics;
-        Glass.Clear(graphics, Parent?.BackColor ?? BackgroundColor);
+        graphics.Clear(Parent?.BackColor ?? BackgroundColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         var track = new RectangleF(

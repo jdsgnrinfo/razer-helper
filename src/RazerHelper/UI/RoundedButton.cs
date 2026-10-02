@@ -61,7 +61,7 @@ internal class RoundedButton : Button
         var graphics = pevent.Graphics;
 
         // Outside the corners the parent shows through.
-        Glass.Clear(graphics, Parent?.BackColor ?? BackgroundColor);
+        graphics.Clear(Parent?.BackColor ?? BackgroundColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         var fillColor = IsGreen
@@ -117,14 +117,13 @@ internal class RoundedButton : Button
             Glyphs.Draw(graphics, Glyph.Value, icon, iconColor);
 
             var textArea = new Rectangle(textBounds.Left, top + CircleSize + StackedGlyphGap, textBounds.Width, textHeight);
-            Glass.DrawText(graphics, this, Text, Font, textArea, textColor,
+            TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
             return;
         }
 
-        Glass.DrawText(
+        TextRenderer.DrawText(
             graphics,
-            this,
             Text,
             Font,
             textBounds,

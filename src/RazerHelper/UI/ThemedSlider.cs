@@ -238,7 +238,7 @@ internal sealed class ThemedSlider : Control
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = e.Graphics;
-        Glass.Clear(graphics, BackColor);
+        graphics.Clear(BackColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         var thumbX = CurrentThumbX;

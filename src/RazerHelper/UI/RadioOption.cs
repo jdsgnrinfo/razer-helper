@@ -51,7 +51,7 @@ internal sealed class RadioOption : Button
     protected override void OnPaint(PaintEventArgs pevent)
     {
         var graphics = pevent.Graphics;
-        Glass.Clear(graphics, Parent?.BackColor ?? BackgroundColor);
+        graphics.Clear(Parent?.BackColor ?? BackgroundColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         var titleHeight = S(24);
@@ -60,7 +60,7 @@ internal sealed class RadioOption : Button
         if (IsChosen)
         {
             using var ring = new SolidBrush(IsUsable ? RazerGreen : OffColor);
-            using var dot = new SolidBrush(OnGreenTextColor); // Not pure black, which is see-through on glass.
+            using var dot = new SolidBrush(Color.Black);
             var inset = S(5.5f);
             graphics.FillEllipse(ring, marker);
             graphics.FillEllipse(dot, RectangleF.Inflate(marker, -inset, -inset));
@@ -80,9 +80,9 @@ internal sealed class RadioOption : Button
         var usable = IsUsable || IsChosen;
         const TextFormatFlags Line = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
 
-        Glass.DrawText(graphics, this, Text, TitleFont, new Rectangle(TextLeft, 0, Width - TextLeft, titleHeight),
+        TextRenderer.DrawText(graphics, Text, TitleFont, new Rectangle(TextLeft, 0, Width - TextLeft, titleHeight),
             usable ? Color.White : SystemColors.GrayText, Line);
-        Glass.DrawText(graphics, this, Description, DescriptionFont, new Rectangle(TextLeft, titleHeight, Width - TextLeft, Height - titleHeight),
+        TextRenderer.DrawText(graphics, Description, DescriptionFont, new Rectangle(TextLeft, titleHeight, Width - TextLeft, Height - titleHeight),
             usable ? SubtleTextColor : SystemColors.GrayText, Line);
     }
 
