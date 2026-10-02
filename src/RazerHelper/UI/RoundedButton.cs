@@ -93,12 +93,13 @@ internal class RoundedButton : Button
         // With a glyph: a larger icon in a circle over the text, the pair
         // centered in the button. The icon is green on grey, dark on the selected
         // green (whose circle is a deeper green), grey when unavailable.
-        // With an icon of the caller's: just the icon, centred, in the text's
-        // colour; the name is left to a tooltip.
+        // With an icon of the caller's: just the icon, centred, the name left to
+        // a tooltip. Green on grey, dark on the selected green, grey when unavailable.
         if (Icon is { } painter)
         {
             var height = S(IconOnlyHeight);
-            painter(graphics, new RectangleF(textBounds.Left, textBounds.Top + (textBounds.Height - height) / 2f, textBounds.Width, height), textColor);
+            var color = !IsUsable ? textColor : IsGreen ? OnGreenTextColor : RazerGreen;
+            painter(graphics, new RectangleF(textBounds.Left, textBounds.Top + (textBounds.Height - height) / 2f, textBounds.Width, height), color);
             return;
         }
 

@@ -29,7 +29,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 - **Redesign** of every window: flat sections split by thin lines, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 600 wide.
 - **Performance modes** as large buttons, quietest first (Silent, Balanced, Custom), each with its icon in a circle.
-- **Refresh rate buttons** show an icon instead of text: the rate in square digits over a row of bars ("A" for Auto), drawn for whatever rates the screen offers; the name ("60 Hz", "Auto") appears under the pointer.
+- **Refresh rate buttons** show an icon instead of text: the rate in square digits over a row of bars ("A" for Auto), drawn for whatever rates the screen offers, in green like the mode icons; the name ("60 Hz", "Auto") appears under the pointer.
 - **Fans** as two options with a line on what each does: Automatic RPM and Max RPM.
 - **Lighting** with the keyboard and the logo side by side.
 - **Header and footer:** the app's logo and name on the left and the close X on the right; the version and the System info, Free up GPU and Settings buttons at the bottom.
