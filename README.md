@@ -67,6 +67,7 @@ Everything the original does still works the same way; on top of it:
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.
 - **Idle power plan** (Idle state button, off by default): after 1 to 30 minutes without touching the keyboard or mouse, Windows switches to the power plan you choose, listed from the plans on your PC; your plan comes back exactly as it was as soon as you use the laptop. A video or a game that keeps the screen on counts as using it.
+- **Optimize** (green button at the bottom of the window): **Free up memory** moves what background programs are not using out of RAM (the program in front, such as a game, is left alone, and nothing is closed); **Temporary files** shows how much your temp folder holds in files over a day old and clears them, leaving any a program has open; and **Free up GPU**. Each runs only when you press its button.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
 - **Tray icon:** its disc takes the color of the current mode (green Balanced, blue Silent, purple Custom), and hovering it names the mode, as in "RazerHelper (Silent)". A mode changed outside the app (the laptop's own keys, Synapse) shows once the window is next opened.
 - **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2** switch to Balanced and Silent with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
@@ -118,7 +119,7 @@ Manual fan control, the CPU overclock toggle, independent verification on any Bl
 
 An app that keeps the dedicated GPU awake drains the battery. There are two ways to deal with that:
 
-- **Free up GPU** (link at the bottom of the window) lists those apps and asks whether to close them. Use it whenever you like, plugged in or not, for example after unplugging an external monitor.
+- **Free up GPU** (in the green Optimize window) lists those apps and asks whether to close them. Use it whenever you like, plugged in or not, for example after unplugging an external monitor.
 - **Close apps using the dedicated GPU when unplugged** (in Settings, off by default) does the same automatically when you unplug the charger.
 
 It is deliberately cautious:

@@ -54,6 +54,28 @@ internal static class L
         ["Close (RazerHelper keeps running in the tray)"] = "Cerrar (RazerHelper sigue en la bandeja)",
         ["RazerHelper Settings"] = "Ajustes de RazerHelper",
 
+        // Optimize window.
+        ["Optimize"] = "Optimizar",
+        ["RazerHelper Optimize"] = "Optimizar con RazerHelper",
+        ["Free up"] = "Liberar",
+        ["Clean"] = "Limpiar",
+        ["Free up memory"] = "Liberar memoria",
+        ["Moves what background programs are not using out of RAM. The game in front is left alone."] = "Saca de la RAM lo que no usan los programas en segundo plano. El juego en primer plano no se toca.",
+        ["Temporary files"] = "Archivos temporales",
+        ["Scanning..."] = "Analizando...",
+        ["Lists apps keeping the dedicated GPU awake, and closes them only if you say so."] = "Muestra las apps que mantienen activa la GPU dedicada y solo las cierra si tú lo dices.",
+        ["Nothing running is closed: memory is only moved out of RAM, and temporary files in use or under a day old stay."] = "No se cierra nada de lo que está en marcha: la memoria solo se saca de la RAM, y los archivos temporales en uso o de menos de un día se quedan.",
+        ["Freeing up memory..."] = "Liberando memoria...",
+        ["{0} freed from {1} programs in the background."] = "{0} liberados de {1} programas en segundo plano.",
+        ["Could not free up memory."] = "No se pudo liberar la memoria.",
+        ["Nothing to clean: no temporary files over a day old."] = "Nada que limpiar: no hay archivos temporales de más de un día.",
+        ["{0} in {1} files over a day old."] = "{0} en {1} archivos de más de un día.",
+        ["Could not read the temporary folder."] = "No se pudo leer la carpeta temporal.",
+        ["Cleaning..."] = "Limpiando...",
+        ["{0} freed ({1} files)."] = "{0} liberados ({1} archivos).",
+        ["{0} in use were left."] = "{0} en uso se quedaron.",
+        ["Could not clean the temporary files."] = "No se pudieron limpiar los archivos temporales.",
+
         // Idle window.
         ["Idle state"] = "Estado de inactividad",
         ["RazerHelper Idle state"] = "Estado de inactividad de RazerHelper",

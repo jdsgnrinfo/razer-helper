@@ -6,7 +6,7 @@ namespace RazerHelper.UI;
 
 /// <summary>
 /// The very bottom of the popup: the app version (just its number) on the
-/// left, then the "System info", "Free up GPU", Idle and Settings buttons on the
+/// left, then the "System info", Optimize (in green), Idle state and Settings buttons on the
 /// right. It only reports clicks; the popup decides what they do.
 /// </summary>
 internal sealed class AppFooter : TableLayoutPanel
@@ -47,11 +47,14 @@ internal sealed class AppFooter : TableLayoutPanel
         systemInfoButton.Click += (_, _) => SystemInfoRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(systemInfoButton, 1, 0);
 
-        var freeUpButton = CreateSmallButton("Free up GPU");
-        freeUpButton.Anchor = AnchorStyles.Right;
-        freeUpButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
-        freeUpButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(freeUpButton, 2, 0);
+        // Green, to stand out: the one place to free up memory, temporary files and the GPU.
+        var optimizeButton = CreateSmallButton("Optimize");
+        optimizeButton.Anchor = AnchorStyles.Right;
+        optimizeButton.BackColor = RazerGreen;
+        optimizeButton.ForeColor = OnGreenTextColor;
+        optimizeButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
+        optimizeButton.Click += (_, _) => OptimizeRequested?.Invoke(this, EventArgs.Empty);
+        Controls.Add(optimizeButton, 2, 0);
 
         var idleButton = CreateSmallButton("Idle state");
         idleButton.Anchor = AnchorStyles.Right;
@@ -67,7 +70,7 @@ internal sealed class AppFooter : TableLayoutPanel
 
     public event EventHandler? SystemInfoRequested;
 
-    public event EventHandler? FreeUpGpuRequested;
+    public event EventHandler? OptimizeRequested;
 
     public event EventHandler? IdleRequested;
 

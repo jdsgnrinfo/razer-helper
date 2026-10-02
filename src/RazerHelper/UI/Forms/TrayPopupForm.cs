@@ -481,7 +481,7 @@ public sealed class TrayPopupForm : Form
 
         var footer = new AppFooter();
         footer.SystemInfoRequested += (_, _) => ShowSystemInfo();
-        footer.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
+        footer.OptimizeRequested += (_, _) => ShowOptimize();
         footer.IdleRequested += (_, _) => ShowIdle();
         footer.SettingsRequested += (_, _) => ShowSettings();
 
@@ -745,6 +745,15 @@ public sealed class TrayPopupForm : Form
         var infoForm = new SystemInfoForm(SystemInfoReader.Read);
         infoForm.PlaceBeside(this);
         return infoForm;
+    });
+
+    // Free up memory, temporary files and the GPU, each on its own button.
+    private void ShowOptimize() => ShowBeside(() =>
+    {
+        var optimizeForm = new OptimizeForm(new MemoryTrimmer(new WindowsProcessMemory()), TempCleaner.ForCurrentUser());
+        optimizeForm.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
+        optimizeForm.PlaceBeside(this);
+        return optimizeForm;
     });
 
     // The Idle option: every choice is saved and applied at once.
