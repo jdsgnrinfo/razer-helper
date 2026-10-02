@@ -6,7 +6,7 @@ namespace RazerHelper.UI;
 
 /// <summary>
 /// The very bottom of the popup: the app version (just its number) on the
-/// left, then the "System info", Optimize (in green), Idle state and Settings buttons on the
+/// left, then the "System info", Idle state, Settings and, last, the green Optimize buttons on the
 /// right. It only reports clicks; the popup decides what they do.
 /// </summary>
 internal sealed class AppFooter : TableLayoutPanel
@@ -47,25 +47,26 @@ internal sealed class AppFooter : TableLayoutPanel
         systemInfoButton.Click += (_, _) => SystemInfoRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(systemInfoButton, 1, 0);
 
-        // Green, to stand out: the one place to free up memory, temporary files and the GPU.
+        // Green and at the right edge, to stand out: the one place to free up memory, temporary files and the GPU.
         var optimizeButton = CreateSmallButton("Optimize");
         optimizeButton.Anchor = AnchorStyles.Right;
         optimizeButton.BackColor = RazerGreen;
         optimizeButton.ForeColor = OnGreenTextColor;
-        optimizeButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
+        optimizeButton.Margin = Padding.Empty; // Last, at the right edge.
         optimizeButton.Click += (_, _) => OptimizeRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(optimizeButton, 2, 0);
+        Controls.Add(optimizeButton, 4, 0);
 
         var idleButton = CreateSmallButton("Idle state");
         idleButton.Anchor = AnchorStyles.Right;
         idleButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
         idleButton.Click += (_, _) => IdleRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(idleButton, 3, 0);
+        Controls.Add(idleButton, 2, 0);
 
         var settingsButton = CreateSmallButton("Settings");
         settingsButton.Anchor = AnchorStyles.Right;
+        settingsButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
         settingsButton.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
-        Controls.Add(settingsButton, 4, 0);
+        Controls.Add(settingsButton, 3, 0);
     }
 
     public event EventHandler? SystemInfoRequested;
