@@ -56,7 +56,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 ### Other
 
 - **Keyboard off with the screen** (optional): the lighting fades out in about half a second as the display turns off, and fades back in to where it was when it turns on.
-- **Razer Blade power plan** (optional, `tools/RazerBladePowerPlan.ps1`): Windows' Balanced plan with the energy performance preference at 33 plugged in and 80 on battery and a 5% minimum processor state, for cooler, quieter rest and longer battery. Needs no administrator rights; running it again updates the plan.
+- **Razer Blade power plan** (optional, `tools/RazerBladePowerPlan.ps1`): Windows' Balanced plan with the energy performance preference at 33 plugged in and 80 on battery a 5% minimum processor state and the turbo on Efficient Enabled on battery, for cooler, quieter rest and longer battery. Needs no administrator rights; running it again updates the plan.
 - **Experimental:** Max fan on the Blade 15 Base (2020) asks for 10000 RPM instead of 7000. The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## 1.0.0

@@ -143,7 +143,7 @@ For anyone who wants a little more control over temperatures, performance and ba
 | Energy performance preference (0 all speed, 100 all efficiency) | 33 | 80 |
 | Minimum processor state | 5% | 5% |
 | Maximum processor state | 100% | 100% |
-| Processor boost (turbo) | Aggressive | Aggressive |
+| Processor boost (turbo) | Aggressive | Efficient Enabled (only when it pays off) |
 
 Screen, sleep and brightness stay as Windows' Balanced has them. It works on any Windows 10 or 11 laptop, Intel or AMD, and does not need RazerHelper. To add it (no administrator rights needed; running it again updates the plan instead of adding another), from the folder you downloaded the fork to:
 

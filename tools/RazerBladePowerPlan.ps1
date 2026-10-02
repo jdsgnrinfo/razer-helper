@@ -11,7 +11,8 @@
                                       Balanced's own are 33 and 50)
       Minimum processor state         5 % (the CPU can rest when idle)
       Maximum processor state         100 %
-      Processor boost (turbo)         Aggressive
+      Processor boost (turbo)         Aggressive plugged in; on battery
+                                      Efficient Enabled, only when it pays off
 
     Everything else (screen, sleep, brightness) stays as Windows' Balanced
     has it. Running it again updates the plan instead of adding another.
@@ -80,7 +81,7 @@ $values = @(
     @('PERFEPP1', 33, 80),         # The same, for the efficiency cores of newer CPUs
     @('PROCTHROTTLEMIN', 5, 5),    # Minimum processor state, %
     @('PROCTHROTTLEMAX', 100, 100),# Maximum processor state, %
-    @('PERFBOOSTMODE', 2, 2)       # Processor boost: 2 is Aggressive
+    @('PERFBOOSTMODE', 2, 3)       # Processor boost: Aggressive plugged in, Efficient Enabled on battery
 )
 
 foreach ($value in $values) {
