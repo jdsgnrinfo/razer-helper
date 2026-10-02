@@ -9,7 +9,7 @@ namespace RazerHelper.UI.Forms;
 /// The Idle window, opened from the footer: an option to switch Windows'
 /// power plan while the laptop is left alone, how many minutes without a key
 /// press or mouse move count as idle, and which plan to switch to. Off until
-/// the user turns it on; every choice applies and is saved at once.
+/// the user turns it on with its switch; every choice applies and is saved at once.
 /// </summary>
 internal sealed class IdleForm : Form
 {
@@ -18,7 +18,7 @@ internal sealed class IdleForm : Form
 
     private static int ContentWidth => S(512);
 
-    private readonly RadioOption _option;
+    private readonly ToggleSwitch _switch;
     private readonly DropdownButton _minutes;
     private readonly DropdownButton _plans;
     private readonly IReadOnlyList<PowerPlan> _planList;
@@ -53,20 +53,24 @@ internal sealed class IdleForm : Form
 
         layout.Controls.Add(WindowTitleRow.Create(this, "Idle", ContentWidth));
 
-        // The on/off choice, marked like the fans' options: ticked, it is on.
-        _option = new RadioOption(L.T("Change the power plan when idle"), L.T("Your plan comes back as soon as you use the laptop."))
+        // The on/off switch, as in Settings: clicking anywhere on the row flips it.
+        _switch = new ToggleSwitch
         {
-            Cursor = Cursors.Hand,
-            Height = RadioOption.PreferredHeight,
-            Margin = new Padding(0, S(12), 0, S(12)),
-            Width = ContentWidth
+            AccessibleName = L.T("Change the power plan when idle"),
+            Anchor = AnchorStyles.Right
         };
-        _option.Click += (_, _) =>
+
+        var option = SettingsForm.CreateCard("Change the power plan when idle", "Your plan comes back as soon as you use the laptop.", _switch);
+        option.Margin = new Padding(0, S(12), 0, 0);
+        var words = option.GetControlFromPosition(0, 0)!;
+
+        foreach (var part in words.Controls.Cast<Control>().Append(words).Append(option))
         {
-            ShowOption(!IsOn);
-            RaiseChanged();
-        };
-        layout.Controls.Add(_option);
+            part.Click += (_, _) => _switch.Checked = !_switch.Checked;
+            part.Cursor = Cursors.Hand;
+        }
+
+        layout.Controls.Add(option);
 
         _minutes = new DropdownButton([.. MinuteChoices.Select(choice => L.F("{0} min", choice))])
         {
@@ -97,15 +101,16 @@ internal sealed class IdleForm : Form
         WindowOutline.Attach(layout);
         Controls.Add(layout);
 
-        ShowOption(enabled);
+        _switch.Checked = enabled;
         _minutes.Select(Array.IndexOf(MinuteChoices, minutes));
         _plans.Select(plan is { } chosen ? IndexOfPlan(chosen) : -1);
+        _switch.CheckedChanged += (_, _) => RaiseChanged();
     }
 
     /// <summary>Raised with every change: on or off, the minutes, and the plan (null while none is picked).</summary>
     public event EventHandler<(bool Enabled, int Minutes, Guid? Plan)>? Changed;
 
-    private bool IsOn => _option.BackColor.ToArgb() == RazerGreen.ToArgb();
+    private bool IsOn => _switch.Checked;
 
     private int IndexOfPlan(Guid plan)
     {
@@ -116,13 +121,6 @@ internal sealed class IdleForm : Form
         }
 
         return -1;
-    }
-
-    // A green BackColor marks it chosen, as on the fans' options.
-    private void ShowOption(bool on)
-    {
-        _option.BackColor = on ? RazerGreen : BackgroundColor;
-        _option.Invalidate();
     }
 
     private void RaiseChanged()
