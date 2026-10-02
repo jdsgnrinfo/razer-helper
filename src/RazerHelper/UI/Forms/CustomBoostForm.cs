@@ -98,6 +98,7 @@ internal sealed class CustomBoostForm : Form
         });
 
         WindowOutline.Attach(layout);
+        WindowFade.Attach(this);
         Controls.Add(layout);
 
         _refreshTimer.Tick += (_, _) => StartRead();

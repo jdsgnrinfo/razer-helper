@@ -81,6 +81,7 @@ internal sealed class OptimizeForm : Form
         });
 
         WindowOutline.Attach(layout);
+        WindowFade.Attach(this);
         Controls.Add(layout);
     }
 

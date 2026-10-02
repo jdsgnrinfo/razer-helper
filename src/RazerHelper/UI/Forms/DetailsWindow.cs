@@ -54,6 +54,7 @@ internal abstract class DetailsWindow : Form
         layout.Controls.Add(CreateTitleRow());
         layout.Controls.Add(_cards);
         WindowOutline.Attach(layout);
+        WindowFade.Attach(this);
         Controls.Add(layout);
 
         _refreshTimer.Tick += (_, _) => Refresh();

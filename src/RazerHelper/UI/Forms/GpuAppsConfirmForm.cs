@@ -33,6 +33,7 @@ internal sealed class GpuAppsConfirmForm : Form
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = true;
         StartPosition = FormStartPosition.CenterScreen;
+        WindowFade.Attach(this); // A dialog: fades in only.
         Text = "RazerHelper";
         TopMost = true;
 

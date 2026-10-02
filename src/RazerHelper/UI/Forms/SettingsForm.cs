@@ -93,6 +93,7 @@ internal sealed class SettingsForm : Form
             ("Reset", ConfirmReset, 1)));
 
         WindowOutline.Attach(layout);
+        WindowFade.Attach(this);
         Controls.Add(layout);
 
         _autoSwitchBox.Checked = settings.AutoSwitchProfiles;

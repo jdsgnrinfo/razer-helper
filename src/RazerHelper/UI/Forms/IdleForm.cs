@@ -99,6 +99,7 @@ internal sealed class IdleForm : Form
         });
 
         WindowOutline.Attach(layout);
+        WindowFade.Attach(this);
         Controls.Add(layout);
 
         _switch.Checked = enabled;

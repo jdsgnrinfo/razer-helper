@@ -334,10 +334,10 @@ public sealed class TrayPopupForm : Form
 
     // --- Fade in and out ---------------------------------------------------
 
-    // Per 15 ms tick: the whole fade takes 100 ms, quicker than the rest of
-    // the motion, so the window is there as soon as it is asked for.
-    private const double FadeMilliseconds = 100;
-    private const double FadeStep = 15 / FadeMilliseconds;
+    // Per 15 ms tick: the whole fade takes as long as the other windows'
+    // (WindowFade, 100 ms), quicker than the rest of the motion, so the
+    // window is there as soon as it is asked for.
+    private const double FadeStep = 15 / WindowFade.Milliseconds;
 
     // How far the fade is, 0 hidden to 1 shown, moving evenly; the window's
     // opacity follows it eased, slow at both ends.
