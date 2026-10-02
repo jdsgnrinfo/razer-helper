@@ -360,6 +360,10 @@ internal sealed class PerformanceSection : SectionPanel
         var source = IsPluggedIn;
         var edited = edit(_profiles[source]);
 
+        // Shown straight away, so the click answers at once; a failure puts
+        // back what the EC last confirmed (see RunAsync).
+        ShowPending(edited);
+
         return RunAsync(
             () => _performanceService.ApplyProfileAsync(edited),
             failureMessage,
@@ -460,23 +464,34 @@ internal sealed class PerformanceSection : SectionPanel
         StateChanged?.Invoke(this, state);
     }
 
+    // The asked-for mode and levels, highlighted before the EC confirms them.
+    private void ShowPending(PowerProfile profile)
+    {
+        if (profile.Mode is PerformanceMode mode && _buttons.TryGetValue(mode, out var button))
+        {
+            HighlightSelected(_buttons.Values, button);
+            UpdateButtonStates();
+        }
+
+        _customRow.ShowBoosts(profile.Cpu, profile.Gpu);
+    }
+
     private void UpdateButtonStates()
     {
         var pluggedIn = IsPluggedIn;
 
         foreach (var (mode, button) in _buttons)
         {
-            // Truly disabled only while a write is in flight. A mode that is not
-            // offered on this power source stays clickable underneath (the click
-            // handler refuses it) so hovering it can explain why.
-            button.Enabled = !_busy;
-
+            // Never greyed while a write is in flight, which would flash all
+            // three: a click then is simply ignored (see ChangeProfileAsync). A
+            // mode that is not offered on this power source stays clickable
+            // underneath (the click handler refuses it) so hovering it can explain why.
             if (_unsupportedModes.Contains(mode))
                 SetAvailability(button, false, _toolTip, "Not supported on this laptop");
             else
                 SetAvailability(button, PowerProfileRules.IsModeAllowed(mode, pluggedIn), _toolTip, "Needs to be plugged in");
         }
 
-        _customRow.Enabled = !_busy && PowerProfileRules.CanChangeBoost(_state, pluggedIn);
+        _customRow.Enabled = PowerProfileRules.CanChangeBoost(_state, pluggedIn);
     }
 }

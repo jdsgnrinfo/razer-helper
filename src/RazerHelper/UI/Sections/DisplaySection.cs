@@ -102,7 +102,7 @@ internal sealed class DisplaySection : SectionPanel
             Select(_savedMode);
 
             if (_savedMode.IsAuto)
-                ApplyAuto();
+                _ = ApplyAutoAsync();
         }
 
         // Keep the "waiting for the game" note if a change was just put on hold.
@@ -118,7 +118,7 @@ internal sealed class DisplaySection : SectionPanel
     public void RefreshStatus()
     {
         if (_fullscreenGuard.ReadyToRetry)
-            ApplyAuto();
+            _ = ApplyAutoAsync();
         else if (!_fullscreenGuard.IsWaiting)
             UpdateDisplayStatus();
     }
@@ -137,13 +137,16 @@ internal sealed class DisplaySection : SectionPanel
         base.Dispose(disposing);
     }
 
-    private void SelectMode(DisplayRefreshMode mode)
+    // The button answers at once; Windows changes the rate on a worker
+    // thread, which takes a moment while the screen re-syncs, so the window
+    // never freezes meanwhile.
+    private async void SelectMode(DisplayRefreshMode mode)
     {
         if (mode.IsAuto)
         {
             Select(mode);
             DisplayModeChanged?.Invoke(this, mode);
-            ApplyAuto();
+            await ApplyAutoAsync();
             return;
         }
 
@@ -151,15 +154,43 @@ internal sealed class DisplaySection : SectionPanel
         _fullscreenGuard.Cancel();
         _retryTimer.Stop();
 
-        if (!_displayService.TrySetInternalRefreshRate(mode.FixedHz!.Value, out var message))
+        var previous = _selectedMode;
+        Select(mode);
+
+        var (applied, message) = await SetRateAsync(mode.FixedHz!.Value);
+
+        if (!applied)
         {
+            // Back to what was chosen before, unless another button was clicked meanwhile.
+            if (_selectedMode == mode)
+            {
+                _selectedMode = previous;
+                HighlightSelected(_buttons.Values, previous is null ? null : _buttons[previous]);
+            }
+
             _statusLabel.Text = message;
             return;
         }
 
-        Select(mode);
         DisplayModeChanged?.Invoke(this, mode);
         UpdateDisplayStatus();
+    }
+
+    // One change at a time, in the order asked, off the UI thread.
+    private Task _rateChange = Task.CompletedTask;
+
+    private Task<(bool Applied, string Message)> SetRateAsync(int hertz)
+    {
+        var before = _rateChange;
+        var change = Task.Run(async () =>
+        {
+            await before.ConfigureAwait(false);
+            var applied = _displayService.TrySetInternalRefreshRate(hertz, out var message);
+            return (applied, message);
+        });
+
+        _rateChange = change;
+        return change;
     }
 
     private void Select(DisplayRefreshMode mode)
@@ -171,10 +202,10 @@ internal sealed class DisplaySection : SectionPanel
     private void PowerSource_PowerSourceChanged(object? sender, EventArgs e)
     {
         if (_selectedMode?.IsAuto == true)
-            PostToUi(ApplyAuto);
+            PostToUi(() => _ = ApplyAutoAsync());
     }
 
-    private void ApplyAuto()
+    private async Task ApplyAutoAsync()
     {
         var isPluggedIn = _powerSource.IsPluggedIn;
 
@@ -197,11 +228,15 @@ internal sealed class DisplaySection : SectionPanel
 
         var targetHz = DisplayRefreshMode.Auto.TargetHz(isPluggedIn.Value, _fastHz);
 
-        if (_displayService.GetInternalDisplayInfo()?.RefreshRateHz != targetHz &&
-            !_displayService.TrySetInternalRefreshRate(targetHz, out var message))
+        if (_displayService.GetInternalDisplayInfo()?.RefreshRateHz != targetHz)
         {
-            _statusLabel.Text = message;
-            return;
+            var (applied, message) = await SetRateAsync(targetHz);
+
+            if (!applied)
+            {
+                _statusLabel.Text = message;
+                return;
+            }
         }
 
         UpdateDisplayStatus();
@@ -210,7 +245,7 @@ internal sealed class DisplaySection : SectionPanel
     private void RetryTimer_Tick(object? sender, EventArgs e)
     {
         if (_fullscreenGuard.ReadyToRetry)
-            ApplyAuto();
+            _ = ApplyAutoAsync();
     }
 
     private void UpdateDisplayStatus()

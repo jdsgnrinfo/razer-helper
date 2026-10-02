@@ -61,6 +61,10 @@ internal sealed class LightingSection : SectionPanel
 
     private bool _busy;
 
+    // A change asked for while another was on its way to the laptop: the
+    // latest only, run as soon as the laptop is free.
+    private (Func<Task> Change, string FailureMessage, bool ReadBack)? _queued;
+
     // While the window is open, the keyboard brightness is read every few
     // tenths of a second, so the slider follows the Fn brightness keys (the
     // laptop handles those itself and tells nobody).
@@ -102,6 +106,16 @@ internal sealed class LightingSection : SectionPanel
                 L.T("Could not change the keyboard lighting."));
         };
 
+        // The light follows the slider while it is dragged; letting go sends
+        // the final value and shows what the laptop then reports.
+        _keyboard.Brightness.ValueChanged += async (_, _) =>
+        {
+            if (_keyboard.Brightness.IsBeingMoved)
+                await ApplyAsync(
+                    () => _lightingService.SetKeyboardBrightnessAsync(_keyboard.Brightness.Value),
+                    L.T("Could not change the keyboard brightness."),
+                    readBack: false);
+        };
         _keyboard.Brightness.Committed += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetKeyboardBrightnessAsync(_keyboard.Brightness.Value),
@@ -111,6 +125,14 @@ internal sealed class LightingSection : SectionPanel
             await ApplyAsync(
                 () => _lightingService.SetLogoAsync(LogoModes[_logo.Effect.SelectedIndex]),
                 L.T("Could not change the logo lighting."));
+        _logo.Brightness.ValueChanged += async (_, _) =>
+        {
+            if (_logo.Brightness.IsBeingMoved)
+                await ApplyAsync(
+                    () => _lightingService.SetLogoBrightnessAsync(_logo.Brightness.Value),
+                    L.T("Could not change the logo brightness."),
+                    readBack: false);
+        };
         _logo.Brightness.Committed += async (_, _) =>
             await ApplyAsync(
                 () => _lightingService.SetLogoBrightnessAsync(_logo.Brightness.Value),
@@ -243,18 +265,24 @@ internal sealed class LightingSection : SectionPanel
         });
     }
 
-    // Runs one change, then shows what the laptop really did, whatever happened.
-    private async Task ApplyAsync(Func<Task> change, string failureMessage)
+    // Runs one change, then shows what the laptop really did, whatever
+    // happened. Nothing is greyed meanwhile: a change asked for in the
+    // meantime waits its turn (the latest only) and runs straight after.
+    // readBack false is for the steps of a drag, which only send: reading
+    // the state back after each would slow the light down, and the release
+    // reads it once at the end.
+    private async Task ApplyAsync(Func<Task> change, string failureMessage, bool readBack = true)
     {
         if (_busy)
         {
-            // Something else is talking to the laptop: put the display back to the truth.
-            _ = RefreshAsync();
+            // A drag step never pushes out a change that reads back (an effect, or the release).
+            if (readBack || _queued is not { ReadBack: true })
+                _queued = (change, failureMessage, readBack);
+
             return;
         }
 
         _busy = true;
-        SetControlsEnabled(false);
 
         Exception? failure = null;
 
@@ -267,11 +295,14 @@ internal sealed class LightingSection : SectionPanel
             failure = exception;
         }
 
-        var state = await ReadStateOrUnknownAsync(L.T("Could not read the lighting state after a change.")).ConfigureAwait(false);
+        var state = readBack || failure is not null
+            ? await ReadStateOrUnknownAsync(L.T("Could not read the lighting state after a change.")).ConfigureAwait(false)
+            : null;
 
         await PostToUiAsync(() =>
         {
-            ShowState(state);
+            if (state is not null)
+                ShowState(state);
 
             if (failure is not null)
             {
@@ -306,16 +337,12 @@ internal sealed class LightingSection : SectionPanel
     private void EndBusy()
     {
         _busy = false;
-        SetControlsEnabled(true);
-    }
 
-    private void SetControlsEnabled(bool enabled)
-    {
-        _keyboard.Enabled = enabled;
-        _logo.Enabled = enabled;
-
-        if (_colorDropdown is not null)
-            _colorDropdown.Enabled = enabled;
+        if (_queued is { } next)
+        {
+            _queued = null;
+            _ = ApplyAsync(next.Change, next.FailureMessage, next.ReadBack);
+        }
     }
 
     private void ShowState(LightingState state)
@@ -462,23 +489,13 @@ internal sealed class LightingSection : SectionPanel
 
         public ThemedSlider Brightness { get; }
 
-        public bool Enabled
-        {
-            set
-            {
-                Effect.Enabled = value;
-                Brightness.Enabled = value;
-                // The percentage greys out with the slider.
-                _percent.ForeColor = value ? Color.White : SubtleTextColor;
-            }
-        }
-
         /// <summary>Shows what the laptop reports: an effect (or -1 for none) and a brightness (or null to leave it).</summary>
         public void Show(int effectIndex, int? brightness)
         {
             Effect.Select(effectIndex);
 
-            if (brightness is { } percent)
+            // Never under the user's hand: a reading taken mid-drag is already behind.
+            if (brightness is { } percent && !Brightness.IsBeingMoved)
                 Brightness.Value = percent;
         }
 
