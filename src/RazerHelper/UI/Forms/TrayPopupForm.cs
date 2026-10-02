@@ -41,9 +41,6 @@ public sealed class TrayPopupForm : Form
     private static int LastGap => S(26);
     private static int FooterRowHeight => S(30);
 
-    // The CPU's energy preference in Silent: 0 is all performance, 100 all efficiency.
-    private const uint SilentEfficiencyPercent = 80;
-
     private bool _allowClose;
     private bool _isResetting;
     private int _modalDepth;
@@ -83,7 +80,6 @@ public sealed class TrayPopupForm : Form
     private readonly IPowerPlans _powerPlans;
     private readonly IdlePlanSwitcher _idleSwitcher;
     private readonly System.Windows.Forms.Timer _idleTimer = new() { Interval = 2_000 };
-    private readonly SilentPlanOverride _silentEfficiency;
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -203,24 +199,17 @@ public sealed class TrayPopupForm : Form
         _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
         _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
 
-        // Silent keeps the CPU at its base frequency and leans it towards
-        // efficiency; Balanced and Custom give both back. Left out (tests,
-        // previews), the power plan is not touched.
+        // Silent keeps the CPU at its base frequency, always: part of the
+        // mode, with no switch. Balanced and Custom give the boost back. Left
+        // out (tests, previews), the power plan is not touched.
         _silentTurbo = new SilentPlanOverride(
             cpuBoost ?? new NoPowerPlan(),
             0, // Boost off.
             "CPU boost",
             _settings.CpuBoostBeforeSilent,
             saved => SaveSettings(_settings with { CpuBoostBeforeSilent = saved }));
-        _silentTurbo.SetEnabled(_settings.SilentWithoutTurbo);
 
-        _silentEfficiency = new SilentPlanOverride(
-            cpuEfficiency ?? new NoPowerPlan(),
-            SilentEfficiencyPercent,
-            "CPU energy preference",
-            _settings.CpuEfficiencyBeforeSilent,
-            saved => SaveSettings(_settings with { CpuEfficiencyBeforeSilent = saved }));
-        _silentEfficiency.SetEnabled(_settings.SilentEfficiency);
+        GiveBackEnergyPreference(cpuEfficiency ?? new NoPowerPlan());
 
         // Off until the user turns it on in the Idle window. A plan a crash or
         // restart left switched comes back first. Left out (tests, previews),
@@ -851,18 +840,6 @@ public sealed class TrayPopupForm : Form
             AppLog.Info("Performance mode shortcuts are off.");
         };
 
-        settingsForm.SilentWithoutTurboChanged += (_, enabled) =>
-        {
-            SaveSettings(_settings with { SilentWithoutTurbo = enabled });
-            _silentTurbo.SetEnabled(enabled);
-        };
-
-        settingsForm.SilentEfficiencyChanged += (_, enabled) =>
-        {
-            SaveSettings(_settings with { SilentEfficiency = enabled });
-            _silentEfficiency.SetEnabled(enabled);
-        };
-
         settingsForm.KeyboardOffWithScreenChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
@@ -903,7 +880,6 @@ public sealed class TrayPopupForm : Form
     {
         // Before the settings holding it are cleared: the CPU boost Silent took away comes back.
         _silentTurbo.Restore();
-        _silentEfficiency.Restore();
         _idleSwitcher.Restore();
 
         _isResetting = true;
@@ -1004,6 +980,27 @@ public sealed class TrayPopupForm : Form
         _settingsService.Save(settings);
     }
 
+    // An earlier version's Silent also leaned the CPU's energy preference
+    // towards efficiency. Silent no longer does, so what it replaced is put
+    // back once, whatever mode the laptop is in.
+    private void GiveBackEnergyPreference(IPowerPlanValue preference)
+    {
+        if (_settings.CpuEfficiencyBeforeSilent is not { } saved)
+            return;
+
+        try
+        {
+            preference.Write(saved.Scheme, saved.PluggedIn, saved.OnBattery);
+            AppLog.Info($"CPU energy preference given back ({saved.PluggedIn} plugged in, {saved.OnBattery} on battery): Silent no longer changes it.");
+        }
+        catch (Exception exception)
+        {
+            AppLog.Error("Could not give the CPU energy preference back.", exception);
+        }
+
+        SaveSettings(_settings with { CpuEfficiencyBeforeSilent = null });
+    }
+
     private void DisplaySection_DisplayModeChanged(object? sender, DisplayRefreshMode mode) =>
         SaveSettings(_settings with { DisplayMode = mode.Label });
 
@@ -1035,7 +1032,6 @@ public sealed class TrayPopupForm : Form
         _fanSection.ShowPerformanceState(state);
         PerformanceModeChanged?.Invoke(this, state.Mode);
         _silentTurbo.OnModeChanged(state.Mode);
-        _silentEfficiency.OnModeChanged(state.Mode);
 
         // The levels only mean something in Custom (the charger switching
         // profiles, or the Fn keys, can leave it while the window is open).

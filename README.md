@@ -25,7 +25,7 @@ On the desktop, with the Custom mode's CPU and GPU levels open beside the window
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, performance mode shortcuts, Silent without turbo, Efficient Silent, free up GPU when unplugged and keyboard off with the screen">
+  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, performance mode shortcuts, free up GPU when unplugged and keyboard off with the screen">
 </p>
 
 <p align="center">
@@ -45,8 +45,7 @@ Everything the original does still works the same way; on top of it:
 - **Razer Blade 15 Base (2020) support**, tested on the laptop itself: Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
 - **Spanish translation**, chosen in Settings (English stays the default).
 - **Performance mode shortcuts:** Ctrl+Shift+F1/F2 switch to Balanced and Silent from any program, with a small notice at the top right.
-- **Silent without turbo:** in Silent the CPU stays at its base frequency (Windows' processor boost is turned off in the active power plan), cooler and quieter; Balanced or Custom give the boost back, closing the app leaves it as it is. A switch in Settings, on by default.
-- **Efficient Silent:** in Silent the CPU's energy preference leans towards efficiency (80 out of 100 in the active power plan); given back the same way. Its own switch in Settings, on by default.
+- **Silent without turbo:** in Silent the CPU always stays at its base frequency (Windows' processor boost is turned off in the active power plan), cooler and quieter. Part of the mode, with no switch; Balanced or Custom give the boost back, closing the app leaves it as it is.
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, and "RazerHelper (Silent)" on hover.
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.

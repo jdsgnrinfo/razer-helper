@@ -41,17 +41,12 @@ internal sealed record AppSettings(
     // On unless the user turns it off: Ctrl+Shift+F1/F2/F3 switch performance
     // mode from any program. Off frees them for another program that wants them.
     bool ProfileShortcuts = true,
-    // On unless the user turns it off: Silent keeps the CPU at its base
-    // frequency by turning off Windows' processor boost.
-    bool SilentWithoutTurbo = true,
-    // The boost setting Silent replaced, kept until Balanced or Custom gives
-    // it back (closing the app does not); null when Silent has not changed it.
+    // Silent always turns off Windows' processor boost. The boost setting it
+    // replaced, kept until Balanced or Custom gives it back (closing the app
+    // does not); null when Silent has not changed it.
     SavedPlanValue? CpuBoostBeforeSilent = null,
-    // On unless the user turns it off: Silent sets the CPU's energy
-    // preference towards efficiency.
-    bool SilentEfficiency = true,
-    // The preference Silent replaced, kept until Balanced or Custom gives it
-    // back; null when Silent has not changed it.
+    // Left by an earlier version, whose Silent also changed the CPU's energy
+    // preference: given back once at startup, then cleared.
     SavedPlanValue? CpuEfficiencyBeforeSilent = null,
     // The interface language: "en" or "es". Null follows the Windows display
     // language. Changing it restarts the app.
