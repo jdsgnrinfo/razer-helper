@@ -38,7 +38,7 @@ internal sealed class IdleForm : Form
         KeyPreview = true; // Esc closes.
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterParent;
-        Text = L.T("RazerHelper Idle");
+        Text = L.T("RazerHelper Idle state");
 
         var layout = new FlowLayoutPanel
         {
@@ -51,7 +51,7 @@ internal sealed class IdleForm : Form
             WrapContents = false
         };
 
-        layout.Controls.Add(WindowTitleRow.Create(this, "Idle", ContentWidth));
+        layout.Controls.Add(WindowTitleRow.Create(this, "Idle state", ContentWidth));
 
         // The on/off switch, as in Settings: clicking anywhere on the row flips it.
         _switch = new ToggleSwitch

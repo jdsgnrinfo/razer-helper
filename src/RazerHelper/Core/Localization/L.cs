@@ -55,8 +55,8 @@ internal static class L
         ["RazerHelper Settings"] = "Ajustes de RazerHelper",
 
         // Idle window.
-        ["Idle"] = "Inactividad",
-        ["RazerHelper Idle"] = "Inactividad de RazerHelper",
+        ["Idle state"] = "Estado de inactividad",
+        ["RazerHelper Idle state"] = "Estado de inactividad de RazerHelper",
         ["Change the power plan when idle"] = "Cambiar el plan al estar inactivo",
         ["Your plan comes back as soon as you use the laptop."] = "Tu plan vuelve en cuanto usas el portátil.",
         ["{0} min"] = "{0} min",

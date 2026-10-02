@@ -53,7 +53,7 @@ internal sealed class AppFooter : TableLayoutPanel
         freeUpButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
         Controls.Add(freeUpButton, 2, 0);
 
-        var idleButton = CreateSmallButton("Idle");
+        var idleButton = CreateSmallButton("Idle state");
         idleButton.Anchor = AnchorStyles.Right;
         idleButton.Margin = new Padding(0, 0, SmallButtonGap, 0);
         idleButton.Click += (_, _) => IdleRequested?.Invoke(this, EventArgs.Empty);
