@@ -54,6 +54,7 @@ Everything the original does still works the same way; on top of it:
 - **Battery details window** (More info): power in or out, time left, charge, health, voltage.
 - **System information window** (System info, in the footer): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
 - **Keyboard off with the screen** (optional, in Settings).
+- **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## What it does today
@@ -132,6 +133,25 @@ It is deliberately cautious:
 ## Window size
 
 The window is drawn a little larger on high-resolution screens so it stays easy to read: it grows a quarter as fast as Windows' own display scaling (for example about 30% larger at 225% scaling, and unchanged at 100%). To choose your own size, add `"WindowScale"` to `%LOCALAPPDATA%\RazerHelper\settings.json` (for example `"WindowScale": 1.5`; allowed range 0.75 to 3) and restart the app. Remove it to go back to the automatic size.
+
+## Razer Blade power plan (optional)
+
+For anyone who wants a little more control over temperatures, performance and battery life, the fork includes a Windows power plan, **Razer Blade**: full performance for gaming and work, cool and quiet at rest, and longer on battery. It starts from Windows' own Balanced plan and changes only the processor:
+
+| Setting | Plugged in | On battery |
+|---|---|---|
+| Energy performance preference (0 all speed, 100 all efficiency) | 33 | 80 |
+| Minimum processor state | 5% | 5% |
+| Maximum processor state | 100% | 100% |
+| Processor boost (turbo) | Aggressive | Aggressive |
+
+Screen, sleep and brightness stay as Windows' Balanced has them. It works on any Windows 10 or 11 laptop, Intel or AMD, and does not need RazerHelper. To add it (no administrator rights needed; running it again updates the plan instead of adding another), from the folder you downloaded the fork to:
+
+```
+powershell -ExecutionPolicy Bypass -File .\tools\RazerBladePowerPlan.ps1 -Activate
+```
+
+Leave out `-Activate` to add it without switching to it, and choose it later in Control Panel > Power Options. `-Remove` takes it away again.
 
 ## Requirements
 
