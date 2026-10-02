@@ -93,7 +93,16 @@ internal class RoundedButton : Button
         // With a glyph: a larger icon in a circle over the text, the pair
         // centered in the button. The icon is green on grey, dark on the selected
         // green (whose circle is a deeper green), grey when unavailable.
-        if (Glyph is not null || Icon is not null)
+        // With an icon of the caller's: just the icon, centred, in the text's
+        // colour; the name is left to a tooltip.
+        if (Icon is { } painter)
+        {
+            var height = S(IconOnlyHeight);
+            painter(graphics, new RectangleF(textBounds.Left, textBounds.Top + (textBounds.Height - height) / 2f, textBounds.Width, height), textColor);
+            return;
+        }
+
+        if (Glyph is not null)
         {
             var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
             var top = textBounds.Top + (textBounds.Height - (CircleSize + StackedGlyphGap + textHeight)) / 2;
@@ -104,10 +113,7 @@ internal class RoundedButton : Button
 
             var iconColor = !IsUsable ? textColor : IsGreen ? OnGreenTextColor : RazerGreen;
             var icon = RectangleF.Inflate(circle, -(CircleSize - StackedGlyphSize) / 2f, -(CircleSize - StackedGlyphSize) / 2f);
-            if (Glyph is { } glyph)
-                Glyphs.Draw(graphics, glyph, icon, iconColor);
-            else
-                Icon!(graphics, icon, iconColor);
+            Glyphs.Draw(graphics, Glyph.Value, icon, iconColor);
 
             var textArea = new Rectangle(textBounds.Left, top + CircleSize + StackedGlyphGap, textBounds.Width, textHeight);
             TextRenderer.DrawText(graphics, Text, Font, textArea, textColor,
@@ -139,7 +145,7 @@ internal class RoundedButton : Button
 
     private Glyph? _glyph;
 
-    /// <summary>An icon the caller draws in place of a Glyph, in the same circle and colours (the refresh rates).</summary>
+    /// <summary>An icon the caller draws in place of the text, on its own (the refresh rates).</summary>
     [System.ComponentModel.Browsable(false)]
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public Action<Graphics, RectangleF, Color>? Icon
@@ -153,6 +159,9 @@ internal class RoundedButton : Button
     }
 
     private Action<Graphics, RectangleF, Color>? _icon;
+
+    // Base-design pixels: the height of an icon shown without text.
+    private const int IconOnlyHeight = 30;
 
     private static int StackedGlyphSize => S(30);
     private static int CircleSize => S(64);

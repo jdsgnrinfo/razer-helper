@@ -20,6 +20,7 @@ internal sealed class DisplaySection : SectionPanel
     private readonly Label _statusLabel;
     private readonly Dictionary<DisplayRefreshMode, Button> _buttons = [];
     private readonly FullscreenGuard _fullscreenGuard;
+    private readonly ThemedToolTip _toolTip = new();
 
     // Only runs while an automatic change is on hold behind a fullscreen game.
     private readonly System.Windows.Forms.Timer _retryTimer = new() { Interval = 10_000 };
@@ -63,8 +64,11 @@ internal sealed class DisplaySection : SectionPanel
             button.Font = ProfileButtonFont;
             button.Click += (_, _) => SelectMode(mode);
 
+            // Just the icon on the button; its name ("60 Hz", "Auto") under the pointer.
             if (button is RoundedButton rounded)
                 rounded.Icon = RefreshRateIcon.For(mode.FixedHz);
+
+            _toolTip.SetToolTip(button, button.Text);
         }
 
         Controls.Add(grid);
@@ -127,6 +131,7 @@ internal sealed class DisplaySection : SectionPanel
             _retryTimer.Stop();
             _retryTimer.Tick -= RetryTimer_Tick;
             _retryTimer.Dispose();
+            _toolTip.Dispose();
         }
 
         base.Dispose(disposing);

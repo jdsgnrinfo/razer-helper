@@ -35,6 +35,7 @@ public sealed class TrayPopupForm : Form
     private static int HeaderGap => S(16);
     private static int PerformanceRowHeight => UiControls.SectionHeaderHeight + S(136) + SectionPanel.GapBelow;
     private static int FanRowHeight => UiControls.SectionHeaderHeight + RadioOption.PreferredHeight + SectionPanel.GapBelow;
+    private static int ButtonRowHeight => UiControls.SectionHeaderHeight + S(56) + SectionPanel.GapBelow;
     private static int BatteryRowHeight => BatterySection.ContentHeight + SectionPanel.GapBelow;
     private static int LightingRowHeight => LightingSection.ContentHeight + LastGap;
     private static int LastGap => S(26);
@@ -488,7 +489,7 @@ public sealed class TrayPopupForm : Form
         AddRow(Row.Performance, _performanceSection, PerformanceRowHeight);
         AddRow(Row.Fans, _fanSection, FanRowHeight); // Sized in ResizeToFitRows.
         AddRow(Row.Battery, _batterySection, BatteryRowHeight);
-        AddRow(Row.Display, _displaySection, PerformanceRowHeight); // Icons over the names, as Performance.
+        AddRow(Row.Display, _displaySection, ButtonRowHeight);
         _lightingSection.Margin = new Padding(0, 0, 0, LastGap);
         AddRow(Row.Lighting, _lightingSection, LightingRowHeight);
         AddRow(Row.Services, _servicesSection, 0); // Grows when Razer's software is installed.
