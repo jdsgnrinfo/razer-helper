@@ -8,6 +8,27 @@ namespace RazerHelper.Core.Services;
 internal static partial class SystemInfoText
 {
     private const long Gigabyte = 1L << 30;
+    private const long Megabyte = 1L << 20;
+
+    /// <summary>
+    /// The model without the product code the maker adds at the end:
+    /// "Blade 15 Base Model (Early 2020) - RZ09-0328" becomes "Blade 15 Base Model (Early 2020)".
+    /// </summary>
+    public static string ModelName(string model) => ProductCode().Replace(model, string.Empty).Trim();
+
+    /// <summary>A graphics card's line under its name: the maker, then its memory in brackets, "NVIDIA (6.0 GB)".</summary>
+    public static string? GpuDetail(string? vendor, long? memoryBytes, CultureInfo culture) =>
+        (vendor, memoryBytes is > 0 ? Size(memoryBytes.Value, culture) : null) switch
+        {
+            ({ } maker, { } memory) => $"{maker} ({memory})",
+            ({ } maker, null) => maker,
+            (null, { } memory) => memory,
+            _ => null
+        };
+
+    // " - RZ09-0328" and the like: a dash, then letters and digits in dash-joined groups, at the end.
+    [GeneratedRegex(@"\s+-\s+[A-Z0-9]+(?:-[A-Z0-9]+)+$")]
+    private static partial Regex ProductCode();
 
     /// <summary>
     /// The processor without its trademark marks and base clock:
@@ -82,6 +103,10 @@ internal static partial class SystemInfoText
     public static string Size(long bytes, CultureInfo culture)
     {
         var gigabytes = bytes / (double)Gigabyte;
+
+        // Below a gigabyte, such as built-in graphics memory: "128 MB".
+        if (gigabytes < 1)
+            return (bytes / (double)Megabyte).ToString("0", culture) + " MB";
 
         if (gigabytes >= 1000)
             return (gigabytes / 1024).ToString("0.0", culture) + " TB";

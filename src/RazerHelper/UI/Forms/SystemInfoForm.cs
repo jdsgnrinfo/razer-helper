@@ -9,7 +9,7 @@ namespace RazerHelper.UI.Forms;
 
 /// <summary>
 /// The System information window, opened from the footer: the laptop model
-/// as its header, then two to a row Windows and the processor, the graphics,
+/// and its maker across the top, then two to a row Windows and the processor, the graphics,
 /// memory (with a bar of how full it is) and the BIOS, and each drive letter
 /// with its drive and a bar. The fixed figures
 /// are read once in the background; memory and drive space follow along
@@ -44,13 +44,16 @@ internal sealed class SystemInfoForm : DetailsWindow
             return (header, [new BentoCardSpec("System information", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)]);
         }
 
-        // The model heads the window, where it has the whole width to itself.
-        return (_info.Result.Model ?? header, CardsFor(_info.Result, CultureInfo.CurrentCulture));
+        return (header, CardsFor(_info.Result, CultureInfo.CurrentCulture));
     }
 
     private static List<BentoCardSpec> CardsFor(SystemInfo info, CultureInfo culture)
     {
         var cards = new List<BentoCardSpec>();
+
+        // The model first, across the whole width, with its maker under it.
+        if (info.Model is { } model)
+            cards.Add(new BentoCardSpec("Model", SystemInfoText.ModelName(model), info.Manufacturer, Wide: true));
 
         if (info.OsName is { } os)
             cards.Add(new BentoCardSpec("Operating system", SystemInfoText.OsName(os, info.OsBuild), SystemInfoText.OsDetail(info.OsVersion, info.OsBuild, info.OsRevision)));
@@ -58,16 +61,11 @@ internal sealed class SystemInfoForm : DetailsWindow
         if (info.CpuName is { } cpu)
             cards.Add(new BentoCardSpec("CPU", SystemInfoText.CpuName(cpu), SystemInfoText.CpuDetail(info.CpuCores, info.CpuThreads)));
 
-        // The built-in graphics beside the dedicated card, each with its maker (and memory, if it has its own).
+        // The built-in graphics beside the dedicated card, each with its maker and memory: "Intel (128 MB)".
         foreach (var gpu in info.Gpus.OrderByDescending(gpu => gpu.Integrated))
         {
-            var detail = string.Join(" · ", new[]
-            {
-                SystemInfoText.Vendor(gpu.VendorId),
-                gpu.Integrated || gpu.MemoryBytes is not { } bytes ? null : SystemInfoText.Size(bytes, culture)
-            }.Where(part => part is not null));
-
-            cards.Add(new BentoCardSpec(gpu.Integrated ? "Integrated GPU" : "GPU", SystemInfoText.GpuName(gpu.Name), detail.Length > 0 ? detail : null));
+            var detail = SystemInfoText.GpuDetail(SystemInfoText.Vendor(gpu.VendorId), gpu.MemoryBytes, culture);
+            cards.Add(new BentoCardSpec(gpu.Integrated ? "Integrated GPU" : "GPU", SystemInfoText.GpuName(gpu.Name), detail));
         }
 
         if (SystemInfoReader.ReadMemory() is { TotalBytes: > 0 } memory)

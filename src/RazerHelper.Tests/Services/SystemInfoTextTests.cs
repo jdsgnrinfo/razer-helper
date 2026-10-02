@@ -42,10 +42,28 @@ public class SystemInfoTextTests
     [InlineData(25769803776L, "24 GB")]
     [InlineData(4294967296L, "4.0 GB")]
     [InlineData(2199023255552L, "2.0 TB")]
+    [InlineData(134217728L, "128 MB")]
     public void Size_IsInBinaryUnitsLikeWindows(long bytes, string expected) =>
         Assert.Equal(expected, SystemInfoText.Size(bytes, CultureInfo.InvariantCulture));
 
     [Fact]
     public void BiosDate_IsInTheReadersFormat() =>
         Assert.Equal("4/6/2020", SystemInfoText.BiosDate("06/04/2020", CultureInfo.GetCultureInfo("es-ES")));
+
+    [Theory]
+    [InlineData("Blade 15 Base Model (Early 2020) - RZ09-0328", "Blade 15 Base Model (Early 2020)")]
+    [InlineData("Blade 16 - RZ09-0483T-EUR2", "Blade 16")]
+    [InlineData("Blade 15 Base Model (Early 2020)", "Blade 15 Base Model (Early 2020)")]
+    [InlineData("ROG Zephyrus G14", "ROG Zephyrus G14")]
+    public void ModelName_DropsTheProductCodeAtTheEnd(string model, string expected) =>
+        Assert.Equal(expected, SystemInfoText.ModelName(model));
+
+    [Theory]
+    [InlineData("NVIDIA", 6442450944L, "NVIDIA (6.0 GB)")]
+    [InlineData("Intel", 134217728L, "Intel (128 MB)")]
+    [InlineData("Intel", null, "Intel")]
+    [InlineData(null, 134217728L, "128 MB")]
+    [InlineData(null, null, null)]
+    public void GpuDetail_PutsTheMemoryInBracketsAfterTheMaker(string? vendor, long? bytes, string? expected) =>
+        Assert.Equal(expected, SystemInfoText.GpuDetail(vendor, bytes, CultureInfo.InvariantCulture));
 }

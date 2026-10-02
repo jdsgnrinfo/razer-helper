@@ -126,7 +126,7 @@ internal static class SystemInfoReader
         return cores > 0 ? cores : null;
     }
 
-    // The adapters Windows has now (WMI), with their dedicated memory from the
+    // The adapters Windows has now (WMI), with their dedicated memory from DirectX or the
     // driver's registry key: WMI caps it at 4 GB.
     private static List<GpuInfo> ReadGpus()
     {
@@ -136,17 +136,25 @@ internal static class SystemInfoReader
             .Select(adapter => (Name: adapter.Name!.Trim(), Vendor: VendorOf(adapter.Device!)))
             .ToList();
 
-        var memory = ReadAdapterMemory();
+        // A card's own memory is the driver's registry figure (6.0 GB; DirectX
+        // gives the 5.8 GB Windows lets programs use). Built-in graphics have
+        // only DirectX's figure, the 128 MB Task Manager shows: the registry
+        // gives the most it may borrow.
+        var registry = ReadAdapterMemory();
+        var directX = DxgiAdapterMemory.Read();
         var hasOtherVendor = adapters.Any(adapter => adapter.Vendor is not (IntelVendor or AmdVendor));
 
         return
         [
-            .. adapters.Select(adapter => new GpuInfo(
-                adapter.Name,
-                adapter.Vendor,
-                memory.TryGetValue(adapter.Name, out var bytes) ? bytes : null,
+            .. adapters.Select(adapter =>
+            {
                 // Intel's are built in; an AMD one is when there is also a discrete card beside it.
-                Integrated: adapter.Vendor == IntelVendor || (adapter.Vendor == AmdVendor && hasOtherVendor)))
+                var integrated = adapter.Vendor == IntelVendor || (adapter.Vendor == AmdVendor && hasOtherVendor);
+                var (first, second) = integrated ? (directX, registry) : (registry, directX);
+                long? bytes = first.TryGetValue(adapter.Name, out var found) || second.TryGetValue(adapter.Name, out found) ? found : null;
+
+                return new GpuInfo(adapter.Name, adapter.Vendor, bytes, integrated);
+            })
         ];
     }
 

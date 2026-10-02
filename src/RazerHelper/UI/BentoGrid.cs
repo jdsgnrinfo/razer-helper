@@ -4,7 +4,7 @@ using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
-/// <summary>One bento card's content: a small caption, the figure, a note, and an optional bar (0 to 1). Wide cards take a whole row. A narrow card's note goes under the figure, or at the right of it with DetailBeside.</summary>
+/// <summary>One bento card's content: a small caption, the figure, a note, and an optional bar (0 to 1). Wide cards take a whole row. A wide card with a bar has its note at the right of the figure, as large; any other card has it under the figure, or at the right of it with DetailBeside.</summary>
 internal sealed record BentoCardSpec(
     string Caption,
     string Value,
@@ -147,7 +147,12 @@ internal sealed class BentoGrid : TableLayoutPanel
 
         /// <summary>How tall a card is: the gap above, the caption, the figure, the bar or the note, and the gap below.</summary>
         public static int HeightFor(BentoCardSpec spec) =>
-            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (!spec.Wide && !spec.DetailBeside && spec.Detail is not null ? S(20) : 0) + BottomGap;
+            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (NoteUnder(spec) ? S(20) : 0) + BottomGap;
+
+        // A wide card with a bar (a drive) has its note at the right of the figure; every other note goes under it, unless asked beside.
+        private static bool NoteRight(BentoCardSpec spec) => spec.Wide && spec.Bar is not null;
+
+        private static bool NoteUnder(BentoCardSpec spec) => spec.Detail is not null && !NoteRight(spec) && !spec.DetailBeside;
 
         private BentoCardSpec? _spec;
 
@@ -208,7 +213,7 @@ internal sealed class BentoGrid : TableLayoutPanel
 
             if (spec.Detail is { } detail)
             {
-                if (spec.Wide)
+                if (NoteRight(spec))
                 {
                     TextRenderer.DrawText(graphics, detail, _valueFont, valueRow, Color.White, Line | TextFormatFlags.Right);
                 }
