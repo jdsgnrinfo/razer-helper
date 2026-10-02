@@ -33,7 +33,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Custom window:** the GPU's buttons line up with the CPU's, a line between the two, and the note in a green box.
 - **Battery details:** each figure under its name in grey, with lines between them, and flat green bars.
 - Every window takes its rounded corners and border from Windows 11.
-- **New icons** for the performance modes and the CPU and GPU, from open icon sets (see the credits in the README).
+- **New icons** for the performance modes: Balanced and Silent designed for this fork, Custom and the CPU and GPU from open icon sets (see the credits in the README).
 - CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.

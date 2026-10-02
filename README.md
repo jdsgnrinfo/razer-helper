@@ -212,10 +212,10 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 - [razer-ctl](https://github.com/tdakhran/razer-ctl) by tdakhran, and its actively maintained continuation [sqmagellan/razer-ctl](https://github.com/sqmagellan/razer-ctl) (MIT): the documented Blade command set this project builds on.
 - [OpenRazer](https://github.com/openrazer/openrazer): the USB protocol reverse-engineering work behind all of the above.
 - [G-Helper](https://github.com/seerge/g-helper): inspiration for the approach to power profiles and service handling. No G-Helper code is used.
-- App icon and logo by [jdsgnrinfo](https://github.com/jdsgnrinfo).
+- App icon, logo and the Balanced and Silent mode icons by [jdsgnrinfo](https://github.com/jdsgnrinfo).
 - Interface icons (this fork), drawn from their published SVG paths:
-  - [Phosphor Icons](https://phosphoricons.com) (MIT): fan, CPU and graphics card.
-  - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): speed and tune.
+  - [Phosphor Icons](https://phosphoricons.com) (MIT): CPU and graphics card.
+  - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): tune.
 - Typeface (this fork): [Titillium Web](https://fonts.google.com/specimen/Titillium+Web) by Accademia di Belle Arti di Urbino, under the [SIL Open Font License 1.1](https://openfontlicense.org). Its Light, Regular, SemiBold and Bold files ship inside the app, with the license beside it as `TitilliumWeb-OFL.txt` (in the repository, [src/RazerHelper/Assets/Fonts/OFL.txt](src/RazerHelper/Assets/Fonts/OFL.txt)).
 
 ## Disclaimer
