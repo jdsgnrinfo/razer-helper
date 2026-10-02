@@ -161,7 +161,7 @@ internal class RoundedButton : Button
     private Action<Graphics, RectangleF, Color>? _icon;
 
     // Base-design pixels: the height of an icon shown without text.
-    private const int IconOnlyHeight = 18;
+    private const int IconOnlyHeight = 20;
 
     private static int StackedGlyphSize => S(30);
     private static int CircleSize => S(64);
