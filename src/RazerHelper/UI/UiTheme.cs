@@ -28,7 +28,7 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(0x16, 0x16, 0x16);
+    public static readonly Color BackgroundColor = Color.FromArgb(0x10, 0x10, 0x10);
 
     /// <summary>An unselected button's or drop-down's flat fill.</summary>
     public static readonly Color ButtonColor = Color.FromArgb(0x24, 0x24, 0x24);
