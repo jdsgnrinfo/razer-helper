@@ -77,7 +77,7 @@ internal static class UiControls
     private const float HalfPoint = 2F / 3;
 
     /// <summary>
-    /// A small button sized to its text, such as "More info" or the footer's: 14px semi-bold text and half a point,
+    /// A small button sized to its text, such as "More details": 14px semi-bold text and half a point,
     /// 10px each side, 30px tall.
     /// </summary>
     public static Button CreateSmallButton(string text)

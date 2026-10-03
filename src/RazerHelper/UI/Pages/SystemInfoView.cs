@@ -5,28 +5,35 @@ using RazerHelper.Core.Localization;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiTheme;
 
-namespace RazerHelper.UI.Forms;
+namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The System information window, opened from the footer: the laptop model
-/// and its maker across the top, then two to a row Windows and the processor, the graphics,
-/// memory (with a bar of how full it is) and the BIOS, and each drive letter
-/// with its drive and a bar. The fixed figures
-/// are read once in the background; memory and drive space follow along
-/// while the window is open.
+/// The System page's figures: the laptop model and its maker across the
+/// top, then two to a row Windows and the processor, the graphics, memory
+/// (with a bar of how full it is) and the BIOS, and each drive letter with
+/// its drive and a bar. The fixed figures are read once in the background,
+/// the first time the page is shown; memory and drive space follow along
+/// while it is on screen.
 /// </summary>
-internal sealed class SystemInfoForm : DetailsWindow
+internal sealed class SystemInfoView(Func<SystemInfo> read) : DetailsView("System information", semiBoldValues: true)
 {
-    private readonly Task<SystemInfo> _info;
+    private Task<SystemInfo>? _reading;
     private bool _loggedFailure;
 
-    public SystemInfoForm(Func<SystemInfo> read)
-        : base("System information", semiBoldValues: true)
+    private Task<SystemInfo> Info => _reading ??= ReadInBackground();
+
+    public override void Start()
     {
-        _info = Task.Run(read);
+        _ = Info;
+        base.Start();
+    }
+
+    private Task<SystemInfo> ReadInBackground()
+    {
+        var reading = Task.Run(read);
 
         // Shown as soon as it is read, rather than at the next refresh.
-        _info.ContinueWith(
+        reading.ContinueWith(
             _ =>
             {
                 try
@@ -40,29 +47,31 @@ internal sealed class SystemInfoForm : DetailsWindow
                 }
             },
             TaskScheduler.Default);
+
+        return reading;
     }
 
-    protected override bool IsLoading => !_info.IsCompleted;
+    protected override bool IsLoading => !Info.IsCompleted;
 
     protected override (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards()
     {
         var header = L.T("System information");
 
-        if (!_info.IsCompleted)
+        if (!Info.IsCompleted)
             return (header, [new BentoCardSpec("System information", L.T("Reading..."), null, Wide: true)]);
 
-        if (!_info.IsCompletedSuccessfully)
+        if (!Info.IsCompletedSuccessfully)
         {
             if (!_loggedFailure)
             {
                 _loggedFailure = true;
-                AppLog.Error("Could not read the system information.", _info.Exception);
+                AppLog.Error("Could not read the system information.", Info.Exception);
             }
 
             return (header, [new BentoCardSpec("System information", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)]);
         }
 
-        return (header, CardsFor(_info.Result, CultureInfo.CurrentCulture));
+        return (header, CardsFor(Info.Result, CultureInfo.CurrentCulture));
     }
 
     private static List<BentoCardSpec> CardsFor(SystemInfo info, CultureInfo culture)

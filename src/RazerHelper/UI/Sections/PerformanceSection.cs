@@ -196,6 +196,37 @@ internal sealed class PerformanceSection : SectionPanel
             : L.T("Could not change the performance mode."));
     }
 
+    /// <summary>
+    /// The mode in the profile for a power source. A profile that holds no
+    /// mode yet, for the source the laptop is on, shows the one it is in.
+    /// </summary>
+    public PerformanceMode? ModeFor(bool pluggedIn) =>
+        _profiles[pluggedIn].Mode ?? (pluggedIn == IsPluggedIn ? _state.Mode : null);
+
+    /// <summary>Whether a mode can be picked for a power source: allowed on it, and not refused by this laptop.</summary>
+    public bool IsModeOffered(PerformanceMode mode, bool pluggedIn) =>
+        !_unsupportedModes.Contains(mode) && PowerProfileRules.IsModeAllowed(mode, pluggedIn);
+
+    /// <summary>
+    /// Picks the mode of a power source's profile. For the source the laptop
+    /// is on now it is a click on the mode's button; for the other it is only
+    /// saved, and applied when the charger is plugged in or unplugged.
+    /// </summary>
+    public Task SetModeForAsync(bool pluggedIn, PerformanceMode mode)
+    {
+        if (pluggedIn == IsPluggedIn)
+            return SelectModeAsync(mode);
+
+        if (!IsModeOffered(mode, pluggedIn) || _profiles[pluggedIn].Mode == mode)
+            return Task.CompletedTask;
+
+        var edited = PowerProfileRules.Sanitize(_profiles[pluggedIn] with { Mode = mode }, pluggedIn);
+        _profiles[pluggedIn] = edited;
+        AppLog.Info($"The {(pluggedIn ? "plugged-in" : "on-battery")} profile is now {mode}.");
+        ProfileChanged?.Invoke(this, new PowerProfileChange(pluggedIn, edited));
+        return Task.CompletedTask;
+    }
+
     /// <summary>Applies the profile for the current power source, e.g. at startup.</summary>
     public Task RestoreAsync() => ApplyActiveProfileAsync(atStartup: true);
 

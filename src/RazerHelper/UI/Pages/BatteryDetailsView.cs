@@ -3,14 +3,14 @@ using RazerHelper.Core.Localization;
 using RazerHelper.Core.Services;
 using static RazerHelper.UI.UiTheme;
 
-namespace RazerHelper.UI.Forms;
+namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The Battery details window, opened from the Battery section: the header
-/// "55% (Charging)", then cards for power in or out, time left or to full,
+/// The battery's figures at the top of Battery and power: the summary
+/// "55% (Charging)" for the page's title, then cards for power in or out, time left or to full,
 /// charge and health (each with a bar), voltage and the battery itself.
 /// </summary>
-internal sealed class BatteryDetailsForm(Func<BatteryDetails?> read) : DetailsWindow("Battery", semiBoldValues: true)
+internal sealed class BatteryDetailsView(Func<BatteryDetails?> read) : DetailsView("Battery", semiBoldValues: true)
 {
     private static readonly Color HealthFair = Color.FromArgb(230, 170, 40);
 

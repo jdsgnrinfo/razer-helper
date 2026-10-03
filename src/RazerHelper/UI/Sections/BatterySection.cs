@@ -14,13 +14,13 @@ namespace RazerHelper.UI.Sections;
 /// </summary>
 internal sealed class BatterySection : SectionPanel
 {
-    /// <summary>The title row: taller than the others, to fit the "More info" button, then the 8px gap.</summary>
+    /// <summary>The title row: taller than the others, to fit the "More details" button, then the 8px gap.</summary>
     private static int HeaderHeight => S(30 + 8);
 
     /// <summary>The header and the slider with the chosen limit beside it.</summary>
     public static int ContentHeight => HeaderHeight + S(24);
 
-    /// <summary>Raised when the user asks for the Battery details window. The host opens it.</summary>
+    /// <summary>Raised when the user asks for the battery details. The window shows Battery and power.</summary>
     public event EventHandler? DetailsRequested;
 
     private readonly BatteryChargeLimitService _chargeLimitService;
@@ -45,14 +45,14 @@ internal sealed class BatterySection : SectionPanel
         var initialLimit = BatteryLimitRange.Normalize(savedLimit ?? BatteryLimitRange.NoLimit);
 
         // Header, right: how full the battery is and where the power comes
-        // from ("84% (Plugged in)"), then More info, which opens the Battery
-        // details window.
+        // from ("84% (Plugged in)"), then More details, which goes to
+        // Battery and power.
         _powerLabel = CreateHeaderValueLabel();
         _powerLabel.Font = CapsTitleFont();
         _powerLabel.Dock = DockStyle.None;
         _powerLabel.Anchor = AnchorStyles.Right;
 
-        var details = CreateSmallButton("More info");
+        var details = CreateSmallButton("More details");
         details.Anchor = AnchorStyles.Right;
         details.Margin = new Padding(S(12), 0, 0, 0);
         details.Click += (_, _) => DetailsRequested?.Invoke(this, EventArgs.Empty);

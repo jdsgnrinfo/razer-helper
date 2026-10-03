@@ -45,18 +45,25 @@ internal static class L
 
     internal static readonly IReadOnlyDictionary<string, string> Spanish = new Dictionary<string, string>
     {
-        // Footer, tray icon and window titles.
+        // Tray icon and window titles.
         ["Free up GPU"] = "Liberar GPU",
         ["Settings"] = "Ajustes",
         ["Open RazerHelper"] = "Abrir RazerHelper",
         ["Exit"] = "Salir",
         ["Close"] = "Cerrar",
         ["Close (RazerHelper keeps running in the tray)"] = "Cerrar (RazerHelper sigue en la bandeja)",
-        ["RazerHelper Settings"] = "Ajustes de RazerHelper",
 
-        // Optimize window.
+        // The sidebar's sections and their pages.
+        ["Performance"] = "Rendimiento",
+        ["Display and lighting"] = "Pantalla e iluminación",
+        ["Battery and power"] = "Batería y energía",
+        ["System"] = "Sistema",
+        ["More details"] = "Más detalles",
+        ["Power source profiles"] = "Perfiles por fuente de energía",
+        ["When you plug in or unplug the charger, switches to the profile chosen for each."] = "Al conectar o desconectar el cargador, cambia al perfil elegido para cada caso.",
+
+        // Optimize.
         ["Optimize"] = "Optimizar",
-        ["RazerHelper Optimize"] = "Optimizar con RazerHelper",
         ["Free up"] = "Liberar",
         ["Clean"] = "Limpiar",
         ["Free up memory"] = "Liberar memoria",
@@ -80,8 +87,6 @@ internal static class L
         ["Could not clean the temporary files."] = "No se pudieron limpiar los archivos temporales.",
 
         // Idle window.
-        ["Idle state"] = "Estado de inactividad",
-        ["RazerHelper Idle state"] = "Estado de inactividad de RazerHelper",
         ["Change the power plan when idle"] = "Cambiar el plan al estar inactivo",
         ["Your plan comes back as soon as you use the laptop."] = "Tu plan vuelve en cuanto usas el portátil.",
         ["{0} min"] = "{0} min",
@@ -102,8 +107,6 @@ internal static class L
         ["RazerHelper restarts to change the language."] = "RazerHelper se reinicia para cambiar el idioma.",
         ["Start at login"] = "Iniciar con Windows",
         ["Opens in the tray when you sign in."] = "Se abre en la bandeja al iniciar sesión.",
-        ["Switch profile with the charger"] = "Cambiar de perfil con el cargador",
-        ["Changes mode when you plug in or unplug."] = "Cambia de modo al conectar o desconectar.",
         ["Hide when clicking away"] = "Ocultar al hacer clic fuera",
         ["Off, it stays open until you click the tray icon."] = "Si no, sigue abierta hasta pulsar el icono de la bandeja.",
         ["Always on top"] = "Siempre visible",
@@ -235,7 +238,6 @@ internal static class L
         // Battery.
         ["Battery Charge Limit"] = "Límite de carga",
         ["Limit:"] = "Límite:",
-        ["More info"] = "Más info",
         ["Plugged in"] = "Enchufado",
         ["On battery"] = "Con batería",
         ["This laptop does not support a battery charge limit"] = "Este portátil no permite limitar la carga",
@@ -259,7 +261,6 @@ internal static class L
         ["Cycles"] = "Ciclos",
 
         // System information window.
-        ["System info"] = "Info. del equipo",
         ["System information"] = "Información del equipo",
         ["Reading..."] = "Leyendo...",
         ["Model"] = "Modelo",

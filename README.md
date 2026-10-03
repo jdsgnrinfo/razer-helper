@@ -50,28 +50,30 @@ Everything the original does still works the same way; on top of it:
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
+- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Battery and power, System, Optimize, Settings, and Close at the bottom) and the chosen section beside it.
 - **Custom window:** Custom mode's CPU and GPU levels open in their own window, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
-- **Battery details window** (More info): power in or out, time left, charge, health, voltage.
-- **System information window** (System info, in the footer): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
-- **Keyboard off with the screen** (optional, in Settings).
+- **Battery details** (in Battery and power, or More details on the battery): power in or out, time left, charge, health, voltage.
+- **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
+- **Profiles for each power source** chosen in Battery and power: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
+- **Keyboard off with the screen** (optional, in Display and lighting).
 - **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## What it does today
 
 - **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom, on every model.
-- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
+- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Battery and power, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** any percentage from 60% to 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
 - **Temperatures:** CPU and GPU, shown at the top to the left of the power source, only while the window is open. The GPU reading comes from the graphics driver (the same source Task Manager uses). The CPU reading comes from the laptop's own controller. Compared with MSI Afterburner under load on the developer's laptop it was very close, but it updates more slowly, so Afterburner's number moves faster (hover it for a reminder). It is not read from the CPU die itself. The GPU is read every 2 seconds and the CPU every 4, and nothing is read while the window is closed.
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.
-- **Idle power plan** (Idle state button, off by default): after 1 to 30 minutes without touching the keyboard or mouse, Windows switches to the power plan you choose, listed from the plans on your PC; your plan comes back exactly as it was as soon as you use the laptop. A video or a game that keeps the screen on counts as using it.
-- **Optimize** (green button at the bottom of the window): **Free up memory** moves what background programs are not using out of RAM (the program in front, such as a game, is left alone, and nothing is closed) and, after Windows asks for administrator permission, clears its memory cache, saying how much went (declining keeps the cache); **Temporary files** shows how much your temp folder holds in files over a day old and clears them, leaving any a program has open; and **Free up GPU**. Each runs only when you press its button.
+- **Idle power plan** (in Battery and power, off by default): after 1 to 30 minutes without touching the keyboard or mouse, Windows switches to the power plan you choose, listed from the plans on your PC; your plan comes back exactly as it was as soon as you use the laptop. A video or a game that keeps the screen on counts as using it.
+- **Optimize** (its own section): **Free up memory** moves what background programs are not using out of RAM (the program in front, such as a game, is left alone, and nothing is closed) and, after Windows asks for administrator permission, clears its memory cache, saying how much went (declining keeps the cache); **Temporary files** shows how much your temp folder holds in files over a day old and clears them, leaving any a program has open; and **Free up GPU**. Each runs only when you press its button.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
 - **Tray icon:** its disc takes the color of the current mode (green Balanced, blue Silent, purple Custom), and hovering it names the mode, as in "RazerHelper (Silent)". A mode changed outside the app (the laptop's own keys, Synapse) shows once the window is next opened.
 - **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2** switch to Balanced and Silent with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
-- **Settings** (button at the bottom right): start at login, switch profile automatically when you plug in or unplug, hide the window when you click away, keep it always on top, close apps using the dedicated GPU when you unplug (see below), shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
+- **Settings** (its own section): the language, start at login, hide the window when you click away, keep it always on top, the performance mode shortcuts, shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
 
 **Reset to defaults** (in Settings) puts the app back the way it was the first time you opened it, if something ever seems stuck. After you confirm, it clears your saved settings, turns off Start at login, sets the laptop to Balanced mode with no battery charge limit, and restarts. It does not touch Razer's background services (the record of what they were set to is kept, so Start can still restore them) or anything else on your PC.
 
@@ -119,8 +121,8 @@ Manual fan control, the CPU overclock toggle, independent verification on any Bl
 
 An app that keeps the dedicated GPU awake drains the battery. There are two ways to deal with that:
 
-- **Free up GPU** (in the green Optimize window) lists those apps and asks whether to close them. Use it whenever you like, plugged in or not, for example after unplugging an external monitor.
-- **Close apps using the dedicated GPU when unplugged** (in Settings, off by default) does the same automatically when you unplug the charger.
+- **Free up GPU** (in Optimize) lists those apps and asks whether to close them. Use it whenever you like, plugged in or not, for example after unplugging an external monitor.
+- **Free up GPU when unplugged** (in Optimize, off by default) does the same automatically when you unplug the charger.
 
 It is deliberately cautious:
 
@@ -238,6 +240,7 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 - Interface icons (this fork), drawn from their published SVG paths:
   - [Phosphor Icons](https://phosphoricons.com) (MIT): CPU and graphics card.
   - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): tune.
+  - [Lucide](https://lucide.dev) (ISC): the rocket of the Performance section. The sidebar's other section icons were drawn for this fork.
 - Typeface (this fork): [Titillium Web](https://fonts.google.com/specimen/Titillium+Web) by Accademia di Belle Arti di Urbino, under the [SIL Open Font License 1.1](https://openfontlicense.org). Its Light, Regular, SemiBold and Bold files ship inside the app, with the license beside it as `TitilliumWeb-OFL.txt` (in the repository, [src/RazerHelper/Assets/Fonts/OFL.txt](src/RazerHelper/Assets/Fonts/OFL.txt)).
 
 ## Disclaimer

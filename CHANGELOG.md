@@ -16,8 +16,8 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, repainted from the logo in the app itself; hovering it shows "RazerHelper (Silent)".
 - **Shortcuts:** Ctrl+Shift+F1 and F2 switch to Balanced and Silent from any program, even a game. A small notice at the top right shows the mode's icon, name and status without taking the focus, then fades out. A switch in Settings, on by default, turns them off for anyone who does not want them or has another program using those keys.
 - **Silent without turbo:** Silent always keeps the CPU at its base frequency by turning off Windows' processor boost in the active power plan; part of the mode, with no switch. It is checked every couple of seconds, so a plan switch (the Idle option, Windows, Razer's software) or a boost put back meanwhile does not bring the turbo back while in Silent. The previous setting is saved and comes back when the laptop goes to Balanced or Custom, not when the app closes. An earlier build also changed the CPU's energy preference in Silent; that is given back once at startup.
-- **Idle power plan** (Idle state button, off by default): after 1 to 30 minutes without touching the keyboard or mouse, Windows switches to the power plan you choose, listed from the plans on your PC; your plan comes back exactly as it was as soon as you use the laptop. A video or a game that keeps the screen on counts as using it.
-- **Optimize** (green button at the bottom of the window): **Free up memory** moves what background programs are not using out of RAM (the program in front, such as a game, is left alone, and nothing is closed) and, after Windows asks for administrator permission, clears its memory cache, saying how much went (declining keeps the cache); **Temporary files** shows how much your temp folder holds in files over a day old and clears them, leaving any a program has open; and **Free up GPU**. Each runs only when you press its button.
+- **Idle power plan** (in Battery and power, off by default; how long and which plan show only with it on): after 1 to 30 minutes without touching the keyboard or mouse, Windows switches to the power plan you choose, listed from the plans on your PC; your plan comes back exactly as it was as soon as you use the laptop. A video or a game that keeps the screen on counts as using it.
+- **Optimize** (its own section, with the offer to free up the GPU on unplugging and Razer's software): **Free up memory** moves what background programs are not using out of RAM (the program in front, such as a game, is left alone, and nothing is closed) and, after Windows asks for administrator permission, clears its memory cache, saying how much went (declining keeps the cache); **Temporary files** shows how much your temp folder holds in files over a day old and clears them, leaving any a program has open; and **Free up GPU**. Each runs only when you press its button.
 - **Balanced, Silent and Custom on every model.** Gaming is no longer offered, and Custom takes its game controller icon; a profile saved with Gaming is applied as Custom. A laptop whose firmware does not take a mode reports another one back; the app then marks that button as not supported instead of offering it again.
 
 ### Language
@@ -32,30 +32,31 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Quicker to answer:** a performance mode or a refresh rate turns green as soon as it is clicked, without greying the other buttons while the laptop applies it (a failure puts back what was there); the keyboard and logo brightness follow the slider while it is dragged; the lighting lists no longer grey out during a change; and changing the refresh rate no longer freezes the window while the screen re-syncs.
 - **Fans** as two options with a line on what each does: Automatic RPM and Max RPM.
 - **Lighting** with the keyboard and the logo side by side.
-- **Header and footer:** the app's logo and name on the left and the close X on the right; the version and the System info, Free up GPU and Settings buttons at the bottom.
+- **A window in sections, like Synapse:** a sidebar on the left with the logo and name, one entry per section with its icon (a rocket for Performance), Close at the bottom (the app keeps running in the tray), and the laptop's name and the version, where errors show in red. The chosen section fills the rest: Performance (modes, fans, battery), Display and lighting, Battery and power, System, Optimize and Settings. The window keeps one size, that of its tallest section. The footer and its buttons, and the Battery, System information, Idle state, Optimize and Settings windows, became these sections; Settings keeps only the app's own options, and the rest moved beside what they control.
+- **Profiles for each power source:** Battery and power shows the mode for plugged in and for on battery, under the switch that changes between them with the charger (Switch profile with the charger, from Settings); off, the modes are hidden. The mode for the source the laptop is not on is saved and applied when the charger is plugged in or unplugged.
+- **More details** on the battery in Performance goes to Battery and power.
 - **Custom window:** the GPU's buttons line up with the CPU's, a line between the two, and the note in a green box.
 - **Battery details:** each figure under its name in grey, with lines between them, and flat green bars.
 - Every window takes its rounded corners and border from Windows 11.
-- **New icons** for the performance modes: Balanced and Silent designed for this fork, Custom and the CPU and GPU from open icon sets (see the credits in the README).
+- **New icons** for the performance modes: Balanced and Silent designed for this fork, Custom and the CPU and GPU from open icon sets, and for the sidebar's sections (the rocket from Lucide, the rest drawn for this fork); see the credits in the README.
 - CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
 - **The keyboard brightness slider follows the Fn keys:** while the window is open, changing the keyboard brightness with the laptop's Fn keys moves the slider too.
-- **Windows beside the main one no longer block it:** Battery, System information, Custom and Settings open beside the main window, which can still be used. Only one is open at a time: opening another closes the one before.
+- **The Custom window no longer blocks the main one:** it opens beside it, which can still be used.
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
 - **New typeface:** the interface is set in Titillium Web, which comes inside the app, so nothing needs installing; Segoe UI is the fallback.
 
-### New windows
+### New windows and sections
 
 - **Custom:** the CPU and GPU boost levels in their own window beside the popup, with live CPU temperature, usage and speed, and GPU temperature, usage, core clock and memory clock. The GPU's usage and core clock come from NVIDIA's library, asked only while the GPU is awake. The window closes by itself if the laptop leaves Custom.
-- **Battery details** (More info): power in or out, time left or to full, charge, health against the design capacity, voltage and the battery itself.
-- **System information** (System info, in the footer): Windows, CPU, integrated and dedicated GPU, RAM in use, each drive letter with its drive and free space, and the BIOS, with the laptop model as the header.
-- Detail windows move to stay on screen when they grow.
+- **Battery details** (top of Battery and power): power in or out, time left or to full, charge, health against the design capacity, voltage and the battery itself.
+- **System information** (the System section, read the first time it is shown): Windows, CPU, integrated and dedicated GPU, RAM in use, each drive letter with its drive and free space, and the BIOS, with the laptop model as the header.
 
 ### Other
 
-- **Keyboard off with the screen** (optional): the lighting fades out in about half a second as the display turns off, and fades back in to where it was when it turns on.
+- **Keyboard off with the screen** (optional, in Display and lighting): the lighting fades out in about half a second as the display turns off, and fades back in to where it was when it turns on.
 - **Razer Blade power plan** (optional, `tools/RazerBladePowerPlan.ps1`): Windows' Balanced plan with the energy performance preference at 33 plugged in and 50 on battery a 5% minimum processor state the turbo on Efficient Enabled on battery and half the cores kept unparked on battery (all plugged in), for cooler, quieter rest and longer battery. Needs no administrator rights; running it again updates the plan.
 - **Experimental:** Max fan on the Blade 15 Base (2020) asks for 10000 RPM instead of 7000. The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 

@@ -15,7 +15,15 @@ internal enum Glyph
     Gpu,
 
     // Windows.
-    Close
+    Close,
+
+    // The sections in the window's sidebar.
+    Rocket,
+    Display,
+    Battery,
+    System,
+    Optimize,
+    Settings
 }
 
 /// <summary>
@@ -62,6 +70,24 @@ internal static class Glyphs
                     graphics.DrawLine(pen, 3.5f, 3.5f, 12.5f, 12.5f);
                     graphics.DrawLine(pen, 12.5f, 3.5f, 3.5f, 12.5f);
                     break;
+                case Glyph.Rocket:
+                    StrokeSetIcon(graphics, IconSet.Rocket, color);
+                    break;
+                case Glyph.Display:
+                    StrokeSetIcon(graphics, IconSet.Display, color);
+                    break;
+                case Glyph.Battery:
+                    StrokeSetIcon(graphics, IconSet.Battery, color);
+                    break;
+                case Glyph.System:
+                    StrokeSetIcon(graphics, IconSet.Processor, color);
+                    break;
+                case Glyph.Optimize:
+                    StrokeSetIcon(graphics, IconSet.Bolt, color);
+                    break;
+                case Glyph.Settings:
+                    StrokeSetIcon(graphics, IconSet.Gear, color);
+                    break;
             }
         }
         finally
@@ -80,6 +106,17 @@ internal static class Glyphs
         graphics.Restore(state);
     }
 
+    // Outlined icons, drawn as lines 2 units wide on their own grid, as they
+    // are in the SVG they come from (stroke-width 2, round ends and joins).
+    private static void StrokeSetIcon(Graphics graphics, SetIcon icon, Color color)
+    {
+        var state = graphics.Save();
+        graphics.ScaleTransform(Grid / icon.Grid, Grid / icon.Grid);
+        using var pen = new Pen(color, 2f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+        graphics.DrawPath(pen, icon.Path);
+        graphics.Restore(state);
+    }
+
     private sealed record SetIcon(float Grid, GraphicsPath Path)
     {
         public SetIcon(float grid, string pathData) : this(grid, SvgPath.Parse(pathData))
@@ -89,6 +126,36 @@ internal static class Glyphs
 
     private static class IconSet
     {
+        // The sidebar's sections, outlined on a 24 grid. Performance: Rocket (Lucide).
+        public static readonly SetIcon Rocket = new(24f,
+            "M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" +
+            "M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" +
+            "M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" +
+            "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5");
+
+        // Display and lighting: a screen on its stand, designed for this fork.
+        public static readonly SetIcon Display = new(24f,
+            "M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" +
+            "M8 20h8M12 16v4");
+
+        // Battery and power: a battery three bars full, designed for this fork.
+        public static readonly SetIcon Battery = new(24f,
+            "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" +
+            "M21 11v2M6 10v4M9 10v4M12 10v4");
+
+        // System: a chip with its pins, designed for this fork.
+        public static readonly SetIcon Processor = new(24f,
+            "M7 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z" +
+            "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4");
+
+        // Optimize: a lightning bolt, designed for this fork.
+        public static readonly SetIcon Bolt = new(24f, "M13 3L4 14h7l-1 7 9-11h-7z");
+
+        // Settings: a hub with rays, designed for this fork.
+        public static readonly SetIcon Gear = new(24f,
+            "M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z" +
+            "M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2");
+
         // Silent: a fan, designed for this fork (its three blades, then the hub).
         public static readonly SetIcon Fan = new(157.97f,
             "M70.66,56.52c16.78-6.15,33.31,3.55,37.82,20.84,8.81-5.81,14.66-13.35,18.71-22.2,5.04-12.02,4.03-25.25-3.31-36.08C101.86-13.43,52.4,3.17,50.35,13.83c-.5,2.59.19,4.92,1.68,7.15,7.55,11.25,13.8,22.72,18.62,35.54Z" +
