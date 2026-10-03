@@ -205,8 +205,8 @@ internal static class SystemInfoReader
         return memory;
     }
 
-    // The type and speed of the installed memory modules (the first that says).
-    private static (string? Type, int? Mhz) ReadMemoryModules()
+    /// <summary>The type and speed of the installed memory modules (the first that says). Asks WMI, so it takes a moment.</summary>
+    public static (string? Type, int? Mhz) ReadMemoryModules()
     {
         var modules = Query("SELECT SMBIOSMemoryType, ConfiguredClockSpeed, Speed FROM Win32_PhysicalMemory", "memory modules");
 

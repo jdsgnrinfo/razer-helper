@@ -11,8 +11,8 @@ namespace RazerHelper.UI.Sections;
 /// </summary>
 internal sealed class CustomBoostSelectors : IDisposable
 {
-    /// <summary>One selector: its title row and its buttons.</summary>
-    public static int SelectorHeight => SectionHeaderHeight + S(48);
+    /// <summary>One selector: its title row and its buttons, with their glow room around them.</summary>
+    public static int SelectorHeight => SectionHeaderHeight + S(44) + GlowRoom;
 
     private readonly Dictionary<CpuBoost, Button> _cpuButtons = [];
     private readonly Dictionary<GpuBoost, Button> _gpuButtons = [];
@@ -72,7 +72,7 @@ internal sealed class CustomBoostSelectors : IDisposable
             Padding = Padding.Empty
         };
 
-        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton");
+        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton", glowRoom: GlowRoom);
         grid.BackColor = BackgroundColor;
 
         foreach (var button in grid.Controls.OfType<Button>())
@@ -84,7 +84,11 @@ internal sealed class CustomBoostSelectors : IDisposable
 
         // Dock order: the title docks first, the buttons fill what is left.
         panel.Controls.Add(grid);
-        panel.Controls.Add(CreateSectionHeader(title, string.Empty, glyph));
+        // The title lines up with the buttons, inside their glow room.
+        var header = CreateSectionHeader(title, string.Empty, glyph);
+        header.Height = SectionHeaderHeight - GlowRoom;
+        header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
+        panel.Controls.Add(header);
         return panel;
     }
 }

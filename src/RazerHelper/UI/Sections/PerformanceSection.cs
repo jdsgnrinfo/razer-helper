@@ -26,7 +26,6 @@ internal sealed class PerformanceSection : SectionPanel
     private readonly IPowerSource _powerSource;
     private readonly Dictionary<PerformanceMode, Button> _buttons = [];
     private readonly CustomBoostSelectors _customRow = new();
-    private readonly Label _temperatureLabel = CreateHeaderValueLabel();
     private readonly ThemedToolTip _toolTip = new();
 
     // Modes this laptop's firmware was asked for and reported another mode
@@ -65,7 +64,7 @@ internal sealed class PerformanceSection : SectionPanel
         // offered. A mode the firmware turns out not to take is marked as such
         // the first time it is tried.
         PerformanceMode[] modes = [PerformanceMode.Silent, PerformanceMode.Balanced, PerformanceMode.Custom];
-        var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton");
+        var grid = CreateButtonGrid(modes.Select(mode => mode.ToString()).ToArray(), "PerformanceButton", glowRoom: GlowRoom);
 
         foreach (var button in grid.Controls.OfType<Button>())
         {
@@ -83,11 +82,12 @@ internal sealed class PerformanceSection : SectionPanel
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
         _customRow.GpuSelected += async (_, level) => await SelectGpuAsync(level);
 
-        // The title, and the temperatures on the right: empty (and taking no
-        // room) until a reading arrives.
+        // The title, as far in as the buttons' glow room, so it lines up
+        // with them; their glow takes the rest of the usual gap below it.
         var header = CreateHeaderLayout();
+        header.Height = SectionHeaderHeight - GlowRoom;
+        header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
         header.Controls.Add(CreateSectionLabel("Performance Mode"), 0, 0);
-        header.Controls.Add(_temperatureLabel, 1, 0);
 
         // Dock order: the header docks first, and the mode buttons fill whatever is left.
         Controls.Add(grid);
@@ -134,19 +134,6 @@ internal sealed class PerformanceSection : SectionPanel
             if (value && IsPluggedIn != _appliedSource)
                 _ = ApplyActiveProfileAsync();
         }
-    }
-
-    /// <summary>
-    /// Shows the temperatures in the header, or nothing when there is no
-    /// reading. Polled every couple of seconds, so it does no work at all when
-    /// the shown text has not changed.
-    /// </summary>
-    public void ShowTemperatures(TemperatureReading reading)
-    {
-        var text = TemperatureText.Format(reading.CpuCelsius, reading.GpuCelsius);
-
-        if (text != _temperatureLabel.Text)
-            _temperatureLabel.Text = text;
     }
 
     /// <summary>The icon a mode's button shows, which the shortcut notice shows too.</summary>

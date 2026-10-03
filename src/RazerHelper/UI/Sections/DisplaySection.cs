@@ -48,6 +48,10 @@ internal sealed class DisplaySection : SectionPanel
         // The title is short; the detected mode ("1920x1080 (120 Hz)") needs the room.
         var header = CreateHeaderLayout(40F, 60F);
 
+        // Lined up with the buttons, inside their glow room.
+        header.Height = SectionHeaderHeight - GlowRoom;
+        header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
+
         _statusLabel = CreateHeaderValueLabel();
         _statusLabel.Text = L.T("Current: -- Hz");
 
@@ -55,7 +59,7 @@ internal sealed class DisplaySection : SectionPanel
         header.Controls.Add(_statusLabel, 1, 0);
 
         var modes = OfferedModes();
-        var grid = CreateButtonGrid(modes.Select(mode => mode.Label).ToArray(), "RefreshRateButton");
+        var grid = CreateButtonGrid(modes.Select(mode => mode.Label).ToArray(), "RefreshRateButton", glowRoom: GlowRoom);
 
         foreach (var button in grid.Controls.OfType<Button>())
         {

@@ -38,7 +38,9 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Battery details:** each figure under its name in grey, with lines between them, and flat green bars.
 - Every window takes its rounded corners and border from Windows 11.
 - **New icons** for the performance modes: Balanced and Silent designed for this fork, Custom and the CPU and GPU from open icon sets, and for the sidebar's sections (the rocket and the gear from Lucide, the rest drawn for this fork); see the credits in the README.
-- CPU and GPU temperatures in the Performance header, as "CPU: 52°C | GPU: 45°C".
+- **Usage rings** under the performance modes (and under Custom's levels when open): how busy the CPU, the GPU and the RAM are, each ring three quarters of a circle filling in green, with the CPU's and GPU's temperature and clock beside theirs and the RAM's speed and free memory beside its own. Read once a second, only while Performance is on screen; a sleeping GPU shows as asleep rather than being woken. They replace the temperatures that were in the Performance header.
+- **A soft glow** around the selected green buttons: the performance modes, Custom's levels, the refresh rates, the profiles in Energy and Install Razer Blade plan.
+- **The sidebar's lit entry** has no fill: its thin green edge and its icon light up green, each with a soft glow.| GPU: 45°C".
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
 - **The keyboard brightness slider follows the Fn keys:** while the window is open, changing the keyboard brightness with the laptop's Fn keys moves the slider too.

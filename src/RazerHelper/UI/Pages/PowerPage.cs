@@ -58,7 +58,7 @@ internal sealed class PowerPage : PageView
         _profiles = CreateGroup();
         _profiles.Controls.Add(CreateProfileRow("Plugged in", pluggedIn: true));
         _profiles.Controls.Add(CreateProfileRow("On battery", pluggedIn: false));
-        Add(_profiles);
+        AddWide(_profiles);
 
         _profilesSwitch.Checked = autoSwitchProfiles;
         _profiles.Visible = autoSwitchProfiles;
@@ -77,7 +77,8 @@ internal sealed class PowerPage : PageView
         _planList = new DropdownButton([])
         {
             Font = SemiBoldTitleFont(16),
-            Margin = Padding.Empty,
+            // At the right edge of the content, clear of the glow room the row reaches into.
+            Margin = new Padding(0, GlowRoom, GlowRoom, GlowRoom),
             Size = S(new Size(190, 38))
         };
         _planList.SelectionChanged += (_, _) => ActivateChosenPlan();
@@ -85,9 +86,10 @@ internal sealed class PowerPage : PageView
         _installButton = CreateSmallButton("Install Razer Blade plan");
         _installButton.BackColor = RazerGreen;
         _installButton.ForeColor = OnGreenTextColor;
-        _installButton.Height = S(38);
-        _installButton.Width += S(16);
-        _installButton.Margin = new Padding(0, 0, S(8), 0);
+        ((RoundedButton)_installButton).GlowRoom = GlowRoom;
+        _installButton.Height = S(38) + 2 * GlowRoom;
+        _installButton.Width += S(16) + 2 * GlowRoom;
+        _installButton.Margin = new Padding(0, 0, S(8) - GlowRoom, 0);
         _installButton.Click += async (_, _) => await InstallPlanAsync();
 
         // Right to left, so the list keeps the right edge and the button sits before it.
@@ -98,18 +100,18 @@ internal sealed class PowerPage : PageView
             FlowDirection = FlowDirection.RightToLeft,
             Margin = Padding.Empty,
             Padding = Padding.Empty,
-            Size = new Size(_planList.Width + _installButton.Width + S(8), _planList.Height),
+            Size = new Size(_planList.Width + GlowRoom + _installButton.Width + S(8) - GlowRoom, _installButton.Height),
             WrapContents = false
         };
         controls.Controls.Add(_planList);
         controls.Controls.Add(_installButton);
 
-        var planCard = CreateCard("Power plan", "The one Windows uses.", controls);
+        var planCard = Widen(CreateCard("Power plan", "The one Windows uses.", controls), controls);
         _planHint = HintOf(planCard);
         var planDivider = CreateDivider();
         planDivider.Margin = new Padding(0, S(12), 0, 0);
         Add(planDivider);
-        Add(planCard);
+        AddWide(planCard);
 
         ShowPlans();
     }
@@ -253,12 +255,22 @@ internal sealed class PowerPage : PageView
     };
 
     // "Plugged in" on the left and the three modes on the right.
+    // A setting's row made as wide as the parts with glowing buttons (see
+    // AddWide): the text keeps its place, and the control reaches into the
+    // glow room at the right, so its buttons still end at the content's edge.
+    private static TableLayoutPanel Widen(TableLayoutPanel card, Control control)
+    {
+        card.Padding = new Padding(GlowRoom, card.Padding.Top, 0, card.Padding.Bottom);
+        card.ColumnStyles[0] = new ColumnStyle(SizeType.Absolute, ContentWidth + GlowRoom - control.Width);
+        return card;
+    }
+
     private Control CreateProfileRow(string text, bool pluggedIn)
     {
-        var grid = CreateButtonGrid(Modes.Select(mode => mode.ToString()).ToArray(), pluggedIn ? "PluggedInProfileButton" : "OnBatteryProfileButton");
+        var grid = CreateButtonGrid(Modes.Select(mode => mode.ToString()).ToArray(), pluggedIn ? "PluggedInProfileButton" : "OnBatteryProfileButton", glowRoom: GlowRoom);
         grid.Dock = DockStyle.None;
         grid.Anchor = AnchorStyles.Right;
-        grid.Size = S(new Size(360, 38));
+        grid.Size = new Size(S(360) + 2 * GlowRoom, S(38) + 2 * GlowRoom);
 
         var buttons = new Dictionary<PerformanceMode, Button>();
 
@@ -276,8 +288,9 @@ internal sealed class PowerPage : PageView
 
         _profileButtons[pluggedIn] = buttons;
 
-        var row = CreateCard(text, string.Empty, grid);
-        row.Padding = new Padding(0, S(4), 0, S(8));
+        // The glow room above and below takes from the row's own padding.
+        var row = Widen(CreateCard(text, string.Empty, grid), grid);
+        row.Padding = new Padding(GlowRoom, 0, 0, S(8) - GlowRoom);
         return row;
     }
 

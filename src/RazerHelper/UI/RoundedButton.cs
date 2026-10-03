@@ -68,7 +68,14 @@ internal class RoundedButton : Button
             ? Motion.Blend(RazerGreen, RazerGreenHover, Hover)
             : BackColor == ButtonColor ? Motion.Blend(ButtonColor, ButtonHoverColor, Hover) : BackColor;
 
-        using (var path = RoundedPath(new RectangleF(0, 0, Width, Height), S(CornerRadius)))
+        // The button itself, inside the room kept for its glow (none on most).
+        var glow = GlowRoom;
+        var body = new RectangleF(glow, glow, Width - 2 * glow, Height - 2 * glow);
+
+        if (glow > 0 && IsGreen)
+            PaintGlow(graphics, body, glow);
+
+        using (var path = RoundedPath(body, S(CornerRadius)))
         {
             using (var fill = new SolidBrush(Pressed(fillColor)))
                 graphics.FillPath(fill, path);
@@ -76,17 +83,17 @@ internal class RoundedButton : Button
             // Keyboard focus (Tab) shows a thin silver outline.
             if (Focused && ShowFocusCues)
             {
-                using var ring = RoundedPath(new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), S(CornerRadius));
+                using var ring = RoundedPath(RectangleF.Inflate(body, -0.5f, -0.5f), S(CornerRadius));
                 using var pen = new Pen(Color.Silver);
                 graphics.DrawPath(pen, ring);
             }
         }
 
         var textBounds = new Rectangle(
-            Padding.Left,
-            Padding.Top,
-            Width - Padding.Horizontal,
-            Height - Padding.Vertical);
+            glow + Padding.Left,
+            glow + Padding.Top,
+            Width - 2 * glow - Padding.Horizontal,
+            Height - 2 * glow - Padding.Vertical);
 
         var textColor = !Enabled ? SystemColors.GrayText : ForeColor;
 
@@ -129,6 +136,27 @@ internal class RoundedButton : Button
             textBounds,
             textColor,
             ToTextFlags(TextAlign) | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+    }
+
+    /// <summary>
+    /// Room kept around the button, in pixels, where a selected (green) one
+    /// glows softly; the button is drawn that much inside its bounds. Its
+    /// row lays it out that much larger so it lines up with the rest.
+    /// </summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public int GlowRoom { get; set; }
+
+    // The glow: rings of green, fading out from the button's edge.
+    private static void PaintGlow(Graphics graphics, RectangleF body, int room)
+    {
+        for (var step = room; step >= 1; step--)
+        {
+            var fade = 1f - (step - 0.5f) / room;
+            using var pen = new Pen(Color.FromArgb((int)(110 * fade * fade), RazerGreen), 1.5f);
+            using var ring = RoundedPath(RectangleF.Inflate(body, step - 0.5f, step - 0.5f), S(CornerRadius) + step);
+            graphics.DrawPath(pen, ring);
+        }
     }
 
     /// <summary>An optional icon in a circle over the text, as on the performance mode buttons.</summary>

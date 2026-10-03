@@ -133,7 +133,6 @@ public sealed class TrayPopupForm : Form
         _performanceSection.StatusChanged += Section_StatusChanged;
         _performanceSection.StateChanged += PerformanceSection_StateChanged;
         _performanceSection.AutoSwitchProfiles = _settings.AutoSwitchProfiles;
-        _fanSection.TemperaturesRead += (_, reading) => _performanceSection.ShowTemperatures(reading);
 
         _displaySection = new DisplaySection(
             new DisplayService(),

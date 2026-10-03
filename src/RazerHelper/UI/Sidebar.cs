@@ -177,8 +177,8 @@ internal sealed class Sidebar : Panel
 
     /// <summary>
     /// A section's entry: its icon and name, grey at rest; under the pointer
-    /// a dark fill and white text; and when its section is on show, the same
-    /// with a green edge on the left.
+    /// a dark fill and white text; and when its section is on show, white
+    /// text with no fill, and a thin green edge and green icon, softly glowing.
     /// </summary>
     private sealed class NavButton : Control
     {
@@ -237,22 +237,39 @@ internal sealed class Sidebar : Panel
                 graphics.FillRectangle(line, 0, 0, Width, S(1));
             }
 
-            if (lit)
+            // Only the pointer lays a fill; the section on show has none.
+            if (_hovered)
             {
                 using var fill = new SolidBrush(ButtonColor);
                 using var path = RoundedButton.RoundedPath(new RectangleF(0, top, Width, Height - top), S(RoundedButton.CornerRadius));
                 graphics.FillPath(fill, path);
             }
 
-            if (_selected)
-            {
-                using var edge = new SolidBrush(RazerGreen);
-                graphics.FillRectangle(edge, 0, top, S(3), Height - top);
-            }
-
             var color = lit ? Color.White : SubtleTextColor;
             var middle = top + (Height - top) / 2f;
-            Glyphs.Draw(graphics, _glyph, new RectangleF(S(12), middle - IconSize / 2f, IconSize, IconSize), color);
+            var icon = new RectangleF(S(12), middle - IconSize / 2f, IconSize, IconSize);
+
+            if (_selected)
+            {
+                // A thin green edge with a soft glow, 8px short of each end, and the icon lit the same way.
+                var edge = new RectangleF(0, top + S(8), S(3), Height - top - S(16));
+
+                for (var step = S(4); step >= 1; step--)
+                {
+                    using var halo = new SolidBrush(Color.FromArgb(18, RazerGreen));
+                    graphics.FillRectangle(halo, edge.X, edge.Y - step / 2f, edge.Width + step, edge.Height + step);
+                }
+
+                using (var bar = new SolidBrush(RazerGreen))
+                    graphics.FillRectangle(bar, edge);
+
+                Glyphs.DrawGlow(graphics, _glyph, icon, RazerGreen);
+                Glyphs.Draw(graphics, _glyph, icon, RazerGreen);
+            }
+            else
+            {
+                Glyphs.Draw(graphics, _glyph, icon, color);
+            }
 
             var textLeft = S(12) + IconSize + S(10);
             TextRenderer.DrawText(graphics, Text, Font, new Rectangle(textLeft, top, Width - textLeft, Height - top), color,

@@ -38,7 +38,8 @@ internal abstract class PageView : UserControl
             FlowDirection = FlowDirection.TopDown,
             Location = Point.Empty,
             Margin = Padding.Empty,
-            Padding = S(new Padding(24)),
+            // 24px all round, less at the sides the glow room of the parts that reach into it (see AddWide).
+            Padding = new Padding(S(24) - UiControls.GlowRoom, S(24), S(24) - UiControls.GlowRoom, S(24)),
             WrapContents = false
         };
 
@@ -68,8 +69,23 @@ internal abstract class PageView : UserControl
     {
     }
 
-    /// <summary>Adds a part below the last one.</summary>
-    protected void Add(Control part) => _body.Controls.Add(part);
+    /// <summary>Adds a part below the last one, <see cref="ContentWidth"/> wide.</summary>
+    protected void Add(Control part)
+    {
+        var margin = part.Margin;
+        part.Margin = new Padding(margin.Left + UiControls.GlowRoom, margin.Top, margin.Right + UiControls.GlowRoom, margin.Bottom);
+        _body.Controls.Add(part);
+    }
+
+    /// <summary>
+    /// Adds a part that holds glowing buttons: it is <see cref="WideWidth"/>
+    /// wide, reaching the glow room into the margin at each side, so its
+    /// buttons line up with the rest.
+    /// </summary>
+    protected void AddWide(Control part) => _body.Controls.Add(part);
+
+    /// <summary>The width of a part added with <see cref="AddWide"/>.</summary>
+    public static int WideWidth => ContentWidth + 2 * UiControls.GlowRoom;
 
     /// <summary>Holds the window open for as long as the result is not disposed.</summary>
     protected IDisposable KeepOpen() => HoldOpen?.Invoke() ?? NoHold.Instance;

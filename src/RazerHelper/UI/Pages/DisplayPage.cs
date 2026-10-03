@@ -15,9 +15,9 @@ internal sealed class DisplayPage : PageView
     public DisplayPage(DisplaySection display, LightingSection lighting, bool keyboardOffWithScreen)
     {
         var stack = new SectionStack();
-        stack.AddSection(display, () => SectionHeaderHeight + S(68));
+        stack.AddSection(display, () => SectionHeaderHeight + S(68) + GlowRoom, wide: true);
         stack.AddSection(lighting, () => LightingSection.ContentHeight);
-        Add(stack);
+        AddWide(stack);
 
         var option = CreateSwitchCard("Keyboard off with the screen", "Turns the lighting off and back on with the screen.", out _keyboardOffWithScreen);
         var divider = CreateDivider();

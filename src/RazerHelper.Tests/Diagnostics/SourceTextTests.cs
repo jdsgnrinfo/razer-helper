@@ -71,9 +71,9 @@ public class SourceTextTests
     [Fact]
     public void TheDegreeSignInTemperatures_IsARealDegreeSign()
     {
-        var text = RazerHelper.Core.Services.TemperatureText.Format(null, 41.2);
+        var text = RazerHelper.Core.Services.HardwareStatsText.Celsius(41.2);
 
-        Assert.Equal("GPU: 41°C", text);
+        Assert.Equal("41°C", text);
         Assert.Equal(1, text.Count(character => character == '°'));
         Assert.DoesNotContain('Â', text);
     }
