@@ -19,6 +19,14 @@ internal abstract class DetailsWindow : Form
 
     private readonly TitleHeader _header = new();
     private readonly BentoGrid _cards;
+
+    // In the cards' place while they are still being read.
+    private readonly LoadingSpinner _spinner = new()
+    {
+        Margin = Padding.Empty,
+        Size = new Size(ContentWidth, S(140)),
+        Visible = false
+    };
     private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = RefreshIntervalMilliseconds };
     private Form? _anchor;
     private bool _loggedFailure;
@@ -53,6 +61,7 @@ internal abstract class DetailsWindow : Form
 
         layout.Controls.Add(CreateTitleRow());
         layout.Controls.Add(_cards);
+        layout.Controls.Add(_spinner);
         WindowOutline.Attach(layout);
         WindowFade.Attach(this);
         Controls.Add(layout);
@@ -66,6 +75,9 @@ internal abstract class DetailsWindow : Form
     /// shown as a card saying the figures could not be read.
     /// </summary>
     protected abstract (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards();
+
+    /// <summary>True while the figures are still being read: a spinner shows instead of the cards.</summary>
+    protected virtual bool IsLoading => false;
 
     /// <summary>Opens next to the popup instead of centered over it, where it would hide it.</summary>
     public void PlaceBeside(Form anchor)
@@ -98,6 +110,10 @@ internal abstract class DetailsWindow : Form
 
         _header.ShowText(header);
         _cards.ShowCards(cards);
+
+        var loading = IsLoading;
+        _spinner.Visible = loading;
+        _cards.Visible = !loading;
     }
 
     protected override void OnLoad(EventArgs e)

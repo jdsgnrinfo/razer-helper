@@ -24,7 +24,25 @@ internal sealed class SystemInfoForm : DetailsWindow
         : base("System information", semiBoldValues: true)
     {
         _info = Task.Run(read);
+
+        // Shown as soon as it is read, rather than at the next refresh.
+        _info.ContinueWith(
+            _ =>
+            {
+                try
+                {
+                    if (IsHandleCreated && !IsDisposed)
+                        BeginInvoke(Refresh);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Closed meanwhile: nothing left to show it in.
+                }
+            },
+            TaskScheduler.Default);
     }
+
+    protected override bool IsLoading => !_info.IsCompleted;
 
     protected override (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards()
     {
