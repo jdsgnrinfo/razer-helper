@@ -151,10 +151,10 @@ internal static class Glyphs
         // Optimize: a lightning bolt, designed for this fork.
         public static readonly SetIcon Bolt = new(24f, "M13 3L4 14h7l-1 7 9-11h-7z");
 
-        // Settings: a hub with rays, designed for this fork.
+        // Settings: Settings, a gear (Lucide).
         public static readonly SetIcon Gear = new(24f,
-            "M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z" +
-            "M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2");
+            "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" +
+            "M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z");
 
         // Silent: a fan, designed for this fork (its three blades, then the hub).
         public static readonly SetIcon Fan = new(157.97f,

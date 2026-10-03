@@ -79,10 +79,6 @@ internal sealed class OptimizePage : PageView
         Add(_servicesDivider);
         Add(_services);
 
-        Add(new InfoNote(L.T("Nothing running is closed: memory is only moved out of RAM, and temporary files in use or under a day old stay."), ContentWidth)
-        {
-            Margin = new Padding(0, S(16), 0, 0)
-        });
     }
 
     /// <summary>Raised by the GPU row's button; the window runs its Free up GPU.</summary>

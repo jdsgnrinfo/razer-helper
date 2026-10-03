@@ -24,8 +24,6 @@ internal abstract class PageView : UserControl
     protected PageView()
     {
         AutoScaleMode = AutoScaleMode.None;
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
         BackColor = BackgroundColor;
         ForeColor = Color.White;
         Font = GetDesignFont(FontFamilyName, 9F);
@@ -43,6 +41,11 @@ internal abstract class PageView : UserControl
             Padding = S(new Padding(24)),
             WrapContents = false
         };
+
+        // As tall as what it holds; the window sets the width (see TrayPopupForm).
+        _body.SizeChanged += (_, _) => Height = _body.Height;
+        Height = _body.Height;
+        Width = PageWidth;
 
         Controls.Add(_body);
     }

@@ -39,8 +39,6 @@ public sealed class TrayPopupForm : Form
     private readonly Dictionary<DashboardPage, Pages.PageView> _pages = [];
     private DashboardPage _currentPage = DashboardPage.Performance;
     private Pages.OptimizePage _optimizePage = null!;
-    // The laptop's name, which the sidebar shows whenever there is no error to show.
-    private string _modelName = DeviceSupportService.GenericModelName;
     private readonly GlobalHotkey _hotkey = new();
     private readonly ProfileShortcuts _profileShortcuts = new();
     private readonly ProfileToast _profileToast = new();
@@ -418,8 +416,8 @@ public sealed class TrayPopupForm : Form
 
         // Every showing fades in from nothing (see OnFadeTick).
         Opacity = 0;
-        // The sidebar and a page beside it; the height follows the pages (see ResizeToFitPages).
-        ClientSize = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, S(600));
+        // The sidebar and a page beside it, always the same size; a taller page scrolls (see FitToScreen).
+        ClientSize = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, WindowHeight);
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 
@@ -484,10 +482,7 @@ public sealed class TrayPopupForm : Form
             page.HoldOpen = KeepOpen;
             page.Location = Point.Empty;
             page.Visible = false;
-
-            // A page that grows (Razer's software found, an option switched
-            // on) may need a taller window.
-            page.SizeChanged += (_, _) => ResizeToFitPages();
+            page.Width = _pageHost.ClientSize.Width;
             _pageHost.Controls.Add(page);
         }
 
@@ -503,7 +498,17 @@ public sealed class TrayPopupForm : Form
         Controls.Add(_pageHost);
         Controls.Add(_sidebar);
 
-        ResizeToFitPages();
+        // The pages are as wide as the room left beside the scroll bar, so only a tall page scrolls, and only up and down.
+        _pageHost.ClientSizeChanged += (_, _) =>
+        {
+            foreach (var page in _pages.Values)
+                page.Width = _pageHost.ClientSize.Width;
+        };
+
+        // Dark scroll bars, as in Windows' own dark apps.
+        _pageHost.HandleCreated += (_, _) => SetWindowTheme(_pageHost.Handle, "DarkMode_Explorer", null);
+
+        FitToScreen();
     }
 
     // The plans for the Idle option, read as Battery and power comes on screen.
@@ -541,16 +546,17 @@ public sealed class TrayPopupForm : Form
             showing.OnPageShown();
     }
 
-    // The window is as tall as its tallest section, so it keeps one size
-    // whichever is on show, and no taller than the screen (the page scrolls
+    // The window's height in the base design: every section fits but
+    // Performance with Custom's levels open, which scrolls a little.
+    private static int WindowHeight => S(628);
+
+    // A screen too short for the window keeps it shorter (the page scrolls
     // then). Re-anchored to the taskbar so it does not end up floating or
     // overlapping it.
-    private void ResizeToFitPages()
+    private void FitToScreen()
     {
-        var tallest = _pages.Values.Max(page => page.GetPreferredSize(Size.Empty).Height);
         var screen = Screen.FromPoint(Visible ? Location : Cursor.Position).WorkingArea;
-        var height = Math.Min(Math.Max(tallest, S(560)), screen.Height - S(16));
-        var size = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, height);
+        var size = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, Math.Min(WindowHeight, screen.Height - S(16)));
 
         if (ClientSize == size)
             return;
@@ -560,6 +566,9 @@ public sealed class TrayPopupForm : Form
         if (Visible)
             Location = TaskbarPlacement.GetPopupLocation(Size);
     }
+
+    [System.Runtime.InteropServices.DllImport("uxtheme.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int SetWindowTheme(IntPtr window, string? subAppName, string? subIdList);
 
     // The app's logo, always in its own green whatever the mode, drawn from the
     // icon file's largest size down to <paramref name="size"/> so it stays smooth.
@@ -727,16 +736,15 @@ public sealed class TrayPopupForm : Form
     }
 
     // Successes are visible in the controls themselves, so only failures are
-    // worth words. They show in red at the foot of the sidebar, in the
-    // laptop's place, until the next result.
+    // worth words. They show in red at the foot of the sidebar, above Close,
+    // until the next result.
     private void ShowStatus(SectionStatus status) =>
-        _sidebar.ShowStatus(status.IsError ? status.Message : _modelName, status.IsError);
+        _sidebar.ShowError(status.IsError ? status.Message : null);
 
     private void CheckForSupportedDevice()
     {
         if (_model is RazerLaptopModel model)
         {
-            _modelName = model.Name;
             ShowStatus(new SectionStatus(model.Name));
 
             // Runs before RestoreAsync, so an ignored limit is never re-sent.

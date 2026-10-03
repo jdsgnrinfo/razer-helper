@@ -240,7 +240,7 @@ The app sends commands to the laptop's embedded controller over a standard Windo
 - Interface icons (this fork), drawn from their published SVG paths:
   - [Phosphor Icons](https://phosphoricons.com) (MIT): CPU and graphics card.
   - [Material Icons](https://fonts.google.com/icons) by Google (Apache 2.0): tune.
-  - [Lucide](https://lucide.dev) (ISC): the rocket of the Performance section. The sidebar's other section icons were drawn for this fork.
+  - [Lucide](https://lucide.dev) (ISC): the rocket of Performance and the gear of Settings. The sidebar's other section icons were drawn for this fork.
 - Typeface (this fork): [Titillium Web](https://fonts.google.com/specimen/Titillium+Web) by Accademia di Belle Arti di Urbino, under the [SIL Open Font License 1.1](https://openfontlicense.org). Its Light, Regular, SemiBold and Bold files ship inside the app, with the license beside it as `TitilliumWeb-OFL.txt` (in the repository, [src/RazerHelper/Assets/Fonts/OFL.txt](src/RazerHelper/Assets/Fonts/OFL.txt)).
 
 ## Disclaimer

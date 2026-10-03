@@ -15,7 +15,7 @@ internal sealed class DisplayPage : PageView
     public DisplayPage(DisplaySection display, LightingSection lighting, bool keyboardOffWithScreen)
     {
         var stack = new SectionStack();
-        stack.AddSection(display, () => SectionHeaderHeight + S(56));
+        stack.AddSection(display, () => SectionHeaderHeight + S(68));
         stack.AddSection(lighting, () => LightingSection.ContentHeight);
         Add(stack);
 

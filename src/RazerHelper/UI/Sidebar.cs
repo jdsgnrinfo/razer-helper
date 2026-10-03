@@ -1,6 +1,5 @@
 using System.Drawing.Drawing2D;
 using RazerHelper.Core.Localization;
-using RazerHelper.Helpers;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
@@ -18,9 +17,8 @@ internal enum DashboardPage
 
 /// <summary>
 /// The left of the main window: the app's logo and name, one entry per
-/// section (the chosen one lit, with a green edge), then at the bottom Close
-/// and the laptop's name and the version. Errors take the laptop's place, in
-/// red, until the next result. It only reports clicks; the window decides
+/// section (the chosen one lit, with a green edge), then Close at the bottom.
+/// An error shows in red just above Close, only until the next result. It only reports clicks; the window decides
 /// what they do.
 /// </summary>
 internal sealed class Sidebar : Panel
@@ -30,7 +28,7 @@ internal sealed class Sidebar : Panel
     private static int Inset => S(12);
 
     private readonly Dictionary<DashboardPage, NavButton> _entries = [];
-    private readonly Label _status;
+    private readonly Label _error;
     private readonly ThemedToolTip _toolTip = new();
 
     public Sidebar(Image? logo)
@@ -83,38 +81,26 @@ internal sealed class Sidebar : Panel
             WrapContents = false
         };
 
-        // Hides the window to the tray, from any section: the app keeps running.
-        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = Padding.Empty, LineAbove = true };
-        close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
-        _toolTip.SetToolTip(close, L.T("Close (RazerHelper keeps running in the tray)"));
-        bottom.Controls.Add(close);
-
-        _status = new Label
+        _error = new Label
         {
             AutoEllipsis = true,
             AutoSize = false,
             BackColor = SidebarColor,
             Font = SemiBoldFont(13),
-            ForeColor = SubtleTextColor,
-            Margin = new Padding(0, S(10), 0, 0),
+            ForeColor = Color.IndianRed,
+            Margin = new Padding(0, 0, 0, S(8)),
             Padding = new Padding(Inset, 0, 0, 0),
             Size = new Size(entryWidth, S(20)),
-            TextAlign = ContentAlignment.MiddleLeft
+            TextAlign = ContentAlignment.MiddleLeft,
+            Visible = false
         };
-        bottom.Controls.Add(_status);
+        bottom.Controls.Add(_error);
 
-        bottom.Controls.Add(new Label
-        {
-            AutoSize = false,
-            BackColor = SidebarColor,
-            Font = DesignFont(13),
-            ForeColor = Color.FromArgb(0x6E, 0x6E, 0x6E),
-            Margin = Padding.Empty,
-            Padding = new Padding(Inset, 0, 0, 0),
-            Size = new Size(entryWidth, S(20)),
-            Text = AppVersion.Current.ToUpperInvariant(),
-            TextAlign = ContentAlignment.MiddleLeft
-        });
+        // Hides the window to the tray, from any section: the app keeps running.
+        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = Padding.Empty, LineAbove = true };
+        close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
+        _toolTip.SetToolTip(close, L.T("Close (RazerHelper keeps running in the tray)"));
+        bottom.Controls.Add(close);
 
         // Dock order: the last added docks first.
         Controls.Add(bottom);
@@ -134,12 +120,12 @@ internal sealed class Sidebar : Panel
             entry.Selected = each == page;
     }
 
-    /// <summary>The laptop's name in grey, or an error in red; a cut-short text shows whole on hover.</summary>
-    public void ShowStatus(string text, bool isError)
+    /// <summary>Shows an error in red, or with null takes it away; a cut-short text shows whole on hover.</summary>
+    public void ShowError(string? text)
     {
-        _status.ForeColor = isError ? Color.IndianRed : SubtleTextColor;
-        _status.Text = text;
-        _toolTip.SetToolTip(_status, text);
+        _error.Text = text ?? string.Empty;
+        _error.Visible = text is not null;
+        _toolTip.SetToolTip(_error, text ?? string.Empty);
     }
 
     protected override void Dispose(bool disposing)

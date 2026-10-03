@@ -89,12 +89,8 @@ internal sealed class PowerPage : PageView
         _plans = CreatePlanList(plans);
 
         _idleOptions = CreateGroup();
-        _idleOptions.Controls.Add(CreateCard("Idle for", "Without touching the keyboard or the mouse.", _minutes));
-        _idleOptions.Controls.Add(CreatePlanCard());
-        _idleOptions.Controls.Add(new InfoNote(L.T("A video or a game that keeps the screen on counts as using the laptop."), ContentWidth)
-        {
-            Margin = new Padding(0, S(4), 0, 0)
-        });
+        _idleOptions.Controls.Add(CreateOptionRow(CreateCard("Idle for", "Without touching the keyboard or the mouse.", _minutes)));
+        _idleOptions.Controls.Add(CreateOptionRow(CreatePlanCard()));
         Add(_idleOptions);
 
         _idleSwitch.Checked = idle.Enabled;
@@ -204,7 +200,14 @@ internal sealed class PowerPage : PageView
         }
     }
 
-    private Control CreatePlanCard() => CreateCard("Power plan", "Applied once that time has passed.", _plans);
+    // A choice under a switch: closer above and below than a setting of its own.
+    private static Control CreateOptionRow(TableLayoutPanel card)
+    {
+        card.Padding = new Padding(0, S(2), 0, S(10));
+        return card;
+    }
+
+    private TableLayoutPanel CreatePlanCard() => CreateCard("Power plan", "Applied once that time has passed.", _plans);
 
     private static DropdownButton CreatePlanList(IReadOnlyList<PowerPlan> plans) => new([.. plans.Select(each => each.Name)])
     {

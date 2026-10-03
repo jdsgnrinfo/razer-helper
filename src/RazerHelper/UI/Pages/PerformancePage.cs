@@ -24,7 +24,7 @@ internal sealed class PerformancePage : PageView
     {
         _custom = new CustomBoostPanel(performance.BoostSelectors) { Visible = false };
 
-        _stack.AddSection(performance, () => SectionHeaderHeight + S(136));
+        _stack.AddSection(performance, () => SectionHeaderHeight + S(156));
         _stack.AddSection(_custom, () => _customShown ? CustomBoostPanel.PanelHeight : 0, joined: true);
         _stack.AddSection(fans, () => SectionHeaderHeight + RadioOption.PreferredHeight +
             (fans.AreReadingsShown ? FanSection.ReadingsHeight : 0));
@@ -55,13 +55,6 @@ internal sealed class PerformancePage : PageView
     {
         _onScreen = false;
         _custom.Stop();
-    }
-
-    // The window keeps room for the levels, so opening them never makes it grow.
-    public override Size GetPreferredSize(Size proposedSize)
-    {
-        var size = base.GetPreferredSize(proposedSize);
-        return _customShown ? size : new Size(size.Width, size.Height + CustomBoostPanel.PanelHeight + S(16));
     }
 
     private void ShowCustom(bool shown)

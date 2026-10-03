@@ -16,8 +16,7 @@ namespace RazerHelper.UI.Pages;
 /// </summary>
 internal sealed class SettingsPage : PageView
 {
-    private static int ActionButtonHeight => S(40);
-    private static int ActionButtonGap => S(8);
+    private static int ButtonGap => S(8);
 
     private readonly IStartupRegistration _startupRegistration;
     private readonly ToggleSwitch _startAtLoginBox;
@@ -49,12 +48,22 @@ internal sealed class SettingsPage : PageView
         };
         Add(_errorLabel);
 
-        // The actions in one row: Razer's drivers across half of it, then the
-        // log folder and the reset (which asks first) sharing the other half.
-        Add(CreateActionRow(
-            ("Razer drivers and support", ExternalLinks.OpenRazerDrivers, 2),
-            ("Logs", ExternalLinks.OpenLogFolder, 1),
-            ("Reset", ConfirmReset, 1)));
+        // Razer's drivers, the log folder and the reset (which asks first), as one setting.
+        Add(CreateDivider());
+        Add(CreateCard("Maintenance", "Razer drivers and support, logs, reset.", CreateButtonRow(
+            ("Drivers", ExternalLinks.OpenRazerDrivers),
+            ("Logs", ExternalLinks.OpenLogFolder),
+            ("Reset", ConfirmReset))));
+
+        // The app's version, quietly, at the foot of its settings.
+        Add(new Label
+        {
+            AutoSize = true,
+            Font = DesignFont(13),
+            ForeColor = Color.FromArgb(0x6E, 0x6E, 0x6E),
+            Margin = new Padding(0, S(16), 0, 0),
+            Text = AppVersion.Current.ToUpperInvariant()
+        });
 
         _hideWhenClickedAwayBox.Checked = settings.HideWhenClickedAway;
         _alwaysOnTopBox.Checked = settings.AlwaysOnTop;
@@ -194,41 +203,33 @@ internal sealed class SettingsPage : PageView
         _ => "English"
     };
 
-    // One row of the app's buttons, each taking its share of the content
-    // width (a weight of 2 is twice as wide as 1), 8px apart.
-    private static Control CreateActionRow(params (string Text, Action Open, int Weight)[] actions)
+    // Small buttons side by side, each sized to its text, 8px apart.
+    private static Control CreateButtonRow(params (string Text, Action Open)[] actions)
     {
-        var row = new TableLayoutPanel
+        var row = new FlowLayoutPanel
         {
+            Anchor = AnchorStyles.Right,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = BackgroundColor,
-            ColumnCount = actions.Length,
-            Height = ActionButtonHeight,
-            Margin = new Padding(0, S(8), 0, 0),
+            Margin = Padding.Empty,
             Padding = Padding.Empty,
-            RowCount = 1,
-            Width = ContentWidth
+            WrapContents = false
         };
-
-        row.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-        var gaps = ActionButtonGap * (actions.Length - 1);
-        var share = (ContentWidth - gaps) / (float)actions.Sum(action => action.Weight);
 
         for (var index = 0; index < actions.Length; index++)
         {
-            var (text, open, weight) = actions[index];
-            var last = index == actions.Length - 1;
-
-            row.ColumnStyles.Add(last
-                ? new ColumnStyle(SizeType.Percent, 100F) // The rest, so rounding never leaves a sliver.
-                : new ColumnStyle(SizeType.Absolute, share * weight + ActionButtonGap));
-
-            var button = CreateActionButton(text);
-            button.Margin = new Padding(0, 0, last ? 0 : ActionButtonGap, 0);
+            var (text, open) = actions[index];
+            var button = CreateSmallButton(text);
+            button.Height = S(38);
+            button.Margin = new Padding(index == 0 ? 0 : ButtonGap, 0, 0, 0);
             button.Click += (_, _) => open();
-            row.Controls.Add(button, index, 0);
+            row.Controls.Add(button);
         }
 
+        // Sized now: the card makes room for it by its width.
+        row.PerformLayout();
+        row.Size = row.GetPreferredSize(Size.Empty);
         return row;
     }
 }
