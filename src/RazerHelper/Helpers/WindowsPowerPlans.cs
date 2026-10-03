@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using RazerHelper.Core.Services;
 
@@ -6,8 +8,8 @@ namespace RazerHelper.Helpers;
 
 /// <summary>
 /// Windows' power plans through the power API, as the Control Panel lists
-/// them. Choosing the active plan is the user's own setting, so no
-/// administrator rights are needed.
+/// them. Choosing the active plan, and adding or changing one of the user's
+/// own, needs no administrator rights.
 /// </summary>
 internal sealed class WindowsPowerPlans : IPowerPlans
 {
@@ -51,6 +53,42 @@ internal sealed class WindowsPowerPlans : IPowerPlans
 
     public void Activate(Guid plan) =>
         Check(PowerSetActiveScheme(IntPtr.Zero, ref plan), "change the power plan");
+
+    public void Duplicate(Guid source, Guid copy)
+    {
+        if (!PowerCfg("/duplicatescheme", source.ToString(), copy.ToString()))
+            throw new Win32Exception($"Windows did not create the power plan {copy}.");
+    }
+
+    public bool SetProcessorValue(Guid plan, string setting, uint pluggedIn, uint onBattery) =>
+        PowerCfg("/setacvalueindex", plan.ToString(), "SUB_PROCESSOR", setting, pluggedIn.ToString(CultureInfo.InvariantCulture)) &&
+        PowerCfg("/setdcvalueindex", plan.ToString(), "SUB_PROCESSOR", setting, onBattery.ToString(CultureInfo.InvariantCulture));
+
+    public void Rename(Guid plan, string name, string description) =>
+        PowerCfg("/changename", plan.ToString(), name, description);
+
+    // Windows' own powercfg, as the plan script uses: it knows the settings by
+    // their aliases and needs no administrator rights for the user's plans.
+    // True when it reports success.
+    private static bool PowerCfg(params string[] arguments)
+    {
+        var start = new ProcessStartInfo("powercfg.exe")
+        {
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false
+        };
+
+        foreach (var argument in arguments)
+            start.ArgumentList.Add(argument);
+
+        using var process = Process.Start(start) ?? throw new Win32Exception("Could not start powercfg.");
+        process.StandardOutput.ReadToEnd();
+        process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        return process.ExitCode == 0;
+    }
 
     private static string? FriendlyName(Guid plan)
     {

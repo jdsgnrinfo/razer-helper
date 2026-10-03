@@ -47,6 +47,8 @@ public sealed class TrayPopupForm : Form
     private readonly SilentPlanOverride _silentTurbo;
     // Checks Silent's boost every couple of seconds, whatever the window does.
     private readonly System.Windows.Forms.Timer _silentTimer = new() { Interval = 2_000 };
+    // Windows' power plans, for the Energy page and the plan the old Idle option left.
+    private readonly IPowerPlans _powerPlans;
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -175,7 +177,8 @@ public sealed class TrayPopupForm : Form
 
         // An earlier build could switch the power plan while the laptop sat
         // idle; one a crash or restart left switched comes back once.
-        GiveBackIdlePlan(powerPlans ?? new NoPowerPlans());
+        _powerPlans = powerPlans ?? new NoPowerPlans();
+        GiveBackIdlePlan(_powerPlans);
 
         // In Silent, the boost stays off in whatever plan is active.
         _silentTimer.Tick += (_, _) => _silentTurbo.Recheck();
@@ -422,7 +425,8 @@ public sealed class TrayPopupForm : Form
         var powerPage = new Pages.PowerPage(
             BatteryReader.Read,
             _performanceSection,
-            _settings.AutoSwitchProfiles);
+            _settings.AutoSwitchProfiles,
+            _powerPlans);
         powerPage.AutoSwitchProfilesChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { AutoSwitchProfiles = enabled });
@@ -835,6 +839,16 @@ public sealed class TrayPopupForm : Form
         public Guid Active() => Guid.Empty;
 
         public void Activate(Guid plan)
+        {
+        }
+
+        public void Duplicate(Guid source, Guid copy)
+        {
+        }
+
+        public bool SetProcessorValue(Guid plan, string setting, uint pluggedIn, uint onBattery) => false;
+
+        public void Rename(Guid plan, string name, string description)
         {
         }
     }

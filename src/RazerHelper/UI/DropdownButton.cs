@@ -19,7 +19,7 @@ internal sealed class DropdownButton : RoundedButton
     private static readonly SolidBrush ArrowBrush = new(Color.White);
     private static readonly SolidBrush DisabledArrowBrush = new(SystemColors.GrayText);
 
-    private readonly string[] _items;
+    private string[] _items;
     private readonly string _placeholder;
     // A plain drop-down, not a menu: a menu keeps margins for check marks,
     // icons and shortcut keys, which left a gap beside the hover highlight.
@@ -57,6 +57,21 @@ internal sealed class DropdownButton : RoundedButton
 
         AddItems();
         UpdateText();
+    }
+
+    /// <summary>Puts a new list in place of the items (a list without swatches), with none picked.</summary>
+    public void Replace(IReadOnlyList<string> items)
+    {
+        System.Diagnostics.Debug.Assert(_swatches is null, "A list with swatches keeps its items.");
+
+        _items = [.. items];
+
+        foreach (var old in _menu.Items.Cast<ToolStripItem>().ToList())
+            old.Dispose();
+
+        _menu.Items.Clear();
+        AddItems();
+        Select(-1);
     }
 
     private void AddItems()

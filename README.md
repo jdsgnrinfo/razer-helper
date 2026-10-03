@@ -56,7 +56,7 @@ Everything the original does still works the same way; on top of it:
 - **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
 - **Profiles for each power source** chosen in Energy: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
 - **Keyboard off with the screen** (optional, in Display and lighting).
-- **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script; see [Razer Blade power plan](#razer-blade-power-plan-optional).
+- **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script or with one click in Energy; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## What it does today
@@ -154,6 +154,8 @@ powershell -ExecutionPolicy Bypass -File .\tools\RazerBladePowerPlan.ps1 -Activa
 ```
 
 Leave out `-Activate` to add it without switching to it, and choose it later in Control Panel > Power Options. `-Remove` takes it away again.
+
+In RazerHelper itself, **Energy** lists your power plans to choose the one Windows uses, and while this plan is not on your PC, the green **Install Razer Blade plan** button adds it and switches to it, with the same settings as the script.
 
 ## Requirements
 

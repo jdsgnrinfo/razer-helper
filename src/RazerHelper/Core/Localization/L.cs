@@ -60,6 +60,13 @@ internal static class L
         ["System"] = "Sistema",
         ["More details"] = "Más detalles",
         ["Power source profiles"] = "Perfiles por fuente de energía",
+        ["Power plan"] = "Plan de energía",
+        ["The one Windows uses."] = "El que usa Windows.",
+        ["Install Razer Blade plan"] = "Instalar plan Razer Blade",
+        ["Installing..."] = "Instalando...",
+        ["Razer Blade plan installed and in use."] = "Plan Razer Blade instalado y en uso.",
+        ["Could not install the Razer Blade plan."] = "No se pudo instalar el plan Razer Blade.",
+        ["Windows did not change the plan."] = "Windows no cambió el plan.",
         ["When you plug in or unplug the charger, switches to the profile chosen for each."] = "Al conectar o desconectar el cargador, cambia al perfil elegido para cada caso.",
 
         // Optimize.
