@@ -16,7 +16,7 @@ internal static class Glow
     public static int Radius => UiControls.GlowRoom;
 
     // At the button's edge; it fades to nothing at the radius.
-    private const int EdgeAlpha = 120;
+    private const int EdgeAlpha = 60;
 
     /// <summary>Has <paramref name="row"/> paint the glow of its selected buttons.</summary>
     public static void Attach(Control row) => row.Paint += (_, e) => PaintAround(e.Graphics, row);
