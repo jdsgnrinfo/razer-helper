@@ -15,7 +15,6 @@ internal sealed class PerformancePage : PageView
 {
     private readonly SectionStack _stack = new();
     private readonly CustomBoostPanel _custom;
-    private bool _onScreen;
 
     // Kept apart from Visible, which reads false whenever the window is hidden.
     private bool _customShown;
@@ -33,28 +32,11 @@ internal sealed class PerformancePage : PageView
         // A laptop that does not report fan speeds loses that line.
         fans.ReadingsHidden += (_, _) => _stack.Relayout();
 
-        // The fan poll already reads the CPU temperature for the header; pass it on too.
-        fans.TemperaturesRead += (_, reading) => _custom.ShowCpuTemperature(reading.CpuCelsius);
-
         // The levels only mean something in Custom; the charger switching
         // profiles, or the Fn keys, can leave it while the window is open.
         performance.StateChanged += (_, state) => ShowCustom(state.Mode == PerformanceMode.Custom);
 
         Add(_stack);
-    }
-
-    public override void OnPageShown()
-    {
-        _onScreen = true;
-
-        if (_customShown)
-            _custom.Start();
-    }
-
-    public override void OnPageHidden()
-    {
-        _onScreen = false;
-        _custom.Stop();
     }
 
     private void ShowCustom(bool shown)
@@ -65,10 +47,5 @@ internal sealed class PerformancePage : PageView
         _customShown = shown;
         _custom.Visible = shown;
         _stack.Relayout();
-
-        if (shown && _onScreen)
-            _custom.Start();
-        else
-            _custom.Stop();
     }
 }

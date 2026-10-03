@@ -51,7 +51,7 @@ Everything the original does still works the same way; on top of it:
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
 - **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Battery and power, System, Optimize, Settings, and Close at the bottom) and the chosen section beside it.
-- **Custom levels in place:** choosing Custom opens its CPU and GPU levels under the mode buttons, side by side, with live CPU (temperature, usage, speed) and GPU (temperature, usage, core and memory clock) figures.
+- **Custom levels in place:** choosing Custom opens its CPU and GPU levels under the mode buttons, side by side.
 - **Battery details** (in Battery and power, or More details on the battery): power in or out, time left, charge, health, voltage.
 - **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
 - **Profiles for each power source** chosen in Battery and power: the mode for plugged in and for on battery, under the switch that changes between them with the charger.

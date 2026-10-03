@@ -25,7 +25,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### Interface
 
-- **Redesign** of every window: flat sections split by thin lines, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 600 wide.
+- **Redesign** of every window: flat sections split by thin lines with 24px of room either side, section titles in capitals, flat buttons with 6px corners (green with dark text when selected, a touch lighter under the pointer), thin sliders filling in green with a white square thumb, green and grey switches with a white square knob. The main window is 600 wide.
 - **Performance modes** as large buttons, quietest first (Silent, Balanced, Custom), each with its icon in a circle. The mode and refresh rate buttons are a little taller, with the icons the same size.
 - **Refresh rate buttons** show an icon instead of text: the rate in square digits over a row of bars ("A" for Auto), drawn for whatever rates the screen offers, in green like the mode icons; the name ("60 Hz", "Auto") appears under the pointer.
 - **Quicker to answer:** a performance mode or a refresh rate turns green as soon as it is clicked, without greying the other buttons while the laptop applies it (a failure puts back what was there); the keyboard and logo brightness follow the slider while it is dragged; the lighting lists no longer grey out during a change; and changing the refresh rate no longer freezes the window while the screen re-syncs.
@@ -47,7 +47,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 
 ### New windows and sections
 
-- **Custom:** the CPU and GPU boost levels open under the mode buttons while the laptop is in Custom, the CPU on the left and the GPU on the right, each with its live figures: CPU temperature, usage and speed, and GPU temperature, usage, core clock and memory clock. The GPU's usage and core clock come from NVIDIA's library, asked only while the GPU is awake. They fold away by themselves if the laptop leaves Custom, and the window keeps room for them, so it never changes size.
+- **Custom:** the CPU and GPU boost levels open under the mode buttons while the laptop is in Custom, the CPU on the left and the GPU on the right. They fold away by themselves if the laptop leaves Custom, and the window keeps room for them, so it never changes size.
 - **Battery details** (top of Battery and power): power in or out, time left or to full, charge, health against the design capacity, voltage and the battery itself.
 - **System information** (the System section, read the first time it is shown): Windows, CPU, integrated and dedicated GPU, RAM in use, each drive letter with its drive and free space, and the BIOS, with the laptop model as the header.
 
