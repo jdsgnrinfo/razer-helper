@@ -43,6 +43,8 @@ internal sealed class OptimizePage : PageView
         _memoryButton.Click += async (_, _) => await FreeUpMemoryAsync();
         var memory = CreateCard("Free up memory", "Moves what background programs are not using out of RAM and clears Windows' memory cache (asks for administrator permission). The game in front is left alone.", _memoryButton);
         _memoryHint = HintOf(memory);
+        // 6px lower, so its text starts where the cards' does on Battery and System.
+        memory.Margin = new Padding(0, S(6), 0, 0);
         Add(memory);
 
         _tempButton = CreateRowButton("Clean");

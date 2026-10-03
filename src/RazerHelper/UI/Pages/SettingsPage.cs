@@ -31,7 +31,10 @@ internal sealed class SettingsPage : PageView
     {
         _startupRegistration = startupRegistration;
 
-        Add(CreateLanguageRow());
+        // 6px lower, so its text starts where the cards' does on Battery and System.
+        var language = CreateLanguageRow();
+        language.Margin = new Padding(0, S(6), 0, 0);
+        Add(language);
 
         _startAtLoginBox = AddOption("Start at login", "Opens in the tray when you sign in.");
         _hideWhenClickedAwayBox = AddOption("Hide when clicking away", "Off, it stays open until you click the tray icon.");

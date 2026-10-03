@@ -20,7 +20,8 @@ internal sealed class SectionStack : TableLayoutPanel
     {
         BackColor = BackgroundColor;
         ColumnCount = 1;
-        Margin = Padding.Empty;
+        // Room above the first title, so it starts where the other pages' first text does.
+        Margin = new Padding(0, S(18), 0, 0);
         Padding = Padding.Empty;
         Width = PageView.ContentWidth;
 
