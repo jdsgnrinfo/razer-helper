@@ -6,9 +6,9 @@
 .DESCRIPTION
     Starts from Windows' own Balanced plan and changes only the processor:
 
-      Energy performance preference   33 plugged in, 80 on battery
+      Energy performance preference   33 plugged in, 50 on battery
                                       (0 is all speed, 100 all efficiency;
-                                      Balanced's own are 33 and 50)
+                                      the same as Windows' Balanced)
       Minimum processor state         5 % (the CPU can rest when idle)
       Maximum processor state         100 %
       Processor boost (turbo)         Aggressive plugged in; on battery
@@ -79,8 +79,8 @@ if (-not $exists) {
 
 # setting alias, plugged in, on battery
 $values = @(
-    @('PERFEPP', 33, 80),          # Energy performance preference
-    @('PERFEPP1', 33, 80),         # The same, for the efficiency cores of newer CPUs
+    @('PERFEPP', 33, 50),          # Energy performance preference
+    @('PERFEPP1', 33, 50),         # The same, for the efficiency cores of newer CPUs
     @('PROCTHROTTLEMIN', 5, 5),    # Minimum processor state, %
     @('PROCTHROTTLEMAX', 100, 100),# Maximum processor state, %
     @('PERFBOOSTMODE', 2, 3),      # Processor boost: Aggressive plugged in, Efficient Enabled on battery

@@ -140,7 +140,7 @@ For anyone who wants a little more control over temperatures, performance and ba
 
 | Setting | Plugged in | On battery |
 |---|---|---|
-| Energy performance preference (0 all speed, 100 all efficiency) | 33 | 80 |
+| Energy performance preference (0 all speed, 100 all efficiency) | 33 | 50 |
 | Minimum processor state | 5% | 5% |
 | Maximum processor state | 100% | 100% |
 | Processor boost (turbo) | Aggressive | Efficient Enabled (only when it pays off) |
