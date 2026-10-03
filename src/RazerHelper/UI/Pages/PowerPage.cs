@@ -77,8 +77,6 @@ internal sealed class PowerPage : PageView
         _planList = new DropdownButton([])
         {
             Font = SemiBoldTitleFont(16),
-            // At the right edge of the content, clear of the glow room the row reaches into.
-            Margin = new Padding(0, GlowRoom, GlowRoom, GlowRoom),
             Size = S(new Size(190, 38))
         };
         _planList.SelectionChanged += (_, _) => ActivateChosenPlan();
@@ -86,25 +84,28 @@ internal sealed class PowerPage : PageView
         _installButton = CreateSmallButton("Install Razer Blade plan");
         _installButton.BackColor = RazerGreen;
         _installButton.ForeColor = OnGreenTextColor;
-        ((RoundedButton)_installButton).GlowRoom = GlowRoom;
-        _installButton.Height = S(38) + 2 * GlowRoom;
-        _installButton.Width += S(16) + 2 * GlowRoom;
-        _installButton.Margin = new Padding(0, 0, S(8) - GlowRoom, 0);
+        ((RoundedButton)_installButton).GlowRoom = ButtonGlowInset;
+        _installButton.Height = S(38) + 2 * ButtonGlowInset;
+        _installButton.Width += S(16) + 2 * ButtonGlowInset;
         _installButton.Click += async (_, _) => await InstallPlanAsync();
 
-        // Right to left, so the list keeps the right edge and the button sits before it.
-        var controls = new FlowLayoutPanel
+        // The list at the right edge of the content and the button 8px before
+        // it, placed by hand: the panel reaches the glow room past the content
+        // at the right, and keeps the rest of the button's glow room around it
+        // (it paints the glow; see Glow).
+        var edge = GlowRoom - ButtonGlowInset;
+        var controls = new Panel
         {
             Anchor = AnchorStyles.Right,
             BackColor = BackgroundColor,
-            FlowDirection = FlowDirection.RightToLeft,
             Margin = Padding.Empty,
-            Padding = Padding.Empty,
-            Size = new Size(_planList.Width + GlowRoom + _installButton.Width + S(8) - GlowRoom, _installButton.Height),
-            WrapContents = false
+            Size = new Size(edge + _installButton.Width + S(8) - ButtonGlowInset + _planList.Width + GlowRoom, _installButton.Height + 2 * edge)
         };
+        _installButton.Location = new Point(edge, edge);
+        _planList.Location = new Point(controls.Width - GlowRoom - _planList.Width, (controls.Height - _planList.Height) / 2);
         controls.Controls.Add(_planList);
         controls.Controls.Add(_installButton);
+        Glow.Attach(controls);
 
         var planCard = Widen(CreateCard("Power plan", "The one Windows uses.", controls), controls);
         _planHint = HintOf(planCard);
@@ -290,7 +291,7 @@ internal sealed class PowerPage : PageView
 
         // The glow room above and below takes from the row's own padding.
         var row = Widen(CreateCard(text, string.Empty, grid), grid);
-        row.Padding = new Padding(GlowRoom, 0, 0, S(8) - GlowRoom);
+        row.Padding = new Padding(GlowRoom, 0, 0, Math.Max(0, S(8) - GlowRoom));
         return row;
     }
 

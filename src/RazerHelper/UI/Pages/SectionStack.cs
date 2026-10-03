@@ -14,8 +14,8 @@ namespace RazerHelper.UI.Pages;
 /// </summary>
 internal sealed class SectionStack : TableLayoutPanel
 {
-    // Measured from a glowing row's glow room, which adds its own 6px.
-    private static int JoinedGap => S(10);
+    // Measured from a glowing row's glow room, which adds its own 12px.
+    private static int JoinedGap => S(16) - UiControls.GlowRoom;
 
     private readonly List<(Control Section, Func<int> Height, bool Joined, bool Wide)> _rows = [];
 

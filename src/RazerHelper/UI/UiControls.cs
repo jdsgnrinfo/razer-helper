@@ -35,8 +35,11 @@ internal static class UiControls
     /// <summary>The space between two buttons side by side.</summary>
     public static int ButtonGap => S(12);
 
-    /// <summary>The room a selected (green) button glows into around itself; see RoundedButton.GlowRoom.</summary>
-    public static int GlowRoom => S(6);
+    /// <summary>How far a selected (green) button's glow spreads around it (see <see cref="Glow"/>); a row of such buttons is that much larger on every side.</summary>
+    public static int GlowRoom => S(12);
+
+    /// <summary>The part of the glow room a glowing button keeps inside itself: half the gap to its neighbour.</summary>
+    public static int ButtonGlowInset => ButtonGap / 2;
 
     /// <summary>A title row, <see cref="SectionHeaderHeight"/> tall and docked to the top, with room below for its gap.</summary>
     public static TableLayoutPanel CreateHeaderLayout(float leftWidth = 60F, float rightWidth = 40F)
@@ -140,7 +143,7 @@ internal static class UiControls
     }
 
     /// <param name="slots">How many button widths the row is divided into; more than the buttons leaves the extra ones empty at the right, so rows of different lengths line up.</param>
-    /// <param name="glowRoom">Room each button keeps around itself for its glow when selected (see RoundedButton.GlowRoom); the row is that much larger on every side than the buttons it shows.</param>
+    /// <param name="glowRoom">Room for the glow of a selected button (see <see cref="Glow"/>): the row is that much larger on every side than the buttons it shows, and paints their glow.</param>
     public static Control CreateButtonGrid(IReadOnlyList<string> buttonNames, string nameSuffix, int slots = 0, int glowRoom = 0)
     {
         var count = Math.Max(slots, buttonNames.Count);
@@ -156,6 +159,14 @@ internal static class UiControls
 
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
+        if (glowRoom > 0)
+        {
+            // The rest of the glow room, beyond what the buttons keep inside themselves.
+            var edge = glowRoom - ButtonGlowInset;
+            grid.Padding = new Padding(edge);
+            Glow.Attach(grid);
+        }
+
         for (var index = 0; index < count; index++)
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / count));
 
@@ -165,13 +176,15 @@ internal static class UiControls
             var name = buttonNames[index];
             var button = CreateActionButton(name);
 
-            // ButtonGap between neighbours (less the glow room both keep) and
-            // none at the outer edges, split so every button comes out the same width.
-            var gap = ButtonGap - 2 * glowRoom;
+            // ButtonGap between neighbours and none at the outer edges, split so
+            // every button comes out the same width. Glowing buttons keep half
+            // the gap inside themselves instead, so the glow can cross it.
+            var inset = glowRoom > 0 ? ButtonGlowInset : 0;
+            var gap = ButtonGap - 2 * inset;
             button.Margin = new Padding(gap * index / count, 0, gap * (count - 1 - index) / count, 0);
 
             if (button is RoundedButton rounded)
-                rounded.GlowRoom = glowRoom;
+                rounded.GlowRoom = inset;
             button.Name = $"{name}{nameSuffix}";
             button.Tag = name;
             grid.Controls.Add(button, index, 0);

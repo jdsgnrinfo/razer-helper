@@ -69,11 +69,12 @@ internal class RoundedButton : Button
             : BackColor == ButtonColor ? Motion.Blend(ButtonColor, ButtonHoverColor, Hover) : BackColor;
 
         // The button itself, inside the room kept for its glow (none on most).
+        // Its row paints the glow; what of it falls on this button is painted here first.
         var glow = GlowRoom;
         var body = new RectangleF(glow, glow, Width - 2 * glow, Height - 2 * glow);
 
-        if (glow > 0 && IsGreen)
-            PaintGlow(graphics, body, glow);
+        if (glow > 0)
+            Glow.PaintBehind(graphics, this);
 
         using (var path = RoundedPath(body, S(CornerRadius)))
         {
@@ -139,25 +140,13 @@ internal class RoundedButton : Button
     }
 
     /// <summary>
-    /// Room kept around the button, in pixels, where a selected (green) one
-    /// glows softly; the button is drawn that much inside its bounds. Its
-    /// row lays it out that much larger so it lines up with the rest.
+    /// Room kept around the button, in pixels: it is drawn that much inside
+    /// its bounds, so a selected (green) one's glow (see <see cref="Glow"/>)
+    /// can spread over the gap to its neighbours and beyond.
     /// </summary>
     [System.ComponentModel.Browsable(false)]
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public int GlowRoom { get; set; }
-
-    // The glow: rings of green, fading out from the button's edge.
-    private static void PaintGlow(Graphics graphics, RectangleF body, int room)
-    {
-        for (var step = room; step >= 1; step--)
-        {
-            var fade = 1f - (step - 0.5f) / room;
-            using var pen = new Pen(Color.FromArgb((int)(110 * fade * fade), RazerGreen), 1.5f);
-            using var ring = RoundedPath(RectangleF.Inflate(body, step - 0.5f, step - 0.5f), S(CornerRadius) + step);
-            graphics.DrawPath(pen, ring);
-        }
-    }
 
     /// <summary>An optional icon in a circle over the text, as on the performance mode buttons.</summary>
     [System.ComponentModel.Browsable(false)]
@@ -233,7 +222,20 @@ internal class RoundedButton : Button
     // (a hand cursor is what marks the usable ones) stays flat.
     private Color Pressed(Color color) => _pressed && IsUsable ? Lighten(color, 0.12f) : color;
 
-    private bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();
+    /// <summary>True when selected: green.</summary>
+    internal bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();
+
+    /// <summary>The button itself, inside its glow room, in its own coordinates.</summary>
+    internal RectangleF Body => new(GlowRoom, GlowRoom, Width - 2 * GlowRoom, Height - 2 * GlowRoom);
+
+    // Selecting or unselecting a glowing button changes its neighbours' underlay too.
+    protected override void OnBackColorChanged(EventArgs e)
+    {
+        base.OnBackColorChanged(e);
+
+        if (GlowRoom > 0)
+            Parent?.Invalidate(true);
+    }
 
     private bool IsUsable => Enabled && Cursor == Cursors.Hand;
 
