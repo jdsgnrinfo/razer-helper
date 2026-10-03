@@ -16,7 +16,7 @@ namespace RazerHelper.UI.Forms;
 internal sealed class SettingsForm : Form
 {
     private static int ContentWidth => S(512);
-    private static int RowPadding => S(8);
+    private static int RowPadding => S(12);
     private static int ActionButtonHeight => S(40);
     private static int ActionButtonGap => S(8);
 
