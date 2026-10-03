@@ -30,8 +30,8 @@ internal sealed class EcTemperatureService(
     TimeSpan? cacheFor = null,
     Func<DateTime>? clock = null) : ICpuTemperatureSource
 {
-    /// <summary>How long a reading is reused. The sensor changes by about a degree every few seconds at most.</summary>
-    public static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromSeconds(4);
+    /// <summary>How long a reading is reused: just under the window's once-a-second poll, so every poll shows a fresh reading.</summary>
+    public static readonly TimeSpan DefaultCacheDuration = TimeSpan.FromMilliseconds(900);
 
     private readonly TimeSpan _cacheFor = cacheFor ?? DefaultCacheDuration;
     private readonly Func<DateTime> _now = clock ?? (() => DateTime.UtcNow);

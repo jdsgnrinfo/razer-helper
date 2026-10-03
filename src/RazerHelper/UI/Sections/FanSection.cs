@@ -17,7 +17,8 @@ namespace RazerHelper.UI.Sections;
 /// </summary>
 internal sealed class FanSection : SectionPanel
 {
-    private const int PollIntervalMilliseconds = 2_000;
+    // Once a second: the temperatures in the window follow the laptop as it happens.
+    private const int PollIntervalMilliseconds = 1_000;
 
     private readonly FanTelemetryService _telemetryService;
     private readonly ICpuTemperatureSource _cpuTemperature;

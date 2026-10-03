@@ -141,7 +141,7 @@ public class EcTemperatureCacheTests
         var (service, ec, clock) = Create();
 
         service.Read();
-        clock.Advance(2);
+        clock.Advance(0.5);
         service.Read();
 
         Assert.Single(ec.Log);
@@ -155,7 +155,7 @@ public class EcTemperatureCacheTests
         service.Read();
 
         ec.CpuTemperature = 54;
-        clock.Advance(4.5);
+        clock.Advance(1);
 
         Assert.Equal(54, service.Read().CpuCelsius);
         Assert.Equal(2, ec.Log.Count);
@@ -169,24 +169,24 @@ public class EcTemperatureCacheTests
         service.Read();
 
         ec.CpuTemperature = 60;
-        clock.Advance(2);
+        clock.Advance(0.5);
 
         Assert.Equal(50, service.Read().CpuCelsius);
     }
 
     [Fact]
-    public void SteadyPolling_EveryTwoSeconds_HalvesTheControllerReads()
+    public void SteadyPolling_OnceASecond_ReadsFreshEveryPoll()
     {
-        // The popup polls every 2 s. With the 4 s window that is one controller read per two polls.
+        // The popup polls once a second; the window is just under that, so no poll shows an old reading.
         var (service, ec, clock) = Create();
 
         for (var poll = 0; poll < 30; poll++)
         {
             service.Read();
-            clock.Advance(2);
+            clock.Advance(1);
         }
 
-        Assert.Equal(15, ec.Log.Count);
+        Assert.Equal(30, ec.Log.Count);
     }
 
     [Fact]
@@ -222,6 +222,6 @@ public class EcTemperatureCacheTests
     }
 
     [Fact]
-    public void TheDefaultWindow_IsFourSeconds() =>
-        Assert.Equal(TimeSpan.FromSeconds(4), EcTemperatureService.DefaultCacheDuration);
+    public void TheDefaultWindow_IsJustUnderTheOnceASecondPoll() =>
+        Assert.Equal(TimeSpan.FromMilliseconds(900), EcTemperatureService.DefaultCacheDuration);
 }
