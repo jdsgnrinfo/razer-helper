@@ -73,14 +73,17 @@ internal static class UiControls
         TextAlign = ContentAlignment.MiddleRight
     };
 
+    // Half a point, in pixels (a point is 4/3 px).
+    private const float HalfPoint = 2F / 3;
+
     /// <summary>
-    /// A small button sized to its text, such as "More info" or the footer's: 14px semi-bold text,
+    /// A small button sized to its text, such as "More info" or the footer's: 14px semi-bold text and half a point,
     /// 10px each side, 30px tall.
     /// </summary>
     public static Button CreateSmallButton(string text)
     {
         var button = CreateActionButton(text);
-        var font = button.Font = SemiBoldTitleFont(14);
+        var font = button.Font = SemiBoldTitleFont(14 + HalfPoint);
         var textSize = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding);
 
         button.Dock = DockStyle.None;
