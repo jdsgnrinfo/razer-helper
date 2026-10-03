@@ -10,16 +10,11 @@ namespace RazerHelper.UI.Pages;
 
 /// <summary>
 /// The battery's figures; the profiles for each power source, under the
-/// switch that changes between them with the charger; and the option to
-/// switch Windows' power plan while the laptop is left alone. A choice shown
-/// only with its switch on stays hidden while it is off. Every change
-/// applies and is saved at once.
+/// switch that changes between them with the charger, and hidden while it
+/// is off. Every change applies and is saved at once.
 /// </summary>
 internal sealed class PowerPage : PageView
 {
-    /// <summary>The idle times offered, in minutes.</summary>
-    public static readonly int[] MinuteChoices = [1, 5, 10, 15, 20, 25, 30];
-
     private static readonly PerformanceMode[] Modes = [PerformanceMode.Silent, PerformanceMode.Balanced, PerformanceMode.Custom];
 
     private readonly BatteryDetailsView _battery;
@@ -28,26 +23,18 @@ internal sealed class PowerPage : PageView
     private readonly ToggleSwitch _profilesSwitch;
     private readonly FlowLayoutPanel _profiles;
     private readonly Dictionary<bool, Dictionary<PerformanceMode, Button>> _profileButtons = [];
-    private readonly ToggleSwitch _idleSwitch;
-    private readonly FlowLayoutPanel _idleOptions;
-    private readonly DropdownButton _minutes;
-    private readonly DropdownButton _plans;
-    private IReadOnlyList<PowerPlan> _planList;
 
     public PowerPage(
         Func<BatteryDetails?> readBattery,
         PerformanceSection performance,
-        bool autoSwitchProfiles,
-        (bool Enabled, int Minutes, Guid? Plan) idle,
-        IReadOnlyList<PowerPlan> plans)
+        bool autoSwitchProfiles)
     {
         _performance = performance;
-        _planList = plans;
 
         _battery = new BatteryDetailsView(readBattery);
         Add(_battery);
 
-        // Read once now, so the window is sized for the cards before it first opens.
+        // Read once now, so the cards are there the moment the page first opens.
         _battery.Refresh();
 
         // The profiles: the switch, and under it the mode for each source.
@@ -73,55 +60,14 @@ internal sealed class PowerPage : PageView
         _performance.ProfileChanged += Performance_ProfileChanged;
         _performance.StateChanged += Performance_StateChanged;
         ShowProfiles();
-
-        // Idle: the switch, and under it, only while it is on, how long and which plan.
-        var idleCard = CreateSwitchCard("Change the power plan when idle", "Your plan comes back as soon as you use the laptop.", out _idleSwitch);
-        Add(CreateDivider());
-        Add(idleCard);
-
-        _minutes = new DropdownButton([.. MinuteChoices.Select(choice => L.F("{0} min", choice))])
-        {
-            Anchor = AnchorStyles.Right,
-            Font = SemiBoldTitleFont(16),
-            Size = S(new Size(116, 38))
-        };
-
-        _plans = CreatePlanList(plans);
-
-        _idleOptions = CreateGroup();
-        _idleOptions.Controls.Add(CreateOptionRow(CreateCard("Idle for", "Without touching the keyboard or the mouse.", _minutes)));
-        _idleOptions.Controls.Add(CreateOptionRow(CreatePlanCard()));
-        Add(_idleOptions);
-
-        _idleSwitch.Checked = idle.Enabled;
-        _idleOptions.Visible = idle.Enabled;
-        _minutes.Select(Array.IndexOf(MinuteChoices, idle.Minutes));
-        _plans.Select(idle.Plan is { } chosen ? IndexOfPlan(chosen) : -1);
-
-        _idleSwitch.CheckedChanged += (_, _) =>
-        {
-            _idleOptions.Visible = _idleSwitch.Checked;
-            RaiseIdleChanged();
-        };
-        _minutes.SelectionChanged += (_, _) => RaiseIdleChanged();
-        _plans.SelectionChanged += (_, _) => RaiseIdleChanged();
     }
 
     /// <summary>Raised by the profiles' switch.</summary>
     public event EventHandler<bool>? AutoSwitchProfilesChanged;
 
-    /// <summary>Raised with every idle change: on or off, the minutes, and the plan (null while none is picked).</summary>
-    public event EventHandler<(bool Enabled, int Minutes, Guid? Plan)>? IdleChanged;
-
-    /// <summary>Asked each time the page is shown, so a plan added meanwhile is offered.</summary>
-    [System.ComponentModel.Browsable(false)]
-    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-    public Func<IReadOnlyList<PowerPlan>>? ListPlans { get; set; }
-
     public override void OnPageShown()
     {
         ShowProfiles();
-        RefreshPlans();
         _battery.Start();
     }
 
@@ -143,8 +89,8 @@ internal sealed class PowerPage : PageView
 
     private void Performance_StateChanged(object? sender, PerformanceState state) => ShowProfiles();
 
-    // What follows a switch, pressed close under it: no line between them,
-    // so they read as one option.
+    // What follows the switch, close under it with no line between, so they
+    // read as one option.
     private static FlowLayoutPanel CreateGroup() => new()
     {
         AutoSize = true,
@@ -198,51 +144,5 @@ internal sealed class PowerPage : PageView
                 SetAvailability(button, _performance.IsModeOffered(each, pluggedIn), _toolTip, reason);
             }
         }
-    }
-
-    // A choice under a switch: closer above and below than a setting of its own.
-    private static Control CreateOptionRow(TableLayoutPanel card)
-    {
-        card.Padding = new Padding(0, S(2), 0, S(10));
-        return card;
-    }
-
-    private TableLayoutPanel CreatePlanCard() => CreateCard("Power plan", "Applied once that time has passed.", _plans);
-
-    private static DropdownButton CreatePlanList(IReadOnlyList<PowerPlan> plans) => new([.. plans.Select(each => each.Name)])
-    {
-        Anchor = AnchorStyles.Right,
-        Font = SemiBoldTitleFont(16),
-        Size = S(new Size(200, 38))
-    };
-
-    // The list is rebuilt only when the plans themselves changed.
-    private void RefreshPlans()
-    {
-        if (ListPlans?.Invoke() is not { } plans || plans.Select(plan => (plan.Id, plan.Name)).SequenceEqual(_planList.Select(plan => (plan.Id, plan.Name))))
-            return;
-
-        Guid? chosen = _plans.SelectedIndex >= 0 ? _planList[_plans.SelectedIndex].Id : null;
-        _planList = plans;
-        _plans.Replace([.. plans.Select(each => each.Name)]);
-        _plans.Select(chosen is { } id ? IndexOfPlan(id) : -1);
-    }
-
-    private int IndexOfPlan(Guid plan)
-    {
-        for (var index = 0; index < _planList.Count; index++)
-        {
-            if (_planList[index].Id == plan)
-                return index;
-        }
-
-        return -1;
-    }
-
-    private void RaiseIdleChanged()
-    {
-        var minutes = _minutes.SelectedIndex >= 0 ? MinuteChoices[_minutes.SelectedIndex] : MinuteChoices[1];
-        Guid? plan = _plans.SelectedIndex >= 0 ? _planList[_plans.SelectedIndex].Id : null;
-        IdleChanged?.Invoke(this, (_idleSwitch.Checked, minutes, plan));
     }
 }

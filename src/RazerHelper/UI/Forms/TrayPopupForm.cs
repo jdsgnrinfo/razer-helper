@@ -45,10 +45,8 @@ public sealed class TrayPopupForm : Form
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
     private readonly SilentPlanOverride _silentTurbo;
-    // The Idle option, checked every couple of seconds whatever the window does.
-    private readonly IPowerPlans _powerPlans;
-    private readonly IdlePlanSwitcher _idleSwitcher;
-    private readonly System.Windows.Forms.Timer _idleTimer = new() { Interval = 2_000 };
+    // Checks Silent's boost every couple of seconds, whatever the window does.
+    private readonly System.Windows.Forms.Timer _silentTimer = new() { Interval = 2_000 };
 
     // The popup fades in on every showing and fades out before hiding
     // (see RequestHide and OnFadeTick). A WinForms timer: ticks on the UI thread.
@@ -71,8 +69,7 @@ public sealed class TrayPopupForm : Form
             fullscreenDetector: new WindowsFullscreenDetector(),
             cpuBoost: PowerPlanValue.BoostMode(),
             cpuEfficiency: PowerPlanValue.EfficiencyPreference(),
-            powerPlans: new WindowsPowerPlans(),
-            idleClock: new WindowsIdleClock())
+            powerPlans: new WindowsPowerPlans())
     {
     }
 
@@ -95,8 +92,7 @@ public sealed class TrayPopupForm : Form
         IFullscreenDetector? fullscreenDetector = null,
         IPowerPlanValue? cpuBoost = null,
         IPowerPlanValue? cpuEfficiency = null,
-        IPowerPlans? powerPlans = null,
-        IIdleClock? idleClock = null)
+        IPowerPlans? powerPlans = null)
     {
         _transport = transport;
         _powerSource = powerSource;
@@ -177,25 +173,13 @@ public sealed class TrayPopupForm : Form
 
         GiveBackEnergyPreference(cpuEfficiency ?? new NoPowerPlan());
 
-        // Off until the user turns it on in the Idle window. A plan a crash or
-        // restart left switched comes back first. Left out (tests, previews),
-        // no plan is touched.
-        _powerPlans = powerPlans ?? new NoPowerPlans();
-        _idleSwitcher = new IdlePlanSwitcher(
-            _powerPlans,
-            idleClock ?? new NeverIdle(),
-            _settings.PlanBeforeIdle,
-            saved => SaveSettings(_settings with { PlanBeforeIdle = saved }));
-        _idleSwitcher.Restore();
-        _idleSwitcher.Configure(_settings.IdleSwitch, _settings.IdleMinutes, _settings.IdlePlan);
-        _idleTimer.Tick += (_, _) =>
-        {
-            _idleSwitcher.Tick();
+        // An earlier build could switch the power plan while the laptop sat
+        // idle; one a crash or restart left switched comes back once.
+        GiveBackIdlePlan(powerPlans ?? new NoPowerPlans());
 
-            // In Silent, the boost stays off in whatever plan is active.
-            _silentTurbo.Recheck();
-        };
-        _idleTimer.Start();
+        // In Silent, the boost stays off in whatever plan is active.
+        _silentTimer.Tick += (_, _) => _silentTurbo.Recheck();
+        _silentTimer.Start();
 
         // Left out (tests, previews) they are inert: no login entries, no programs.
         _servicesSection = new ServicesSection(
@@ -399,8 +383,7 @@ public sealed class TrayPopupForm : Form
         // Nothing is left watching the fans once the app is gone.
         _performanceSection.TurnOffMaxFanBeforeExit();
         _keyboardScreenOff.Restore(); // Never leave the keyboard dark behind.
-        _idleTimer.Stop();
-        _idleSwitcher.Restore(); // Whoever closes the app is at the keyboard.
+        _silentTimer.Stop();
 
         _allowClose = true;
         Close();
@@ -439,21 +422,11 @@ public sealed class TrayPopupForm : Form
         var powerPage = new Pages.PowerPage(
             BatteryReader.Read,
             _performanceSection,
-            _settings.AutoSwitchProfiles,
-            (_settings.IdleSwitch, _settings.IdleMinutes, _settings.IdlePlan),
-            ListPowerPlans())
-        {
-            ListPlans = ListPowerPlans
-        };
+            _settings.AutoSwitchProfiles);
         powerPage.AutoSwitchProfilesChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { AutoSwitchProfiles = enabled });
             _performanceSection.AutoSwitchProfiles = enabled;
-        };
-        powerPage.IdleChanged += (_, choice) =>
-        {
-            SaveSettings(_settings with { IdleSwitch = choice.Enabled, IdleMinutes = choice.Minutes, IdlePlan = choice.Plan });
-            _idleSwitcher.Configure(choice.Enabled, choice.Minutes, choice.Plan);
         };
 
         // Free up memory, temporary files and the GPU, each on its own button.
@@ -511,20 +484,6 @@ public sealed class TrayPopupForm : Form
         FitToScreen();
     }
 
-    // The plans for the Idle option, read as Battery and power comes on screen.
-    private IReadOnlyList<PowerPlan> ListPowerPlans()
-    {
-        try
-        {
-            return _powerPlans.List();
-        }
-        catch (System.ComponentModel.Win32Exception exception)
-        {
-            AppLog.Error("Could not list the power plans.", exception);
-            return [];
-        }
-    }
-
     /// <summary>Puts a section on show and lights its entry; the one before is told it has left.</summary>
     private void ShowPage(DashboardPage page)
     {
@@ -546,9 +505,9 @@ public sealed class TrayPopupForm : Form
             showing.OnPageShown();
     }
 
-    // The window's height in the base design: every section fits but
-    // Performance with Custom's levels open, which scrolls a little.
-    private static int WindowHeight => S(628);
+    // The window's height in the base design, room for every section, even
+    // Performance with Custom's levels open, without scrolling.
+    private static int WindowHeight => S(680);
 
     // A screen too short for the window keeps it shorter (the page scrolls
     // then). Re-anchored to the taskbar so it does not end up floating or
@@ -696,7 +655,6 @@ public sealed class TrayPopupForm : Form
     {
         // Before the settings holding it are cleared: the CPU boost Silent took away comes back.
         _silentTurbo.Restore();
-        _idleSwitcher.Restore();
 
         _isResetting = true;
         using var hold = KeepOpen(); // The message boxes below must not hide the popup.
@@ -779,6 +737,26 @@ public sealed class TrayPopupForm : Form
         _settingsService.Save(settings);
     }
 
+    // The plan the old Idle option replaced, when the app ended while it was
+    // switched: put back once, then forgotten.
+    private void GiveBackIdlePlan(IPowerPlans plans)
+    {
+        if (_settings.PlanBeforeIdle is not { } saved)
+            return;
+
+        try
+        {
+            plans.Activate(saved);
+            AppLog.Info($"Power plan {saved} given back: the Idle option is gone.");
+        }
+        catch (Exception exception)
+        {
+            AppLog.Error("Could not give the power plan back.", exception);
+        }
+
+        SaveSettings(_settings with { PlanBeforeIdle = null });
+    }
+
     // An earlier version's Silent also leaned the CPU's energy preference
     // towards efficiency. Silent no longer does, so what it replaced is put
     // back once, whatever mode the laptop is in.
@@ -843,7 +821,7 @@ public sealed class TrayPopupForm : Form
     // returned value is not disposed.
     private OpenHold KeepOpen() => new(this);
 
-    // No power plans and nobody ever away, for tests and previews.
+    // No power plans, for tests and previews.
     private sealed class NoPowerPlans : IPowerPlans
     {
         public IReadOnlyList<PowerPlan> List() => [];
@@ -853,13 +831,6 @@ public sealed class TrayPopupForm : Form
         public void Activate(Guid plan)
         {
         }
-    }
-
-    private sealed class NeverIdle : IIdleClock
-    {
-        public TimeSpan SinceLastInput() => TimeSpan.Zero;
-
-        public bool ScreenKeptOn() => false;
     }
 
     // No power plan to change, for tests and previews.
@@ -953,7 +924,7 @@ public sealed class TrayPopupForm : Form
             _profileToast.Dispose();
             _displayWatcher.Dispose();
             _fadeTimer.Dispose();
-            _idleTimer.Dispose();
+            _silentTimer.Dispose();
             _dgpuCoordinator.Dispose();
 
             // Only what the form created itself; supplied dependencies belong to the caller.

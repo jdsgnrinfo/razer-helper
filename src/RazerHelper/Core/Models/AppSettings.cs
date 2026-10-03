@@ -51,10 +51,6 @@ internal sealed record AppSettings(
     // The interface language: "en" or "es". Null follows the Windows display
     // language. Changing it restarts the app.
     string? Language = null,
-    // Idle window. Off until the user turns it on: after IdleMinutes without
-    // a key press or mouse move, Windows switches to the IdlePlan power plan.
-    bool IdleSwitch = false,
-    int IdleMinutes = 5,
-    Guid? IdlePlan = null,
-    // The plan the idle switch replaced, until it is given back; null otherwise.
+    // Left by an earlier version's Idle option, when it ended with its plan
+    // switched: the plan it replaced, given back once at startup, then cleared.
     Guid? PlanBeforeIdle = null);

@@ -85,14 +85,7 @@ internal static class L
         ["{0} in use were left."] = "{0} en uso se quedaron.",
         ["Could not clean the temporary files."] = "No se pudieron limpiar los archivos temporales.",
 
-        // Idle window.
-        ["Change the power plan when idle"] = "Cambiar el plan al estar inactivo",
-        ["Your plan comes back as soon as you use the laptop."] = "Tu plan vuelve en cuanto usas el portátil.",
-        ["{0} min"] = "{0} min",
-        ["Idle for"] = "Inactivo durante",
-        ["Without touching the keyboard or the mouse."] = "Sin tocar el teclado ni el ratón.",
-        ["Power plan"] = "Plan de energía",
-        ["Applied once that time has passed."] = "Se aplica cuando pasa ese tiempo.",
+        // Status messages.
         ["{0} shortcut is used by another program."] = "Otro programa ya usa el atajo {0}.",
         ["{0} control interface found."] = "Control de {0} encontrado.",
         ["{0} control interface found (community-reported product id, not verified on this model)."] =
