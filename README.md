@@ -50,11 +50,11 @@ Everything the original does still works the same way; on top of it:
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
-- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Battery and power, System, Optimize, Settings, and Close at the bottom) and the chosen section beside it.
+- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Energy, System, Optimize, Settings, and Close at the bottom) and the chosen section beside it.
 - **Custom levels in place:** choosing Custom opens its CPU and GPU levels under the mode buttons, side by side.
-- **Battery details** (in Battery and power, or More details on the battery): power in or out, time left, charge, health, voltage.
+- **Battery details** (in Energy, or More details on the battery): power in or out, time left, charge, health, voltage.
 - **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
-- **Profiles for each power source** chosen in Battery and power: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
+- **Profiles for each power source** chosen in Energy: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
 - **Keyboard off with the screen** (optional, in Display and lighting).
 - **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
@@ -62,7 +62,7 @@ Everything the original does still works the same way; on top of it:
 ## What it does today
 
 - **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom, on every model.
-- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Battery and power, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
+- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Energy, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** any percentage from 60% to 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
 - **Temperatures:** CPU and GPU, shown at the top to the left of the power source, only while the window is open. The GPU reading comes from the graphics driver (the same source Task Manager uses). The CPU reading comes from the laptop's own controller. Compared with MSI Afterburner under load on the developer's laptop it was very close, but it updates more slowly, so Afterburner's number moves faster (hover it for a reminder). It is not read from the CPU die itself. The GPU is read every 2 seconds and the CPU every 4, and nothing is read while the window is closed.

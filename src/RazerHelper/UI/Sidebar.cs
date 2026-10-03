@@ -58,7 +58,7 @@ internal sealed class Sidebar : Panel
         {
             (DashboardPage.Performance, Glyph.Rocket, "Performance"),
             (DashboardPage.Display, Glyph.Display, "Display and lighting"),
-            (DashboardPage.Power, Glyph.Battery, "Battery and power"),
+            (DashboardPage.Power, Glyph.Battery, "Energy"),
             (DashboardPage.System, Glyph.System, "System"),
             (DashboardPage.Optimize, Glyph.Optimize, "Optimize"),
             (DashboardPage.Settings, Glyph.Settings, "Settings")

@@ -138,7 +138,7 @@ internal static class Glyphs
             "M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" +
             "M8 20h8M12 16v4");
 
-        // Battery and power: a battery three bars full, designed for this fork.
+        // Energy: a battery three bars full, designed for this fork.
         public static readonly SetIcon Battery = new(24f,
             "M5 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" +
             "M21 11v2M6 10v4M9 10v4M12 10v4");

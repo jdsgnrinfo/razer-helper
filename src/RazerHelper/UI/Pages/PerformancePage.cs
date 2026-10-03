@@ -9,7 +9,7 @@ namespace RazerHelper.UI.Pages;
 /// The first section, where the window opens: the performance modes (with
 /// the temperatures) and, under them while the laptop is in Custom, its CPU
 /// and GPU levels; the fans; and the battery with its charge limit and a
-/// button to Battery and power.
+/// button to Energy.
 /// </summary>
 internal sealed class PerformancePage : PageView
 {

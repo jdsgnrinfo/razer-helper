@@ -41,7 +41,7 @@ internal sealed class OptimizePage : PageView
 
         _memoryButton = CreateRowButton("Free up");
         _memoryButton.Click += async (_, _) => await FreeUpMemoryAsync();
-        var memory = CreateCard("Free up memory", "Moves what background programs are not using out of RAM and clears Windows' memory cache (asks for administrator permission). The game in front is left alone.", _memoryButton);
+        var memory = CreateCard("Free up memory", "Frees unused RAM and clears Windows' cache (asks for permission).", _memoryButton);
         _memoryHint = HintOf(memory);
         // 6px lower, so its text starts where the cards' does on Battery and System.
         memory.Margin = new Padding(0, S(6), 0, 0);
@@ -58,7 +58,7 @@ internal sealed class OptimizePage : PageView
         var gpuButton = CreateRowButton("Free up");
         gpuButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
         Add(CreateDivider());
-        Add(CreateCard("Free up GPU", "Lists apps keeping the dedicated GPU awake, and closes them only if you say so.", gpuButton));
+        Add(CreateCard("Free up GPU", "Closes the apps keeping the dedicated GPU awake, if you confirm.", gpuButton));
 
         var unplugged = CreateSwitchCard("Free up GPU when unplugged", "Offers to close apps using the dedicated GPU, to save battery.", out _closeGpuApps);
         Add(CreateDivider());

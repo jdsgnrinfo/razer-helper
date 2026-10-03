@@ -20,7 +20,7 @@ internal sealed class BatterySection : SectionPanel
     /// <summary>The header and the slider with the chosen limit beside it.</summary>
     public static int ContentHeight => HeaderHeight + S(24);
 
-    /// <summary>Raised when the user asks for the battery details. The window shows Battery and power.</summary>
+    /// <summary>Raised when the user asks for the battery details. The window shows Energy.</summary>
     public event EventHandler? DetailsRequested;
 
     private readonly BatteryChargeLimitService _chargeLimitService;
@@ -46,7 +46,7 @@ internal sealed class BatterySection : SectionPanel
 
         // Header, right: how full the battery is and where the power comes
         // from ("84% (Plugged in)"), then More details, which goes to
-        // Battery and power.
+        // Energy.
         _powerLabel = CreateHeaderValueLabel();
         _powerLabel.Font = CapsTitleFont();
         _powerLabel.Dock = DockStyle.None;

@@ -456,6 +456,7 @@ public sealed class TrayPopupForm : Form
             page.Location = Point.Empty;
             page.Visible = false;
             page.Width = _pageHost.ClientSize.Width;
+            page.MinimumSize = new Size(0, _pageHost.ClientSize.Height);
             _pageHost.Controls.Add(page);
         }
 
@@ -475,7 +476,12 @@ public sealed class TrayPopupForm : Form
         _pageHost.ClientSizeChanged += (_, _) =>
         {
             foreach (var page in _pages.Values)
+            {
                 page.Width = _pageHost.ClientSize.Width;
+
+                // At least as tall as the room, so what sits at a page's foot (the version in Settings) is at the window's.
+                page.MinimumSize = new Size(0, _pageHost.ClientSize.Height);
+            }
         };
 
         // Dark scroll bars, as in Windows' own dark apps.

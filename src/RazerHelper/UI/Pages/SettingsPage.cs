@@ -58,15 +58,19 @@ internal sealed class SettingsPage : PageView
             ("Logs", ExternalLinks.OpenLogFolder),
             ("Reset", ConfirmReset))));
 
-        // The app's version, quietly, at the foot of its settings.
-        Add(new Label
+        // The app's version, quietly, at the bottom edge of the window, 24px in
+        // from the left and the bottom like the rest of the page.
+        var version = new Label
         {
+            Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
             AutoSize = true,
             Font = DesignFont(13),
             ForeColor = Color.FromArgb(0x6E, 0x6E, 0x6E),
-            Margin = new Padding(0, S(16), 0, 0),
             Text = AppVersion.Current.ToUpperInvariant()
-        });
+        };
+        Controls.Add(version);
+        version.BringToFront();
+        Resize += (_, _) => version.Location = new Point(S(24), Height - S(24) - version.Height);
 
         _hideWhenClickedAwayBox.Checked = settings.HideWhenClickedAway;
         _alwaysOnTopBox.Checked = settings.AlwaysOnTop;

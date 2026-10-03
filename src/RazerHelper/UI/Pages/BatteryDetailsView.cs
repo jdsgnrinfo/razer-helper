@@ -6,7 +6,7 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The battery's figures at the top of Battery and power: cards for power in
+/// The battery's figures at the top of Energy: cards for power in
 /// or out, time left or to full, charge and health (each with a bar), voltage and the battery itself.
 /// </summary>
 internal sealed class BatteryDetailsView(Func<BatteryDetails?> read) : DetailsView("Battery", semiBoldValues: true)
