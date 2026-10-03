@@ -71,15 +71,8 @@ internal sealed class PerformanceSection : SectionPanel
         {
             var mode = Enum.Parse<PerformanceMode>((string)button.Tag!);
             _buttons[mode] = button;
-            button.Click += async (_, _) =>
-            {
-                await SelectModeAsync(mode);
-
-                // Custom's levels live in a window of their own. It opens once
-                // the EC is in Custom, and clicking Custom again reopens it.
-                if (mode == PerformanceMode.Custom && _state.Mode == PerformanceMode.Custom)
-                    CustomBoostRequested?.Invoke(this, EventArgs.Empty);
-            };
+            // Custom's levels open under the buttons once the EC is in Custom (see PerformancePage).
+            button.Click += async (_, _) => await SelectModeAsync(mode);
 
             button.Font = ProfileButtonFont;
 
@@ -114,13 +107,10 @@ internal sealed class PerformanceSection : SectionPanel
     /// <summary>Raised whenever the section shows a new state, so others (the fan buttons) can follow it.</summary>
     public event EventHandler<PerformanceState>? StateChanged;
 
-    /// <summary>Raised when the user clicks Custom and the EC is in it. The host opens the boost window.</summary>
-    public event EventHandler? CustomBoostRequested;
-
     /// <summary>
     /// The CPU and GPU level selectors. The section keeps them up to date
-    /// whether or not they are shown; the Custom window borrows them while it
-    /// is open and hands them back when it closes.
+    /// whether or not they are shown; the Custom panel under the mode buttons
+    /// shows them while the laptop is in Custom.
     /// </summary>
     public CustomBoostSelectors BoostSelectors => _customRow;
 

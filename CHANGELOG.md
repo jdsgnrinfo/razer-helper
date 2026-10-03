@@ -32,10 +32,9 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Quicker to answer:** a performance mode or a refresh rate turns green as soon as it is clicked, without greying the other buttons while the laptop applies it (a failure puts back what was there); the keyboard and logo brightness follow the slider while it is dragged; the lighting lists no longer grey out during a change; and changing the refresh rate no longer freezes the window while the screen re-syncs.
 - **Fans** as two options with a line on what each does: Automatic RPM and Max RPM.
 - **Lighting** with the keyboard and the logo side by side.
-- **A window in sections, like Synapse:** a sidebar on the left with the logo and name, one entry per section with its icon (a rocket for Performance), Close at the bottom (the app keeps running in the tray), and the laptop's name and the version, where errors show in red. The chosen section fills the rest: Performance (modes, fans, battery), Display and lighting, Battery and power, System, Optimize and Settings. The window keeps one size, that of its tallest section. The footer and its buttons, and the Battery, System information, Idle state, Optimize and Settings windows, became these sections; Settings keeps only the app's own options, and the rest moved beside what they control.
+- **A window in sections, like Synapse:** a sidebar on the left with the logo and name, one entry per section with its icon (a rocket for Performance), Close at the bottom (the app keeps running in the tray), and the laptop's name and the version, where errors show in red. The chosen section fills the rest, without repeating its name (the lit entry already says it): Performance (modes, fans, battery), Display and lighting, Battery and power, System, Optimize and Settings. The window keeps one size, that of its tallest section. The footer and its buttons, and the Battery, System information, Idle state, Optimize and Settings windows, became these sections; Settings keeps only the app's own options, and the rest moved beside what they control.
 - **Profiles for each power source:** Battery and power shows the mode for plugged in and for on battery, under the switch that changes between them with the charger (Switch profile with the charger, from Settings); off, the modes are hidden. The mode for the source the laptop is not on is saved and applied when the charger is plugged in or unplugged.
 - **More details** on the battery in Performance goes to Battery and power.
-- **Custom window:** the GPU's buttons line up with the CPU's, a line between the two, and the note in a green box.
 - **Battery details:** each figure under its name in grey, with lines between them, and flat green bars.
 - Every window takes its rounded corners and border from Windows 11.
 - **New icons** for the performance modes: Balanced and Silent designed for this fork, Custom and the CPU and GPU from open icon sets, and for the sidebar's sections (the rocket from Lucide, the rest drawn for this fork); see the credits in the README.
@@ -43,14 +42,13 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
 - **The keyboard brightness slider follows the Fn keys:** while the window is open, changing the keyboard brightness with the laptop's Fn keys moves the slider too.
-- **The Custom window no longer blocks the main one:** it opens beside it, which can still be used.
 - **Dark tray menu:** the tray icon's right-click menu matches the app: dark rounded panel, white text, a highlight across the whole width under the pointer.
 - **Smoother motion:** hover changes, switches and the fades of the window and the shortcut notice all take 300 ms, easing in and out.
 - **New typeface:** the interface is set in Titillium Web, which comes inside the app, so nothing needs installing; Segoe UI is the fallback.
 
 ### New windows and sections
 
-- **Custom:** the CPU and GPU boost levels in their own window beside the popup, with live CPU temperature, usage and speed, and GPU temperature, usage, core clock and memory clock. The GPU's usage and core clock come from NVIDIA's library, asked only while the GPU is awake. The window closes by itself if the laptop leaves Custom.
+- **Custom:** the CPU and GPU boost levels open under the mode buttons while the laptop is in Custom, the CPU on the left and the GPU on the right, each with its live figures: CPU temperature, usage and speed, and GPU temperature, usage, core clock and memory clock. The GPU's usage and core clock come from NVIDIA's library, asked only while the GPU is awake. They fold away by themselves if the laptop leaves Custom, and the window keeps room for them, so it never changes size.
 - **Battery details** (top of Battery and power): power in or out, time left or to full, charge, health against the design capacity, voltage and the battery itself.
 - **System information** (the System section, read the first time it is shown): Windows, CPU, integrated and dedicated GPU, RAM in use, each drive letter with its drive and free space, and the BIOS, with the laptop model as the header.
 

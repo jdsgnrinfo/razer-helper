@@ -16,9 +16,6 @@ public sealed class TrayPopupForm : Form
     private bool _allowClose;
     private bool _isResetting;
     private int _modalDepth;
-    // The one window open beside the popup: Custom's levels. The popup
-    // stays usable meanwhile.
-    private Form? _sideWindow;
     private readonly SettingsService _settingsService;
     // One EC connection shared by every service that talks to the hardware.
     private readonly IRazerTransport _transport;
@@ -137,7 +134,6 @@ public sealed class TrayPopupForm : Form
             _settings.OnBatteryProfile,
             maxFanMethod: maxFanMethod);
         _performanceSection.ProfileChanged += PerformanceSection_ProfileChanged;
-        _performanceSection.CustomBoostRequested += (_, _) => ShowCustomBoost();
         _performanceSection.StatusChanged += Section_StatusChanged;
         _performanceSection.StateChanged += PerformanceSection_StateChanged;
         _performanceSection.AutoSwitchProfiles = _settings.AutoSwitchProfiles;
@@ -628,71 +624,6 @@ public sealed class TrayPopupForm : Form
         return answer.Task;
     }
 
-    /// <summary>
-    /// Opens a window beside the popup and in front of it, without blocking
-    /// the popup. Only one is open at a time: another one closes first, and
-    /// asking for the one already open brings it to the front.
-    /// </summary>
-    private void ShowBeside<T>(Func<T> create, Action<T>? whenClosed = null) where T : Form
-    {
-        if (_sideWindow is T open)
-        {
-            open.Activate();
-            return;
-        }
-
-        _sideWindow?.Close();
-
-        var window = create();
-        window.TopMost = TopMost;
-        _sideWindow = window;
-
-        // The popup stays open while the window is, even when it has the focus.
-        var hold = KeepOpen();
-
-        var closed = false;
-
-        window.FormClosed += (_, _) =>
-        {
-            // Closing the popup closes the windows it owns, which can report
-            // closing a second time; act on the first only.
-            if (closed)
-                return;
-
-            closed = true;
-            hold.Dispose();
-
-            if (_sideWindow == window)
-                _sideWindow = null;
-
-            // After the window has finished closing: what follows (a restart
-            // in a new language, a reset) may close the popup too.
-            if (whenClosed is not null && !IsDisposed)
-                BeginInvoke(() => whenClosed(window));
-        };
-
-        window.Show(this);
-    }
-
-    // Custom's CPU and GPU levels. It closes by itself if the laptop leaves
-    // Custom meanwhile.
-    private void ShowCustomBoost()
-    {
-        // The fan poll already reads the CPU temperature for the header; pass it on too.
-        void ShowTemperature(object? sender, TemperatureReading reading) =>
-            (_sideWindow as CustomBoostForm)?.ShowCpuTemperature(reading.CpuCelsius);
-
-        ShowBeside(
-            () =>
-            {
-                var boostForm = new CustomBoostForm(_performanceSection.BoostSelectors);
-                boostForm.PlaceBeside(this);
-                _fanSection.TemperaturesRead += ShowTemperature;
-                return boostForm;
-            },
-            _ => _fanSection.TemperaturesRead -= ShowTemperature);
-    }
-
     private Pages.SettingsPage CreateSettingsPage()
     {
         var settingsPage = new Pages.SettingsPage(_settings, _startupRegistration);
@@ -892,11 +823,6 @@ public sealed class TrayPopupForm : Form
         _fanSection.ShowPerformanceState(state);
         PerformanceModeChanged?.Invoke(this, state.Mode);
         _silentTurbo.OnModeChanged(state.Mode);
-
-        // The levels only mean something in Custom (the charger switching
-        // profiles, or the Fn keys, can leave it while the window is open).
-        if (state.Mode is PerformanceMode known && known != PerformanceMode.Custom)
-            (_sideWindow as CustomBoostForm)?.Close();
     }
 
     private void ServicesSection_HasServicesChanged(object? sender, bool hasServices)
@@ -1064,9 +990,6 @@ public sealed class TrayPopupForm : Form
         if (!Visible)
         {
             _hiddenAtTicks = Environment.TickCount64;
-
-            // A window beside the popup goes with it.
-            _sideWindow?.Close();
 
             // A showing by shortcut may have raised it above everything; back to the setting.
             TopMost = _settings.AlwaysOnTop;

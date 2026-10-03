@@ -53,12 +53,10 @@ internal sealed class SystemInfoView(Func<SystemInfo> read) : DetailsView("Syste
 
     protected override bool IsLoading => !Info.IsCompleted;
 
-    protected override (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards()
+    protected override IReadOnlyList<BentoCardSpec> ReadCards()
     {
-        var header = L.T("System information");
-
         if (!Info.IsCompleted)
-            return (header, [new BentoCardSpec("System information", L.T("Reading..."), null, Wide: true)]);
+            return [new BentoCardSpec("System information", L.T("Reading..."), null, Wide: true)];
 
         if (!Info.IsCompletedSuccessfully)
         {
@@ -68,10 +66,10 @@ internal sealed class SystemInfoView(Func<SystemInfo> read) : DetailsView("Syste
                 AppLog.Error("Could not read the system information.", Info.Exception);
             }
 
-            return (header, [new BentoCardSpec("System information", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)]);
+            return [new BentoCardSpec("System information", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)];
         }
 
-        return (header, CardsFor(Info.Result, CultureInfo.CurrentCulture));
+        return CardsFor(Info.Result, CultureInfo.CurrentCulture);
     }
 
     private static List<BentoCardSpec> CardsFor(SystemInfo info, CultureInfo culture)

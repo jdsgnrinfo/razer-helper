@@ -159,7 +159,6 @@ internal static class L
         ["Balanced"] = "Equilibrado",
         ["Gaming"] = "Juego",
         ["Custom"] = "Personalizado",
-        ["Boost levels apply right away and are saved in the current power profile."] = "Los niveles se aplican al instante y se guardan en el perfil de energía actual.",
         ["Temperature"] = "Temperatura",
         ["Usage"] = "Uso",
         ["Speed"] = "Velocidad",

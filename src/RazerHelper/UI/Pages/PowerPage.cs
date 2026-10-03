@@ -40,13 +40,11 @@ internal sealed class PowerPage : PageView
         bool autoSwitchProfiles,
         (bool Enabled, int Minutes, Guid? Plan) idle,
         IReadOnlyList<PowerPlan> plans)
-        : base("Battery and power")
     {
         _performance = performance;
         _planList = plans;
 
         _battery = new BatteryDetailsView(readBattery);
-        _battery.HeaderShown += (_, header) => SetMeta(header);
         Add(_battery);
 
         // Read once now, so the window is sized for the cards before it first opens.

@@ -7,8 +7,7 @@ namespace RazerHelper.UI.Pages;
 /// <summary>
 /// The figures of a page (Battery, System) as cards, two to a row. It reads
 /// them every couple of seconds, only while its page is on screen (see
-/// <see cref="Start"/>), and has a one-line summary for the page's title
-/// (<see cref="HeaderShown"/>).
+/// <see cref="Start"/>).
 /// </summary>
 internal abstract class DetailsView : FlowLayoutPanel
 {
@@ -47,15 +46,12 @@ internal abstract class DetailsView : FlowLayoutPanel
         _refreshTimer.Tick += (_, _) => Refresh();
     }
 
-    /// <summary>Raised with the one-line summary each time the figures are read.</summary>
-    public event EventHandler<string>? HeaderShown;
-
     /// <summary>
-    /// Reads the figures and returns the summary and the cards. Called as the
+    /// Reads the figures and returns the cards. Called as the
     /// page comes on screen and every couple of seconds; a throw is caught,
     /// logged once, and shown as a card saying the figures could not be read.
     /// </summary>
-    protected abstract (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards();
+    protected abstract IReadOnlyList<BentoCardSpec> ReadCards();
 
     /// <summary>True while the figures are still being read: a spinner shows instead of the cards.</summary>
     protected virtual bool IsLoading => false;
@@ -72,12 +68,11 @@ internal abstract class DetailsView : FlowLayoutPanel
     /// <summary>Reads and shows the figures now.</summary>
     public new void Refresh()
     {
-        string header;
         IReadOnlyList<BentoCardSpec> cards;
 
         try
         {
-            (header, cards) = ReadCards();
+            cards = ReadCards();
         }
         catch (Exception exception)
         {
@@ -87,11 +82,9 @@ internal abstract class DetailsView : FlowLayoutPanel
                 AppLog.Error($"Could not read the {Name} figures.", exception);
             }
 
-            header = L.T("Unavailable");
             cards = [new BentoCardSpec("Unavailable", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)];
         }
 
-        HeaderShown?.Invoke(this, header);
         _cards.ShowCards(cards);
 
         var loading = IsLoading;

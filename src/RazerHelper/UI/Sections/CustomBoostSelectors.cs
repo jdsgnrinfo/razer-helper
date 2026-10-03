@@ -6,7 +6,7 @@ namespace RazerHelper.UI.Sections;
 
 /// <summary>
 /// The Custom performance mode's CPU and GPU boost selectors, each its title
-/// over a row of level buttons. Two separate panels, so the Custom window can
+/// over a row of level buttons. Two separate panels, so the Custom panel can
 /// put each chip's figures under its own selector.
 /// </summary>
 internal sealed class CustomBoostSelectors : IDisposable
@@ -23,10 +23,10 @@ internal sealed class CustomBoostSelectors : IDisposable
         Gpu = CreateSelector("GPU", Glyph.Gpu, Enum.GetValues<GpuBoost>(), _gpuButtons, level => GpuSelected?.Invoke(this, level));
     }
 
-    /// <summary>The CPU's selector, to place in a window.</summary>
+    /// <summary>The CPU's selector, to place in the Custom panel.</summary>
     public Panel Cpu { get; }
 
-    /// <summary>The GPU's selector, to place in a window.</summary>
+    /// <summary>The GPU's selector, to place in the Custom panel.</summary>
     public Panel Gpu { get; }
 
     public event EventHandler<CpuBoost>? CpuSelected;
@@ -48,13 +48,6 @@ internal sealed class CustomBoostSelectors : IDisposable
     {
         HighlightSelected(_cpuButtons.Values, cpu is CpuBoost c ? _cpuButtons[c] : null);
         HighlightSelected(_gpuButtons.Values, gpu is GpuBoost g ? _gpuButtons[g] : null);
-    }
-
-    /// <summary>Takes both selectors back out of whatever window holds them, so closing it does not dispose them.</summary>
-    public void Detach()
-    {
-        Cpu.Parent?.Controls.Remove(Cpu);
-        Gpu.Parent?.Controls.Remove(Gpu);
     }
 
     public void Dispose()
@@ -79,8 +72,7 @@ internal sealed class CustomBoostSelectors : IDisposable
             Padding = Padding.Empty
         };
 
-        // Four slots each, so the GPU's three buttons are as wide as the CPU's four.
-        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton", slots: 4);
+        var grid = CreateButtonGrid(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton");
         grid.BackColor = BackgroundColor;
 
         foreach (var button in grid.Controls.OfType<Button>())

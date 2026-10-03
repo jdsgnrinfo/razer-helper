@@ -6,24 +6,17 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The battery's figures at the top of Battery and power: the summary
-/// "55% (Charging)" for the page's title, then cards for power in or out, time left or to full,
-/// charge and health (each with a bar), voltage and the battery itself.
+/// The battery's figures at the top of Battery and power: cards for power in
+/// or out, time left or to full, charge and health (each with a bar), voltage and the battery itself.
 /// </summary>
 internal sealed class BatteryDetailsView(Func<BatteryDetails?> read) : DetailsView("Battery", semiBoldValues: true)
 {
     private static readonly Color HealthFair = Color.FromArgb(230, 170, 40);
 
-    protected override (string Header, IReadOnlyList<BentoCardSpec> Cards) ReadCards()
-    {
-        if (read() is not { } battery)
-            return ($"--% ({L.T("Unavailable")})", [new BentoCardSpec("Battery", L.T("No information"), L.T("Windows did not report the battery"), Wide: true)]);
-
-        var percent = BatteryDetailsText.ChargePercent(battery);
-        var header = $"{(percent is { } p ? $"{p}%" : "--%")} ({BatteryDetailsText.HeaderStatus(battery)})";
-
-        return (header, CardsFor(battery));
-    }
+    protected override IReadOnlyList<BentoCardSpec> ReadCards() =>
+        read() is { } battery
+            ? CardsFor(battery)
+            : [new BentoCardSpec("Battery", L.T("No information"), L.T("Windows did not report the battery"), Wide: true)];
 
     private static List<BentoCardSpec> CardsFor(BatteryDetails battery)
     {

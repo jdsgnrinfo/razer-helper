@@ -13,7 +13,6 @@ internal sealed class DisplayPage : PageView
     private readonly ToggleSwitch _keyboardOffWithScreen;
 
     public DisplayPage(DisplaySection display, LightingSection lighting, bool keyboardOffWithScreen)
-        : base("Display and lighting")
     {
         var stack = new SectionStack();
         stack.AddSection(display, () => SectionHeaderHeight + S(56));

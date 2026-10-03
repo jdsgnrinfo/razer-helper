@@ -8,7 +8,6 @@ internal sealed class SystemPage : PageView
     private readonly SystemInfoView _info;
 
     public SystemPage(Func<SystemInfo> read)
-        : base("System")
     {
         _info = new SystemInfoView(read);
         Add(_info);

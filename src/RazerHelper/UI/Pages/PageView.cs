@@ -4,9 +4,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// One section of the main window, shown beside the sidebar: its title in
-/// bold capitals (with an optional figure at the right), then what it holds,
-/// top to bottom, inside a 24px margin. The window tells it when it comes on
+/// One section of the main window, shown beside the sidebar: what it holds,
+/// top to bottom, inside a 24px margin. Its name is the sidebar's lit entry,
+/// so the page does not repeat it. The window tells it when it comes on
 /// screen and when it leaves, so a page reads what it shows only meanwhile.
 /// </summary>
 internal abstract class PageView : UserControl
@@ -20,9 +20,8 @@ internal abstract class PageView : UserControl
     private static int RowPadding => S(12);
 
     private readonly FlowLayoutPanel _body;
-    private readonly Label _meta;
 
-    protected PageView(string title)
+    protected PageView()
     {
         AutoScaleMode = AutoScaleMode.None;
         AutoSize = true;
@@ -45,46 +44,6 @@ internal abstract class PageView : UserControl
             WrapContents = false
         };
 
-        var titleRow = new TableLayoutPanel
-        {
-            BackColor = BackgroundColor,
-            ColumnCount = 2,
-            Height = S(28),
-            Margin = new Padding(0, 0, 0, S(18)),
-            Padding = Padding.Empty,
-            RowCount = 1,
-            Width = ContentWidth
-        };
-
-        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        titleRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-        titleRow.Controls.Add(new Label
-        {
-            AutoSize = true,
-            BackColor = BackgroundColor,
-            Dock = DockStyle.Left,
-            Font = DesignFont(20, FontStyle.Bold),
-            ForeColor = Color.White,
-            Margin = Padding.Empty,
-            Text = L.T(title).ToUpper(System.Globalization.CultureInfo.CurrentUICulture),
-            TextAlign = ContentAlignment.MiddleLeft
-        }, 0, 0);
-
-        _meta = new Label
-        {
-            AutoSize = true,
-            BackColor = BackgroundColor,
-            Dock = DockStyle.Right,
-            Font = SemiBoldFont(15),
-            ForeColor = SubtleTextColor,
-            Margin = Padding.Empty,
-            TextAlign = ContentAlignment.MiddleRight
-        };
-        titleRow.Controls.Add(_meta, 1, 0);
-
-        _body.Controls.Add(titleRow);
         Controls.Add(_body);
     }
 
@@ -108,13 +67,6 @@ internal abstract class PageView : UserControl
 
     /// <summary>Adds a part below the last one.</summary>
     protected void Add(Control part) => _body.Controls.Add(part);
-
-    /// <summary>The figure at the right of the title, such as the battery's charge.</summary>
-    protected void SetMeta(string text)
-    {
-        if (_meta.Text != text)
-            _meta.Text = text;
-    }
 
     /// <summary>Holds the window open for as long as the result is not disposed.</summary>
     protected IDisposable KeepOpen() => HoldOpen?.Invoke() ?? NoHold.Instance;

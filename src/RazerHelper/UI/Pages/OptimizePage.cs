@@ -34,7 +34,6 @@ internal sealed class OptimizePage : PageView
 
     /// <param name="cache">Left out (previews), Free up memory does not touch the cache.</param>
     public OptimizePage(MemoryTrimmer trimmer, TempCleaner cleaner, ServicesSection services, bool closeGpuAppsOnUnplug, MemoryCache? cache = null)
-        : base("Optimize")
     {
         _trimmer = trimmer;
         _cleaner = cleaner;
