@@ -747,7 +747,10 @@ public sealed class TrayPopupForm : Form
     // Free up memory, temporary files and the GPU, each on its own button.
     private void ShowOptimize() => ShowBeside(() =>
     {
-        var optimizeForm = new OptimizeForm(new MemoryTrimmer(new WindowsProcessMemory()), TempCleaner.ForCurrentUser());
+        var optimizeForm = new OptimizeForm(
+            new MemoryTrimmer(new WindowsProcessMemory()),
+            TempCleaner.ForCurrentUser(),
+            new OptimizeForm.MemoryCache(WindowsMemoryCache.CachedBytes, () => ElevatedRunner.RunAsync(MemoryCacheCommand.Arguments())));
         optimizeForm.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
         optimizeForm.PlaceBeside(this);
         return optimizeForm;

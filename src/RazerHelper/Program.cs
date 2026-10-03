@@ -22,6 +22,10 @@ namespace RazerHelper
             if (RazerServiceCommand.TryRun(args, new WindowsServiceControl()) is int exitCode)
                 return exitCode;
 
+            // The same for clearing the memory cache, from the Optimize window.
+            if (MemoryCacheCommand.TryRun(args, WindowsMemoryCache.Purge) is int cacheExitCode)
+                return cacheExitCode;
+
             // After a restart from Settings, let the old copy finish exiting first:
             // it still holds the single-instance lock below until it is gone.
             AppRestart.WaitForPreviousCopy(args);

@@ -23,12 +23,18 @@ internal sealed class OptimizeForm : Form
     private readonly Label _memoryHint;
     private readonly Button _tempButton;
     private readonly Label _tempHint;
+    private readonly MemoryCache? _cache;
     private Form? _anchor;
 
-    public OptimizeForm(MemoryTrimmer trimmer, TempCleaner cleaner)
+    /// <summary>Windows' memory cache: how big it is, and clearing it (with administrator rights).</summary>
+    internal sealed record MemoryCache(Func<long?> CachedBytes, Func<Task<ElevatedResult>> ClearAsync);
+
+    /// <param name="cache">Left out (previews), Free up memory does not touch the cache.</param>
+    public OptimizeForm(MemoryTrimmer trimmer, TempCleaner cleaner, MemoryCache? cache = null)
     {
         _trimmer = trimmer;
         _cleaner = cleaner;
+        _cache = cache;
 
         AutoScaleMode = AutoScaleMode.None;
         AutoSize = true;
@@ -57,7 +63,7 @@ internal sealed class OptimizeForm : Form
 
         _memoryButton = CreateRowButton("Free up");
         _memoryButton.Click += async (_, _) => await FreeUpMemoryAsync();
-        var memory = SettingsForm.CreateCard("Free up memory", "Moves what background programs are not using out of RAM. The game in front is left alone.", _memoryButton);
+        var memory = SettingsForm.CreateCard("Free up memory", "Moves what background programs are not using out of RAM and clears Windows' memory cache (asks for administrator permission). The game in front is left alone.", _memoryButton);
         memory.Margin = new Padding(0, S(12), 0, 0);
         _memoryHint = HintOf(memory);
         layout.Controls.Add(memory);
@@ -116,7 +122,11 @@ internal sealed class OptimizeForm : Form
         {
             var result = await Task.Run(_trimmer.Trim);
             AppLog.Info($"Free up memory: {result.Programs} programs trimmed, {result.FreedBytes} bytes freed.");
-            _memoryHint.Text = L.F("{0} freed from {1} programs in the background.", FormatSize(result.FreedBytes), result.Programs);
+            var trimmed = L.F("{0} freed from {1} programs in the background.", FormatSize(result.FreedBytes), result.Programs);
+            _memoryHint.Text = trimmed;
+
+            if (_cache is not null)
+                _memoryHint.Text = trimmed + " " + await ClearCacheAsync(_cache);
         }
         catch (Exception exception)
         {
@@ -128,6 +138,26 @@ internal sealed class OptimizeForm : Form
             if (!IsDisposed)
                 _memoryButton.Enabled = true;
         }
+    }
+
+    // The cache's part: Windows asks for administrator permission, the
+    // elevated helper clears it, and the line says how much went. Declining
+    // the prompt only leaves the cache as it was.
+    private static async Task<string> ClearCacheAsync(MemoryCache cache)
+    {
+        var before = await Task.Run(cache.CachedBytes);
+        var result = await cache.ClearAsync();
+
+        if (result.UserDeclined)
+            return L.T("The memory cache was kept: administrator permission was not given.");
+
+        if (result.ExitCode != MemoryCacheCommand.Success)
+            return L.T("The memory cache could not be cleared.");
+
+        var after = await Task.Run(cache.CachedBytes);
+        var cleared = before is { } b && after is { } a ? Math.Max(0, b - a) : 0;
+        AppLog.Info($"Free up memory: {cleared} bytes of memory cache cleared.");
+        return L.F("{0} of memory cache cleared.", FormatSize(cleared));
     }
 
     private async Task ScanTempFilesAsync()
