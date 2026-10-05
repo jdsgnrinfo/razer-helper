@@ -134,7 +134,7 @@ internal static class L
         ["Offers to close apps using the dedicated GPU, to save battery."] = "Ofrece cerrar las apps que usan la GPU dedicada, para ahorrar batería.",
         ["Performance mode shortcuts"] = "Atajos de los modos de rendimiento",
         ["Performance mode"] = "Modo de rendimiento",
-        ["Ctrl+Shift+F1, F2 and F3: Balanced, Silent and Custom."] = "Ctrl+Shift+F1, F2 y F3: Equilibrado, Silencio y Personalizado.",
+        ["Ctrl+Shift+F1, F2 and F3: Silent, Balanced and Custom."] = "Ctrl+Shift+F1, F2 y F3: Silencio, Equilibrado y Personalizado.",
         ["Turn off lighting when display is off"] = "Apagar la iluminación con la pantalla apagada",
         ["Turn off lighting when idle for:"] = "Apagar la iluminación tras inactividad de:",
         ["Turn off lighting when battery is below:"] = "Apagar la iluminación con batería por debajo de:",
