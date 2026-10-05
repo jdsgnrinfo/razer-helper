@@ -13,12 +13,17 @@ namespace RazerHelper.UI.Sections;
 /// the RAM are, each ring three quarters of a circle filling in green, with
 /// two figures beside it (the CPU's and GPU's temperature and clock, the
 /// RAM's speed and what is free). Read once a second, only while they are
-/// on screen (see <see cref="Start"/>). The CPU temperature comes from the
+/// on screen; between readings each ring and its number glide to the new
+/// value, easing to a stop, rather than jump (see <see cref="Start"/>). The CPU temperature comes from the
 /// fan poll, which already reads it (see <see cref="ShowCpuTemperature"/>).
 /// </summary>
 internal sealed class UsageGauges : Control
 {
     private const int RefreshIntervalMilliseconds = 1_000;
+
+    // How long a ring takes to glide to a new reading: most of the second
+    // between readings, so it is always moving smoothly, never jumping.
+    private const double GlideMilliseconds = 650;
 
     /// <summary>How tall the row of rings is.</summary>
     public static int GaugesHeight => S(76);
@@ -39,6 +44,10 @@ internal sealed class UsageGauges : Control
     private readonly CpuStatsReader _cpuReader = new();
     private readonly GpuStatsReader _gpuReader = new();
     private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = RefreshIntervalMilliseconds };
+
+    // Steps the rings towards their readings, about 60 times a second, only while one is moving.
+    private readonly System.Windows.Forms.Timer _glideTimer = new() { Interval = 15 };
+    private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
     private readonly Gauge[] _gauges;
     private Task _read = Task.CompletedTask;
     private int? _memoryMhz;
@@ -59,6 +68,7 @@ internal sealed class UsageGauges : Control
         ];
 
         _refreshTimer.Tick += (_, _) => StartRead();
+        _glideTimer.Tick += (_, _) => Glide();
     }
 
     /// <summary>Reads now and once a second.</summary>
@@ -69,7 +79,16 @@ internal sealed class UsageGauges : Control
         _refreshTimer.Start();
     }
 
-    public void Stop() => _refreshTimer.Stop();
+    public void Stop()
+    {
+        _refreshTimer.Stop();
+
+        // Off screen: each ring settles on its reading, so it comes back still.
+        _glideTimer.Stop();
+
+        foreach (var gauge in _gauges)
+            gauge.Shown = gauge.Percent;
+    }
 
     /// <summary>The CPU temperature, from the laptop's controller.</summary>
     public void ShowCpuTemperature(double? celsius) => Show(_gauges[0], first: HardwareStatsText.Celsius(celsius));
@@ -95,7 +114,7 @@ internal sealed class UsageGauges : Control
         using (var track = new Pen(TrackColor, RingThickness) { StartCap = LineCap.Round, EndCap = LineCap.Round })
             graphics.DrawArc(track, ring, 135, 270);
 
-        if (gauge.Percent is { } percent && percent > 0)
+        if (gauge.Shown is { } percent && percent > 0)
         {
             // The gradient spans the whole stroke, which reaches half its width
             // outside the ring; beyond its own bounds the brush would start
@@ -103,13 +122,13 @@ internal sealed class UsageGauges : Control
             var span = RectangleF.Inflate(ring, RingThickness, RingThickness);
             using var brush = new LinearGradientBrush(span, ArcStartColor, RazerGreen, LinearGradientMode.Horizontal) { WrapMode = WrapMode.TileFlipX };
             using var arc = new Pen(brush, RingThickness) { StartCap = LineCap.Round, EndCap = LineCap.Round };
-            graphics.DrawArc(arc, ring, 135, (float)Math.Max(1, 270 * Math.Min(percent, 100) / 100));
+            graphics.DrawArc(arc, ring, 135, (float)Math.Max(0.5, 270 * Math.Min(percent, 100) / 100));
         }
 
         // Inside: the percentage, its sign smaller, and the part's name under it.
-        var number = gauge.Percent is { } value ? Math.Round(value).ToString(CultureInfo.CurrentCulture) : HardwareStatsText.NoReading;
+        var number = gauge.Shown is { } value ? Math.Round(value).ToString(CultureInfo.CurrentCulture) : HardwareStatsText.NoReading;
         var numberSize = TextRenderer.MeasureText(graphics, number, PercentFont, Size.Empty, TextFormatFlags.NoPadding);
-        var signSize = gauge.Percent is null ? Size.Empty : TextRenderer.MeasureText(graphics, "%", PercentSignFont, Size.Empty, TextFormatFlags.NoPadding);
+        var signSize = gauge.Shown is null ? Size.Empty : TextRenderer.MeasureText(graphics, "%", PercentSignFont, Size.Empty, TextFormatFlags.NoPadding);
         var labelSize = TextRenderer.MeasureText(graphics, gauge.Name, RingLabelFont, Size.Empty, TextFormatFlags.NoPadding);
 
         var centerX = left + RingSize / 2f;
@@ -118,7 +137,7 @@ internal sealed class UsageGauges : Control
 
         TextRenderer.DrawText(graphics, number, PercentFont, Point.Round(new PointF(numberLeft, top)), Color.White, TextFormatFlags.NoPadding);
 
-        if (gauge.Percent is not null)
+        if (gauge.Shown is not null)
         {
             // The sign sits on the number's baseline.
             var signTop = top + numberSize.Height - signSize.Height - S(1);
@@ -197,8 +216,12 @@ internal sealed class UsageGauges : Control
 
         if (percent is { } value && gauge.Percent != Math.Round(value))
         {
+            // The ring sets off from wherever it is now (from empty the first time).
+            gauge.From = gauge.Shown ?? 0;
+            gauge.Shown ??= 0;
             gauge.Percent = Math.Round(value);
-            changed = true;
+            gauge.StartedAt = _clock.Elapsed.TotalMilliseconds;
+            _glideTimer.Start();
         }
 
         if (first is not null && first != gauge.First)
@@ -217,12 +240,38 @@ internal sealed class UsageGauges : Control
             Invalidate();
     }
 
+    // One step of every moving ring: eased out, quick at first and settling
+    // softly on the reading. Stops once all have arrived.
+    private void Glide()
+    {
+        var now = _clock.Elapsed.TotalMilliseconds;
+        var moving = false;
+
+        foreach (var gauge in _gauges)
+        {
+            if (gauge.Percent is not { } target || gauge.Shown == target)
+                continue;
+
+            var progress = Math.Clamp((now - gauge.StartedAt) / GlideMilliseconds, 0, 1);
+            var eased = 1 - Math.Pow(1 - progress, 3);
+            gauge.Shown = progress >= 1 ? target : gauge.From + (target - gauge.From) * eased;
+            moving |= progress < 1;
+        }
+
+        Invalidate();
+
+        if (!moving)
+            _glideTimer.Stop();
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
             _refreshTimer.Stop();
             _refreshTimer.Dispose();
+            _glideTimer.Stop();
+            _glideTimer.Dispose();
 
             // A read may still be running on another thread; let it finish first.
             _read.ContinueWith(_ =>
@@ -243,8 +292,16 @@ internal sealed class UsageGauges : Control
 
         public string SecondLabel { get; } = secondLabel;
 
-        /// <summary>Null until the first reading.</summary>
+        /// <summary>The latest reading, which the ring glides to; null until the first.</summary>
         public double? Percent { get; set; }
+
+        /// <summary>What the ring shows now, on its way to <see cref="Percent"/>.</summary>
+        public double? Shown { get; set; }
+
+        /// <summary>Where the current glide set off from, and when (on the control's clock, in ms).</summary>
+        public double From { get; set; }
+
+        public double StartedAt { get; set; }
 
         public string First { get; set; } = HardwareStatsText.NoReading;
 
