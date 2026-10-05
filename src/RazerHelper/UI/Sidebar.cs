@@ -64,17 +64,17 @@ internal sealed class Sidebar : Panel
 
         top.Controls.Add(CreateBrand(logo, entryWidth));
 
-        foreach (var (page, glyph, text) in new[]
+        foreach (var (page, text) in new[]
         {
-            (DashboardPage.Performance, Glyph.Rocket, "Performance"),
-            (DashboardPage.Display, Glyph.Display, "Display and lighting"),
-            (DashboardPage.Power, Glyph.Battery, "Energy"),
-            (DashboardPage.System, Glyph.System, "System"),
-            (DashboardPage.Optimize, Glyph.Optimize, "Optimize"),
-            (DashboardPage.Settings, Glyph.Settings, "Settings")
+            (DashboardPage.Performance, "Performance"),
+            (DashboardPage.Display, "Display and lighting"),
+            (DashboardPage.Power, "Energy"),
+            (DashboardPage.System, "System"),
+            (DashboardPage.Optimize, "Optimize"),
+            (DashboardPage.Settings, "Settings")
         })
         {
-            var entry = new NavButton(glyph, L.T(text).ToUpper(CultureInfo.CurrentCulture))
+            var entry = new NavButton(null, L.T(text).ToUpper(CultureInfo.CurrentCulture))
             {
                 Font = SemiBoldFont(14),
                 Height = S(44) + 2 * EntryRoom,
@@ -220,7 +220,7 @@ internal sealed class Sidebar : Panel
     }
 
     /// <summary>
-    /// A section's entry: its icon and name, grey at rest; under the pointer
+    /// A section's entry: its name (with an icon before it, on Close), grey at rest; under the pointer
     /// a dark fill and white text; and when its section is on show, a green
     /// fill (lighter under the pointer) with dark icon and text, and a soft
     /// green glow around it, as the app's selected buttons have.
@@ -229,11 +229,11 @@ internal sealed class Sidebar : Panel
     {
         private static int IconSize => S(18);
 
-        private readonly Glyph _glyph;
+        private readonly Glyph? _glyph;
         private bool _hovered;
         private bool _selected;
 
-        public NavButton(Glyph glyph, string text)
+        public NavButton(Glyph? glyph, string text)
         {
             _glyph = glyph;
 
@@ -325,10 +325,17 @@ internal sealed class Sidebar : Panel
 
             var color = _selected ? OnGreenTextColor : !_hovered ? SubtleTextColor : GreenHover ? RazerGreen : Color.White;
             var middle = body.Top + body.Height / 2f;
-            var icon = new RectangleF(body.Left + S(12), middle - IconSize / 2f, IconSize, IconSize);
-            Glyphs.Draw(graphics, _glyph, icon, color);
 
-            var textLeft = (int)body.Left + S(12) + IconSize + S(10);
+            // An icon only on Close; the sections are their names alone.
+            var textLeft = (int)body.Left + S(16);
+
+            if (_glyph is { } glyph)
+            {
+                var icon = new RectangleF(body.Left + S(12), middle - IconSize / 2f, IconSize, IconSize);
+                Glyphs.Draw(graphics, glyph, icon, color);
+                textLeft = (int)body.Left + S(12) + IconSize + S(10);
+            }
+
             TextRenderer.DrawText(graphics, Text, Font, new Rectangle(textLeft, (int)body.Top, (int)body.Right - textLeft, (int)body.Height), color,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
         }
