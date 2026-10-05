@@ -439,7 +439,7 @@ public sealed class TrayPopupForm : Form
             _servicesSection,
             _settings.CloseGpuAppsOnUnplug,
             new Pages.OptimizePage.MemoryCache(WindowsMemoryCache.CachedBytes, () => ElevatedRunner.RunAsync(MemoryCacheCommand.Arguments())));
-        _optimizePage.FreeUpGpuRequested += async (_, _) => await FreeUpGpuAsync();
+        _optimizePage.FreeUpGpu = FreeUpGpuAsync;
         _optimizePage.CloseGpuAppsOnUnplugChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { CloseGpuAppsOnUnplug = enabled });

@@ -19,9 +19,9 @@ internal sealed class OptimizePage : PageView
 {
     private readonly MemoryTrimmer _trimmer;
     private readonly TempCleaner _cleaner;
-    private readonly Button _memoryButton;
+    private readonly BusySlot _memorySlot;
     private readonly Label _memoryHint;
-    private readonly Button _tempButton;
+    private readonly BusySlot _tempSlot;
     private readonly Label _tempHint;
     private readonly MemoryCache? _cache;
     private readonly ToggleSwitch _closeGpuApps;
@@ -39,26 +39,42 @@ internal sealed class OptimizePage : PageView
         _cleaner = cleaner;
         _cache = cache;
 
-        _memoryButton = CreateRowButton("Free up");
-        _memoryButton.Click += async (_, _) => await FreeUpMemoryAsync();
-        var memory = CreateCard("Free up memory", "Frees unused RAM and clears Windows' cache (asks for permission).", _memoryButton);
+        _memorySlot = new BusySlot(CreateRowButton("Free up"));
+        _memorySlot.Button.Click += async (_, _) => await FreeUpMemoryAsync();
+        var memory = CreateCard("Free up memory", "Frees unused RAM and clears Windows' cache (asks for permission).", _memorySlot);
         _memoryHint = HintOf(memory);
         // 6px lower, so its text starts where the cards' does on Battery and System.
         memory.Margin = new Padding(0, S(6), 0, 0);
         Add(memory);
 
-        _tempButton = CreateRowButton("Clean");
-        _tempButton.Enabled = false; // Until the scan says there is something to clean.
-        _tempButton.Click += async (_, _) => await CleanTempFilesAsync();
-        var temp = CreateCard("Temporary files", "Scanning...", _tempButton);
+        _tempSlot = new BusySlot(CreateRowButton("Clean"));
+        _tempSlot.Button.Enabled = false; // Until the scan says there is something to clean.
+        _tempSlot.Button.Click += async (_, _) => await CleanTempFilesAsync();
+        var temp = CreateCard("Temporary files", "Scanning...", _tempSlot);
         _tempHint = HintOf(temp);
         Add(CreateDivider());
         Add(temp);
 
-        var gpuButton = CreateRowButton("Free up");
-        gpuButton.Click += (_, _) => FreeUpGpuRequested?.Invoke(this, EventArgs.Empty);
+        var gpuSlot = new BusySlot(CreateRowButton("Free up"));
+        gpuSlot.Button.Click += async (_, _) =>
+        {
+            if (FreeUpGpu is not { } freeUp)
+                return;
+
+            gpuSlot.Busy = true;
+
+            try
+            {
+                await freeUp();
+            }
+            finally
+            {
+                if (!IsDisposed)
+                    gpuSlot.Busy = false;
+            }
+        };
         Add(CreateDivider());
-        Add(CreateCard("Free up GPU", "Closes the apps keeping the dedicated GPU awake, if you confirm.", gpuButton));
+        Add(CreateCard("Free up GPU", "Closes the apps keeping the dedicated GPU awake, if you confirm.", gpuSlot));
 
         var unplugged = CreateSwitchCard("Free up GPU when unplugged", "Offers to close apps using the dedicated GPU, to save battery.", out _closeGpuApps);
         Add(CreateDivider());
@@ -83,8 +99,10 @@ internal sealed class OptimizePage : PageView
 
     }
 
-    /// <summary>Raised by the GPU row's button; the window runs its Free up GPU.</summary>
-    public event EventHandler? FreeUpGpuRequested;
+    /// <summary>What the GPU row's button runs (the window's Free up GPU); the row shows a spinner until it ends.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public Func<Task>? FreeUpGpu { get; set; }
 
     public event EventHandler<bool>? CloseGpuAppsOnUnplugChanged;
 
@@ -109,7 +127,7 @@ internal sealed class OptimizePage : PageView
 
     private async Task FreeUpMemoryAsync()
     {
-        _memoryButton.Enabled = false;
+        _memorySlot.Busy = true;
         _memoryHint.Text = L.T("Freeing up memory...");
 
         try
@@ -134,7 +152,7 @@ internal sealed class OptimizePage : PageView
         finally
         {
             if (!IsDisposed)
-                _memoryButton.Enabled = true;
+                _memorySlot.Busy = false;
         }
     }
 
@@ -175,7 +193,7 @@ internal sealed class OptimizePage : PageView
             _tempHint.Text = found.Files == 0
                 ? L.T("Nothing to clean: no temporary files over a day old.")
                 : L.F("{0} in {1} files over a day old.", FormatSize(found.Bytes), found.Files.ToString("N0", CultureInfo.CurrentCulture));
-            _tempButton.Enabled = found.Files > 0;
+            _tempSlot.Button.Enabled = found.Files > 0;
         }
         catch (Exception exception)
         {
@@ -192,7 +210,9 @@ internal sealed class OptimizePage : PageView
 
     private async Task CleanTempFilesAsync()
     {
-        _tempButton.Enabled = false;
+        // Nothing is left to clean afterwards, so the button stays off until the next scan.
+        _tempSlot.Button.Enabled = false;
+        _tempSlot.Busy = true;
         _tempHint.Text = L.T("Cleaning...");
 
         try
@@ -215,7 +235,45 @@ internal sealed class OptimizePage : PageView
             if (!IsDisposed)
                 _tempHint.Text = L.T("Could not clean the temporary files.");
         }
+        finally
+        {
+            if (!IsDisposed)
+                _tempSlot.Busy = false;
+        }
     }
 
     private static string FormatSize(long bytes) => SystemInfoText.Size(bytes, CultureInfo.CurrentCulture);
+
+    // A row's button, which gives its place to the turning circle (the one
+    // System shows while it reads) for as long as its job runs.
+    private sealed class BusySlot : Panel
+    {
+        private readonly LoadingSpinner _spinner = new() { Dock = DockStyle.Fill, Visible = false };
+
+        public BusySlot(Button button)
+        {
+            Button = button;
+            Anchor = button.Anchor;
+            BackColor = BackgroundColor;
+            Size = button.Size;
+
+            button.Dock = DockStyle.Fill;
+            Controls.Add(button);
+            Controls.Add(_spinner);
+        }
+
+        public Button Button { get; }
+
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public bool Busy
+        {
+            get => _spinner.Visible;
+            set
+            {
+                _spinner.Visible = value;
+                Button.Visible = !value;
+            }
+        }
+    }
 }

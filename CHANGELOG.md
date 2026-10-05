@@ -42,6 +42,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **A soft glow** around the selected green buttons: the performance modes, Custom's levels, the refresh rates, the profiles in Energy and Install Razer Blade plan.
 - **The sidebar's sections** are named in capitals, with no icons, and the lit one is filled green with dark text and the same soft green glow as the other selected buttons; Under the pointer an entry's name turns green, with no fill; Close keeps its icon.| GPU: 45°C".
 - **Custom's levels** use the same font as Energy's profile buttons, so "Medium" fits whole; the automatic fan's hint is shorter in English, so it no longer gets cut off.
+- **Optimize's buttons** give their place to the turning circle System shows while it reads, for as long as Free up memory, Temporary files or Free up GPU is working.
 - **New previews** in the README: one picture of each section (Performance, Custom, Display and lighting, Energy, System, Optimize, Settings), drawn at 1.5 times the base size, with a short summary of each.
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
