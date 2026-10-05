@@ -14,22 +14,42 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 
 ## Preview
 
+One window, in sections, like Synapse: a sidebar on the left and the chosen section beside it.
+
+- **Performance:** Silent, Balanced and Custom as large buttons, with live CPU, GPU and RAM usage rings, temperatures and clocks under them, the fans, and the battery charge limit.
+- **Custom levels in place:** choosing Custom opens the CPU and GPU boost levels right under the modes.
+- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), keyboard and logo effects with their brightness, and the keyboard off with the screen.
+- **Energy:** live battery details, a performance profile for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
+- **System:** the model, Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
+- **Optimize:** free up memory, clean temporary files, and close the apps keeping the dedicated GPU awake.
+- **Settings:** language, start at login, hide when clicking away, always on top, performance mode shortcuts, and maintenance.
+
 <p align="center">
-  <img src="docs/images/preview-main.png" width="800" alt="RazerHelper on the desktop above the tray: performance modes (Balanced selected) with CPU and GPU temperatures, fans, battery charge limit, display refresh rate, lighting with keyboard and logo, and the footer buttons">
+  <img src="docs/images/preview-performance.png" width="800" alt="RazerHelper's Performance section: the Silent, Balanced and Custom mode buttons with Balanced selected, CPU, GPU and RAM usage rings with temperature, clock, memory speed and free memory, the fans set to automatic, and the battery charge limit">
 </p>
 
-On the desktop, with the Custom mode's CPU and GPU levels open beside the window, with Settings, and with System information:
-
 <p align="center">
-  <img src="docs/images/preview-custom.png" width="800" alt="RazerHelper on the desktop with Custom selected and the Custom window beside it: CPU and GPU boost levels with their temperature, usage and clock speeds">
+  <img src="docs/images/preview-custom.png" width="800" alt="The Performance section in Custom mode: CPU boost levels Low, Medium, High and Boost, and GPU levels Low, Medium and High, open under the mode buttons">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-settings.png" width="800" alt="RazerHelper on the desktop with the Settings window beside it: language, start at login, switch profile with the charger, hide when clicking away, always on top, performance mode shortcuts, free up GPU when unplugged and keyboard off with the screen">
+  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, keyboard and logo lighting effects with brightness sliders, and the keyboard off with the screen switch">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-system-info.png" width="800" alt="RazerHelper on the desktop with the System information window beside it: model, operating system, CPU, integrated and dedicated GPU, RAM, BIOS and disk space">
+  <img src="docs/images/preview-energy.png" width="800" alt="The Energy section: battery power, time left, charge, health, voltage and type, the power source profiles for plugged in and on battery, and the power plan list with the Install Razer Blade plan button">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-system.png" width="800" alt="The System section: model, operating system, CPU, integrated and dedicated GPU, RAM in use, BIOS and the system drive's space">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-optimize.png" width="800" alt="The Optimize section: free up memory, temporary files to clean, free up GPU, and the free up GPU when unplugged switch">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-settings.png" width="800" alt="The Settings section: language, start at login, hide when clicking away, always on top, performance mode shortcuts, and maintenance with Drivers, Logs and Reset, with the version at the bottom">
 </p>
 
 The tray icon takes the color of the current performance mode, and hovering it names the mode, as in "RazerHelper (Silent)":
