@@ -50,10 +50,11 @@ internal sealed record EqPreset(string Name, double[] Gains)
 }
 
 /// <summary>
-/// The two boosts beside the equalizer, each from 0 (off) to 10, added to
+/// The three boosts beside the equalizer, each from 0 (off) to 10, added to
 /// whatever curve plays. Bass boost lifts everything under about 120 Hz;
 /// Dynamic boost brings out both ends and the presence range, for a fuller,
-/// punchier sound.
+/// punchier sound; Clarity lifts the mids and treble, for crisper voices
+/// and detail.
 /// </summary>
 internal static class EqBoosts
 {
@@ -72,6 +73,12 @@ internal static class EqBoosts
         ("HS", 7000, 0.6, 0)
     ];
 
+    internal static readonly (string Type, double Frequency, double GainPerLevel, double Q)[] Clarity =
+    [
+        ("PK", 2000, 0.4, 0.8),
+        ("HS", 5000, 0.5, 0)
+    ];
+
     public static int Clamp(int level) => Math.Clamp(level, 0, Levels);
 }
 
@@ -79,7 +86,7 @@ internal static class EqBoosts
 /// One output device's equalizer: on or off, the preset it came from (if it
 /// still has one), its own curve, and its two boosts, which is what plays.
 /// </summary>
-internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double[] Gains, int BassBoost = 0, int DynamicBoost = 0)
+internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double[] Gains, int BassBoost = 0, int DynamicBoost = 0, int ClarityBoost = 0)
 {
     /// <summary>A device seen for the first time: on, and flat, so nothing changes until the curve does.</summary>
     public static AudioDeviceEq Default => new(true, "Flat", EqBands.Flat());
@@ -89,7 +96,8 @@ internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double[] Gain
     {
         Gains = [.. Enumerable.Range(0, EqBands.Count).Select(band => EqBands.Snap(band < (Gains?.Length ?? 0) ? Gains![band] : 0))],
         BassBoost = EqBoosts.Clamp(BassBoost),
-        DynamicBoost = EqBoosts.Clamp(DynamicBoost)
+        DynamicBoost = EqBoosts.Clamp(DynamicBoost),
+        ClarityBoost = EqBoosts.Clamp(ClarityBoost)
     };
 
     public AudioDeviceEq WithPreset(EqPreset preset) =>
@@ -129,7 +137,7 @@ internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double[] Gain
             level = Gains[upper - 1] + (Gains[upper] - Gains[upper - 1]) * share;
         }
 
-        foreach (var (filters, boost) in new[] { (EqBoosts.Bass, BassBoost), (EqBoosts.Dynamic, DynamicBoost) })
+        foreach (var (filters, boost) in new[] { (EqBoosts.Bass, BassBoost), (EqBoosts.Dynamic, DynamicBoost), (EqBoosts.Clarity, ClarityBoost) })
         {
             foreach (var (type, center, perLevel, q) in filters)
             {
@@ -186,7 +194,7 @@ internal static class EqualizerApoConfig
             text.AppendLine("GraphicEQ: " + string.Join("; ",
                 EqBands.Frequencies.Select((frequency, band) => $"{frequency} {Number(curve.Gains[band])}")));
 
-            foreach (var (filters, boost) in new[] { (EqBoosts.Bass, curve.BassBoost), (EqBoosts.Dynamic, curve.DynamicBoost) })
+            foreach (var (filters, boost) in new[] { (EqBoosts.Bass, curve.BassBoost), (EqBoosts.Dynamic, curve.DynamicBoost), (EqBoosts.Clarity, curve.ClarityBoost) })
             {
                 if (boost == 0)
                     continue;

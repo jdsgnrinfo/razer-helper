@@ -92,13 +92,15 @@ public class EqualizerTests
     {
         var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq>
         {
-            [Speakers] = AudioDeviceEq.Default with { BassBoost = 5, DynamicBoost = 10 }
+            [Speakers] = AudioDeviceEq.Default with { BassBoost = 5, DynamicBoost = 10, ClarityBoost = 10 }
         });
 
         Assert.Contains("Filter: ON LS Fc 120 Hz Gain 5 dB", text);
         Assert.Contains("Filter: ON LS Fc 80 Hz Gain 4 dB", text);
         Assert.Contains("Filter: ON PK Fc 3000 Hz Gain 3 dB Q 1", text);
         Assert.Contains("Filter: ON HS Fc 7000 Hz Gain 6 dB", text);
+        Assert.Contains("Filter: ON PK Fc 2000 Hz Gain 4 dB Q 0.8", text);
+        Assert.Contains("Filter: ON HS Fc 5000 Hz Gain 5 dB", text);
     }
 
     [Fact]

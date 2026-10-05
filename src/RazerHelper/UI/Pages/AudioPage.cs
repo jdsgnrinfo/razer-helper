@@ -43,7 +43,7 @@ internal sealed record AudioChoices(EqPreset[] Presets, Dictionary<string, Audio
 /// The output device and its equalizer. Top: which device, and making it
 /// Windows' default. Below: the equalizer, with Reset and its on/off switch
 /// beside its title, its preset with Save, New and Delete, the ten bands with
-/// their curve, then Bass boost and Dynamic boost, ten levels each, added to
+/// their curve, then Bass enhancer, Dynamic boost and Clarity, ten levels each, added to
 /// whatever curve plays. At the bottom, only while it is needed, why the
 /// equalizer cannot play yet: Equalizer APO is missing (with its download),
 /// or not hooked into this device (with its Device Selector).
@@ -79,8 +79,10 @@ internal sealed class AudioPage : PageView
     private readonly EqualizerGraph _graph;
     private readonly ThemedSlider _bassBoost;
     private readonly ThemedSlider _dynamicBoost;
+    private readonly ThemedSlider _clarityBoost;
     private readonly Label _bassBoostValue;
     private readonly Label _dynamicBoostValue;
+    private readonly Label _clarityBoostValue;
     private readonly Panel _notice;
     private readonly Label _noticeText;
     private readonly RoundedButton _noticeButton;
@@ -126,7 +128,7 @@ internal sealed class AudioPage : PageView
         };
         reset.MouseEnter += (_, _) => reset.ForeColor = RazerGreen;
         reset.MouseLeave += (_, _) => reset.ForeColor = SubtleTextColor;
-        _toolTip.SetToolTip(reset, L.T("Back to flat, with both boosts off"));
+        _toolTip.SetToolTip(reset, L.T("Back to flat, with the boosts off"));
 
         var beside = new FlowLayoutPanel
         {
@@ -149,7 +151,7 @@ internal sealed class AudioPage : PageView
         _graph = new EqualizerGraph
         {
             Margin = new Padding(0, S(16), 0, 0),
-            Size = new Size(ContentWidth, S(232))
+            Size = new Size(ContentWidth, S(190))
         };
         Add(_graph);
 
@@ -161,6 +163,10 @@ internal sealed class AudioPage : PageView
         (var dynamicRow, _dynamicBoost, _dynamicBoostValue) = BoostRow("Dynamic boost");
         dynamicRow.Margin = new Padding(0, S(6), 0, 0);
         Add(dynamicRow);
+
+        (var clarityRow, _clarityBoost, _clarityBoostValue) = BoostRow("Clarity");
+        clarityRow.Margin = new Padding(0, S(6), 0, 0);
+        Add(clarityRow);
 
         // Why the equalizer cannot play yet, when it cannot.
         (_notice, _noticeText, _noticeButton) = CreateNotice();
@@ -179,6 +185,7 @@ internal sealed class AudioPage : PageView
             _graph.Active = _enabled.Checked;
             _bassBoost.Available = _enabled.Checked;
             _dynamicBoost.Available = _enabled.Checked;
+            _clarityBoost.Available = _enabled.Checked;
 
             if (!_showing)
                 Change(device => device with { Enabled = _enabled.Checked });
@@ -214,9 +221,17 @@ internal sealed class AudioPage : PageView
                 Change(device => device with { DynamicBoost = _dynamicBoost.Value });
         };
 
+        _clarityBoost.ValueChanged += (_, _) =>
+        {
+            _clarityBoostValue.Text = $"{_clarityBoost.Value}";
+
+            if (!_showing)
+                Change(device => device with { ClarityBoost = _clarityBoost.Value });
+        };
+
         reset.Click += (_, _) =>
         {
-            Change(device => device.WithPreset(EqPreset.BuiltIn[0]) with { BassBoost = 0, DynamicBoost = 0 });
+            Change(device => device.WithPreset(EqPreset.BuiltIn[0]) with { BassBoost = 0, DynamicBoost = 0, ClarityBoost = 0 });
             ShowCurve();
         };
 
@@ -292,6 +307,9 @@ internal sealed class AudioPage : PageView
         _dynamicBoostValue.Text = $"{device.DynamicBoost}";
         _bassBoost.Available = device.Enabled;
         _dynamicBoost.Available = device.Enabled;
+        _clarityBoost.Value = device.ClarityBoost;
+        _clarityBoostValue.Text = $"{device.ClarityBoost}";
+        _clarityBoost.Available = device.Enabled;
         _showing = false;
 
         RefreshPresetList();
