@@ -66,6 +66,9 @@ public sealed class TrayPopupForm : Form
     private double _fadeTarget = 1;
     private AppSettings _settings;
 
+    // Windows' output devices and Equalizer APO, for the Audio page.
+    private readonly Pages.AudioBackend _audioBackend;
+
     /// <summary>The real app: talks to the actual laptop, Windows services and user profile.</summary>
     public TrayPopupForm()
         : this(
@@ -82,7 +85,8 @@ public sealed class TrayPopupForm : Form
             cpuBoost: PowerPlanValue.BoostMode(),
             cpuEfficiency: PowerPlanValue.EfficiencyPreference(),
             powerPlans: new WindowsPowerPlans(),
-            gammaRamps: new WindowsGammaRamps())
+            gammaRamps: new WindowsGammaRamps(),
+            audio: Pages.AudioBackend.Windows)
     {
     }
 
@@ -106,13 +110,17 @@ public sealed class TrayPopupForm : Form
         IPowerPlanValue? cpuBoost = null,
         IPowerPlanValue? cpuEfficiency = null,
         IPowerPlans? powerPlans = null,
-        IGammaRamps? gammaRamps = null)
+        IGammaRamps? gammaRamps = null,
+        Pages.AudioBackend? audio = null)
     {
         _transport = transport;
         _powerSource = powerSource;
         _settingsService = settingsService;
         _startupRegistration = startupRegistration;
         _ownsDependencies = ownsDependencies;
+
+        // With none (tests, previews), no devices and no Equalizer APO.
+        _audioBackend = audio ?? new Pages.AudioBackend(() => [], () => null, _ => { }, () => false, _ => false, () => Task.FromResult(false), () => { }, _ => { });
 
         // Read here, not in a field initializer: those run before the Form
         // base constructor, which is what may install the context.
@@ -497,6 +505,7 @@ public sealed class TrayPopupForm : Form
 
         _pages[DashboardPage.Performance] = performancePage;
         _pages[DashboardPage.Display] = displayPage;
+        _pages[DashboardPage.Audio] = CreateAudioPage();
         _pages[DashboardPage.Power] = powerPage;
         _pages[DashboardPage.System] = new Pages.SystemPage(SystemInfoReader.Read);
         _pages[DashboardPage.Optimize] = _optimizePage;
@@ -648,6 +657,14 @@ public sealed class TrayPopupForm : Form
         }, null);
 
         return answer.Task;
+    }
+
+    // Each output device's equalizer, saved as it changes.
+    private Pages.AudioPage CreateAudioPage()
+    {
+        var audioPage = new Pages.AudioPage(_audioBackend, new Pages.AudioChoices(_settings.EqPresets ?? [], _settings.AudioDevices ?? []));
+        audioPage.ChoicesChanged += (_, choices) => SaveSettings(_settings with { EqPresets = choices.Presets, AudioDevices = choices.Devices });
+        return audioPage;
     }
 
     private Pages.SettingsPage CreateSettingsPage()

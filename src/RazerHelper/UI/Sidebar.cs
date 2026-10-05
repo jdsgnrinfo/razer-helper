@@ -10,6 +10,7 @@ internal enum DashboardPage
 {
     Performance,
     Display,
+    Audio,
     Power,
     System,
     Optimize,
@@ -68,6 +69,7 @@ internal sealed class Sidebar : Panel
         {
             (DashboardPage.Performance, "Performance"),
             (DashboardPage.Display, "Display and lighting"),
+            (DashboardPage.Audio, "Audio"),
             (DashboardPage.Power, "Energy"),
             (DashboardPage.System, "System"),
             (DashboardPage.Optimize, "Optimize"),

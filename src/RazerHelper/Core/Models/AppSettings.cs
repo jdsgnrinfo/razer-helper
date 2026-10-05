@@ -63,4 +63,8 @@ internal sealed record AppSettings(
     bool LightsOffWhenIdle = false,
     int LightsOffIdleMinutes = 10,
     bool LightsOffOnLowBattery = false,
-    int LightsOffBatteryPercent = 20);
+    int LightsOffBatteryPercent = 20,
+    // The Audio page: the equalizer presets the user saved, and each output
+    // device's equalizer, by Windows' endpoint id.
+    RazerHelper.Core.Services.EqPreset[]? EqPresets = null,
+    Dictionary<string, RazerHelper.Core.Services.AudioDeviceEq>? AudioDevices = null);

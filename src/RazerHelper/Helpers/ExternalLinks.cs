@@ -16,6 +16,9 @@ internal static class ExternalLinks
 
     public static void OpenProjectPage() => Open(ProjectUrl);
 
+    /// <summary>Equalizer APO's official page, which the Audio page's equalizer needs installed.</summary>
+    public static void OpenEqualizerApoDownload() => Open(EqualizerApo.DownloadUrl);
+
     public static void OpenLogFolder() =>
         Open(Path.GetDirectoryName(AppLog.LogFilePath)!);
 
