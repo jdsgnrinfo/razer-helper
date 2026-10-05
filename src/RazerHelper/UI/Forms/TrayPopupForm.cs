@@ -432,13 +432,15 @@ public sealed class TrayPopupForm : Form
             _performanceSection.AutoSwitchProfiles = enabled;
         };
 
-        // Free up memory, temporary files and the GPU, each on its own button.
+        // Free up memory, temporary files, the shader cache and the GPU, each on its own button; and hibernation.
         _optimizePage = new Pages.OptimizePage(
             new MemoryTrimmer(new WindowsProcessMemory()),
             TempCleaner.ForCurrentUser(),
+            TempCleaner.ForNvidiaShaderCache(),
             _servicesSection,
             _settings.CloseGpuAppsOnUnplug,
-            new Pages.OptimizePage.MemoryCache(WindowsMemoryCache.CachedBytes, () => ElevatedRunner.RunAsync(MemoryCacheCommand.Arguments())));
+            new Pages.OptimizePage.MemoryCache(WindowsMemoryCache.CachedBytes, () => ElevatedRunner.RunAsync(MemoryCacheCommand.Arguments())),
+            new Pages.OptimizePage.Hibernation(WindowsHibernation.IsEnabled, WindowsHibernation.FileBytes, enabled => ElevatedRunner.RunAsync(HibernationCommand.Arguments(enabled))));
         _optimizePage.FreeUpGpu = FreeUpGpuAsync;
         _optimizePage.CloseGpuAppsOnUnplugChanged += (_, enabled) =>
         {

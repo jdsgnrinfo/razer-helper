@@ -109,4 +109,30 @@ public sealed class TempCleanerTests : IDisposable
     [Fact]
     public void AMissingFolder_FindsNothing() =>
         Assert.Equal(new TempFilesResult(0, 0), new TempCleaner(Path.Combine(_folder, "missing")).Scan());
+
+    [Fact]
+    public void WithNoMinimumAge_EveryFileInEveryFolderGoes_AndTheFoldersStay()
+    {
+        var first = Path.Combine(_folder, "DXCache");
+        var second = Path.Combine(_folder, "GLCache");
+        Write(@"DXCache\new.bin", 100, old: false);
+        Write(@"GLCache\sub\old.bin", 50, old: true);
+        var cleaner = new TempCleaner([first, second, Path.Combine(_folder, "missing")], TimeSpan.Zero);
+
+        Assert.Equal(new TempFilesResult(2, 150), cleaner.Scan());
+
+        var result = cleaner.Clean();
+
+        Assert.Equal(new TempFilesResult(2, 150), result);
+        Assert.False(Directory.Exists(Path.Combine(second, "sub")));
+        Assert.True(Directory.Exists(first));
+        Assert.True(Directory.Exists(second));
+    }
+
+    [Fact]
+    public void AnyFolderExists_OnlyWhenOneIsThere()
+    {
+        Assert.True(new TempCleaner([Path.Combine(_folder, "missing"), _folder], TimeSpan.Zero).AnyFolderExists);
+        Assert.False(new TempCleaner([Path.Combine(_folder, "missing")], TimeSpan.Zero).AnyFolderExists);
+    }
 }

@@ -26,6 +26,10 @@ namespace RazerHelper
             if (MemoryCacheCommand.TryRun(args, WindowsMemoryCache.Purge) is int cacheExitCode)
                 return cacheExitCode;
 
+            // And for turning hibernation off or on, from the same window.
+            if (HibernationCommand.TryRun(args, WindowsHibernation.SetEnabled) is int hibernationExitCode)
+                return hibernationExitCode;
+
             // After a restart from Settings, let the old copy finish exiting first:
             // it still holds the single-instance lock below until it is gone.
             AppRestart.WaitForPreviousCopy(args);

@@ -4,15 +4,16 @@ namespace RazerHelper.Core.Services;
 internal sealed record TempFilesResult(int Files, long Bytes, int Skipped = 0);
 
 /// <summary>
-/// Clears the user's own temporary folder: only files older than a day, so
-/// nothing a program set down a moment ago goes, and only those Windows lets
-/// go of, so a file a running program holds open is left where it is. Links
-/// and junctions are never followed, so nothing outside the folder is ever
-/// touched. The folder itself always stays.
+/// Clears folders of throwaway files: the user's temporary folder (only files
+/// older than a day, so nothing a program set down a moment ago goes) or the
+/// graphics driver's shader caches (everything, as the driver rebuilds them).
+/// Only files Windows lets go of are removed, so one a running program holds
+/// open is left where it is. Links and junctions are never followed, so
+/// nothing outside the folders is ever touched. The folders themselves always stay.
 /// </summary>
-internal sealed class TempCleaner(string folder, TimeProvider? clock = null)
+internal sealed class TempCleaner
 {
-    /// <summary>Files newer than this are left alone.</summary>
+    /// <summary>In the temporary folder, files newer than this are left alone.</summary>
     public static readonly TimeSpan MinimumAge = TimeSpan.FromDays(1);
 
     private static readonly EnumerationOptions Walk = new()
@@ -23,10 +24,48 @@ internal sealed class TempCleaner(string folder, TimeProvider? clock = null)
         AttributesToSkip = FileAttributes.ReparsePoint
     };
 
-    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+    private readonly IReadOnlyList<string> _folders;
+    private readonly TimeSpan _minimumAge;
+    private readonly TimeProvider _clock;
+
+    /// <summary>One temporary folder, cleared of files over a day old.</summary>
+    public TempCleaner(string folder, TimeProvider? clock = null)
+        : this([folder], MinimumAge, clock)
+    {
+    }
+
+    /// <param name="minimumAge">Files newer than this are left alone; zero clears every file that is not in use.</param>
+    public TempCleaner(IReadOnlyList<string> folders, TimeSpan minimumAge, TimeProvider? clock = null)
+    {
+        _folders = folders;
+        _minimumAge = minimumAge;
+        _clock = clock ?? TimeProvider.System;
+    }
 
     /// <summary>The user's temporary folder, %TEMP%.</summary>
     public static TempCleaner ForCurrentUser() => new(Path.GetTempPath());
+
+    /// <summary>
+    /// The NVIDIA driver's shader caches for the current user, DirectX and
+    /// OpenGL, where current and older drivers keep them. The driver builds
+    /// them again as games need them.
+    /// </summary>
+    public static TempCleaner ForNvidiaShaderCache()
+    {
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var localLow = Path.Combine(Path.GetDirectoryName(local)!, "LocalLow");
+
+        return new TempCleaner(
+        [
+            Path.Combine(local, "NVIDIA", "DXCache"),
+            Path.Combine(local, "NVIDIA", "GLCache"),
+            Path.Combine(localLow, "NVIDIA", "PerDriverVersion", "DXCache"),
+            Path.Combine(localLow, "NVIDIA", "PerDriverVersion", "GLCache")
+        ], TimeSpan.Zero);
+    }
+
+    /// <summary>True when at least one of the folders is there.</summary>
+    public bool AnyFolderExists => _folders.Any(Directory.Exists);
 
     /// <summary>Counts what a clean would try to remove.</summary>
     public TempFilesResult Scan()
@@ -73,36 +112,41 @@ internal sealed class TempCleaner(string folder, TimeProvider? clock = null)
             }
         }
 
-        RemoveEmptyFolders();
+        foreach (var folder in _folders)
+            RemoveEmptyFolders(folder);
+
         return new TempFilesResult(files, bytes, skipped);
     }
 
     private IEnumerable<FileInfo> OldFiles()
     {
-        if (!Directory.Exists(folder))
-            yield break;
+        var cutoff = _clock.GetUtcNow().UtcDateTime - _minimumAge;
 
-        var cutoff = _clock.GetUtcNow().UtcDateTime - MinimumAge;
-
-        foreach (var file in new DirectoryInfo(folder).EnumerateFiles("*", Walk))
+        foreach (var folder in _folders)
         {
-            if (file.LastWriteTimeUtc < cutoff && file.CreationTimeUtc < cutoff)
-                yield return file;
+            if (!Directory.Exists(folder))
+                continue;
+
+            foreach (var file in new DirectoryInfo(folder).EnumerateFiles("*", Walk))
+            {
+                if (_minimumAge <= TimeSpan.Zero || (file.LastWriteTimeUtc < cutoff && file.CreationTimeUtc < cutoff))
+                    yield return file;
+            }
         }
     }
 
     // Deepest first, so a folder emptied by its children's removal goes too.
-    // Only folders made over a day ago: a program may have just made one to use.
-    private void RemoveEmptyFolders()
+    // Only folders older than the minimum age: a program may have just made one to use.
+    private void RemoveEmptyFolders(string folder)
     {
         if (!Directory.Exists(folder))
             return;
 
-        var cutoff = _clock.GetUtcNow().UtcDateTime - MinimumAge;
+        var cutoff = _clock.GetUtcNow().UtcDateTime - _minimumAge;
 
         var folders = new DirectoryInfo(folder)
             .EnumerateDirectories("*", Walk)
-            .Where(each => each.CreationTimeUtc < cutoff)
+            .Where(each => _minimumAge <= TimeSpan.Zero || each.CreationTimeUtc < cutoff)
             .OrderByDescending(each => each.FullName.Length)
             .ToList();
 
