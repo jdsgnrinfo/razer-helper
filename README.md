@@ -22,7 +22,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 - **Energy:** live battery details, a performance profile for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
 - **System:** the model, Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
 - **Optimize:** free up memory, clean temporary files, and close the apps keeping the dedicated GPU awake.
-- **Settings:** language, start at login, hide when clicking away, always on top, performance mode shortcuts, and maintenance.
+- **Settings:** language, start at login, hide when clicking away, always on top, performance mode shortcuts, maintenance, and a link to the project on GitHub beside the version.
 
 <p align="center">
   <img src="docs/images/preview-performance.png" width="800" alt="RazerHelper's Performance section: the Silent, Balanced and Custom mode buttons with Balanced selected, CPU, GPU and RAM usage rings with temperature, clock, memory speed and free memory, the fans set to automatic, and the battery charge limit">
@@ -49,7 +49,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-settings.png" width="800" alt="The Settings section: language, start at login, hide when clicking away, always on top, performance mode shortcuts, and maintenance with Drivers, Logs and Reset, with the version at the bottom">
+  <img src="docs/images/preview-settings.png" width="800" alt="The Settings section: language, start at login, hide when clicking away, always on top, performance mode shortcuts, and maintenance with Drivers, Logs and Reset, with the version and a link to the project on GitHub at the bottom">
 </p>
 
 The tray icon takes the color of the current performance mode, and hovering it names the mode, as in "RazerHelper (Silent)":

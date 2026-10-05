@@ -70,7 +70,30 @@ internal sealed class SettingsPage : PageView
         };
         Controls.Add(version);
         version.BringToFront();
-        Resize += (_, _) => version.Location = new Point(S(24), Height - S(24) - version.Height);
+
+        // Beside it, the project's page on GitHub: grey, green under the
+        // pointer with no fill, like Close in the sidebar.
+        var github = new Label
+        {
+            AccessibleRole = AccessibleRole.Link,
+            Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+            AutoSize = true,
+            Cursor = Cursors.Hand,
+            Font = SemiBoldFont(13),
+            ForeColor = SubtleTextColor,
+            Text = "GitHub"
+        };
+        github.MouseEnter += (_, _) => github.ForeColor = RazerGreen;
+        github.MouseLeave += (_, _) => github.ForeColor = SubtleTextColor;
+        github.Click += (_, _) => ExternalLinks.OpenProjectPage();
+        Controls.Add(github);
+        github.BringToFront();
+
+        Resize += (_, _) =>
+        {
+            version.Location = new Point(S(24), Height - S(24) - version.Height);
+            github.Location = new Point(version.Right + S(16), version.Bottom - github.Height);
+        };
 
         _hideWhenClickedAwayBox.Checked = settings.HideWhenClickedAway;
         _alwaysOnTopBox.Checked = settings.AlwaysOnTop;
