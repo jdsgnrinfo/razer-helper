@@ -175,4 +175,61 @@ public class KeyboardScreenOffServiceTests
 
         Assert.Equal(80, rig.Brightness);
     }
+
+    [Fact]
+    public void Idle_TurnsTheLightOff_OnlyWhenItsOptionIsOn()
+    {
+        var rig = new Rig();
+
+        rig.Service.SetActive(LightsOffReason.Idle, true);
+        Assert.Equal(80, rig.Brightness);
+
+        rig.Service.SetEnabled(LightsOffReason.Idle, true);
+        Assert.Equal(0, rig.Brightness);
+
+        rig.Service.SetActive(LightsOffReason.Idle, false);
+        Assert.Equal(80, rig.Brightness);
+    }
+
+    [Fact]
+    public void TheLightStaysOff_WhileAnyReasonStillHolds()
+    {
+        var rig = new Rig();
+        rig.Service.SetEnabled(LightsOffReason.LowBattery, true);
+
+        rig.Service.SetActive(LightsOffReason.LowBattery, true);
+        rig.Service.OnDisplayChanged(on: false);
+        rig.Service.OnDisplayChanged(on: true);
+
+        Assert.Equal(0, rig.Brightness);
+
+        rig.Service.SetActive(LightsOffReason.LowBattery, false);
+
+        Assert.Equal(80, rig.Brightness);
+    }
+
+    [Fact]
+    public void TurningAReasonOff_BringsTheLightBack()
+    {
+        var rig = new Rig();
+        rig.Service.SetEnabled(LightsOffReason.LowBattery, true);
+        rig.Service.SetActive(LightsOffReason.LowBattery, true);
+
+        rig.Service.SetEnabled(LightsOffReason.LowBattery, false);
+
+        Assert.Equal(80, rig.Brightness);
+    }
+
+    [Fact]
+    public void AReasonReportedAgain_DoesNotFadeAgain()
+    {
+        var rig = new Rig();
+        rig.Service.SetEnabled(LightsOffReason.Idle, true);
+        rig.Service.SetActive(LightsOffReason.Idle, true);
+        var writes = rig.Writes.Count;
+
+        rig.Service.SetActive(LightsOffReason.Idle, true);
+
+        Assert.Equal(writes, rig.Writes.Count);
+    }
 }

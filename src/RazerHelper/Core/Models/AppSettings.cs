@@ -56,4 +56,11 @@ internal sealed record AppSettings(
     Guid? PlanBeforeIdle = null,
     // The screen's color profile (Warm, Cool, Contrast); null is Standard,
     // the screen as it was.
-    string? ColorProfile = null);
+    string? ColorProfile = null,
+    // Off unless the user turns them on: the keyboard light also goes off
+    // after this many minutes without a key or the mouse, and on battery
+    // below this charge.
+    bool LightsOffWhenIdle = false,
+    int LightsOffIdleMinutes = 10,
+    bool LightsOffOnLowBattery = false,
+    int LightsOffBatteryPercent = 20);

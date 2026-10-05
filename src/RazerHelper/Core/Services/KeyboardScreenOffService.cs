@@ -2,12 +2,25 @@ using RazerHelper.Core.Diagnostics;
 
 namespace RazerHelper.Core.Services;
 
+/// <summary>Why the keyboard's light may be off.</summary>
+internal enum LightsOffReason
+{
+    /// <summary>The screen is off (Windows' display timeout, sleep, a closed lid).</summary>
+    Screen,
+
+    /// <summary>No key or mouse for the chosen time.</summary>
+    Idle,
+
+    /// <summary>On battery, below the chosen charge.</summary>
+    LowBattery
+}
+
 /// <summary>
-/// Turns the keyboard backlight off while the screen is off (Windows' own
-/// display timeout, sleep, a closed lid) and brings it back at the brightness
-/// it had when the screen comes on. Nothing is polled: it acts only on the
-/// display on and off notices Windows sends. "Off" is brightness 0, so the
-/// effect and color are kept.
+/// Turns the keyboard backlight off while any of its reasons holds and is
+/// turned on (the screen off, the laptop idle, the battery low), and brings
+/// it back at the brightness it had once none does. The screen comes from the
+/// display on and off notices Windows sends; idle and battery are reported by
+/// the window. "Off" is brightness 0, so the effect and color are kept.
 ///
 /// The light fades rather than snapping, both ways: a few steps over about
 /// half a second, on a worker thread, so the window never waits on it. The
@@ -30,7 +43,10 @@ internal sealed class KeyboardScreenOffService
     // The queue of writes: each runs once the one before has finished.
     private Task _queue = Task.CompletedTask;
 
-    // Set from the screen going off until it comes back (or the option is turned off).
+    // The reasons turned on, those that hold now, and whether the light is
+    // (going) off for them.
+    private readonly HashSet<LightsOffReason> _enabled = [LightsOffReason.Screen];
+    private readonly HashSet<LightsOffReason> _active = [];
     private bool _dimmed;
 
     // The fade under way or queued, either way; a new one stops it.
@@ -57,39 +73,74 @@ internal sealed class KeyboardScreenOffService
     {
     }
 
-    /// <summary>Off leaves the keyboard alone, and lights it again if it was dimmed.</summary>
-    public bool Enabled { get; private set; } = true;
+    /// <summary>Whether the light goes off with the screen. Off leaves the keyboard alone for it, and lights it again if it was dimmed for it.</summary>
+    public bool Enabled
+    {
+        get
+        {
+            lock (_sync)
+                return _enabled.Contains(LightsOffReason.Screen);
+        }
+    }
 
-    public void SetEnabled(bool enabled)
+    public void SetEnabled(bool enabled) => SetEnabled(LightsOffReason.Screen, enabled);
+
+    /// <summary>Turns a reason on or off; off brings the light back unless another reason still holds.</summary>
+    public void SetEnabled(LightsOffReason reason, bool enabled)
     {
         lock (_sync)
         {
-            Enabled = enabled;
+            if (enabled)
+                _enabled.Add(reason);
+            else
+                _enabled.Remove(reason);
 
-            if (!enabled)
-                QueueRestore("the option was turned off");
+            Update(enabled ? $"{Describe(reason)} was turned on" : $"{Describe(reason)} was turned off");
         }
     }
 
     /// <summary>Windows reported the screen on (true) or off (false).</summary>
-    public void OnDisplayChanged(bool on)
+    public void OnDisplayChanged(bool on) => SetActive(LightsOffReason.Screen, !on);
+
+    /// <summary>Says whether a reason holds now: the screen is off, the laptop idle, the battery low.</summary>
+    public void SetActive(LightsOffReason reason, bool active)
     {
         lock (_sync)
         {
-            if (on)
-            {
-                QueueRestore("the screen came on");
-                return;
-            }
+            if (active)
+                _active.Add(reason);
+            else
+                _active.Remove(reason);
 
-            if (!Enabled || _dimmed)
-                return;
-
-            _dimmed = true;
-            var token = StartFade();
-            Queue(() => FadeOut(token));
+            Update(active ? Describe(reason) : $"{Describe(reason)} no longer holds");
         }
     }
+
+    // Off while any reason that is turned on holds; back once none does.
+    private void Update(string why)
+    {
+        var dim = _active.Any(_enabled.Contains);
+
+        if (dim == _dimmed)
+            return;
+
+        if (!dim)
+        {
+            QueueRestore(why);
+            return;
+        }
+
+        _dimmed = true;
+        var token = StartFade();
+        Queue(() => FadeOut(why, token));
+    }
+
+    private static string Describe(LightsOffReason reason) => reason switch
+    {
+        LightsOffReason.Screen => "the screen is off",
+        LightsOffReason.Idle => "the laptop is idle",
+        _ => "the battery is low"
+    };
 
     /// <summary>Lights the keyboard again if this service dimmed it, e.g. as the app exits. Waits until done.</summary>
     public void Restore()
@@ -105,7 +156,7 @@ internal sealed class KeyboardScreenOffService
         done.Wait();
     }
 
-    private void FadeOut(CancellationToken token)
+    private void FadeOut(string why, CancellationToken token)
     {
         try
         {
@@ -127,11 +178,11 @@ internal sealed class KeyboardScreenOffService
             }
 
             if (Fade(from, 0, token))
-                AppLog.Info("Keyboard backlight faded out with the screen.");
+                AppLog.Info($"Keyboard backlight faded out ({why}).");
         }
         catch (Exception exception)
         {
-            AppLog.Error("Could not turn the keyboard backlight off with the screen.", exception);
+            AppLog.Error($"Could not turn the keyboard backlight off ({why}).", exception);
         }
     }
 

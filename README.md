@@ -18,7 +18,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 
 - **Performance:** Silent, Balanced and Custom as large buttons, with live CPU, GPU and RAM usage rings, temperatures and clocks under them, the fans, and the battery charge limit.
 - **Custom levels in place:** choosing Custom opens the CPU and GPU boost levels right under the modes.
-- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), color profile (Standard, Warm, Cool, Contrast), keyboard and logo effects with their brightness, and the keyboard off with the screen.
+- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), color profile (Standard, Warm, Cool, Contrast), keyboard and logo effects with their brightness, and the keyboard light turned off with the screen, after a chosen idle time, or below a chosen battery charge.
 - **Energy:** live battery details, a performance profile for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
 - **System:** the model, Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
 - **Optimize:** free up memory, clean temporary files, the Recycle Bin, Windows Update's and Delivery Optimization's caches and the NVIDIA shader cache, close the apps keeping the dedicated GPU awake, and turn off hibernation to free its file.
@@ -33,7 +33,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, color profile buttons Standard, Warm, Cool and Contrast, keyboard and logo lighting effects with brightness sliders, and the keyboard off with the screen switch">
+  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, color profile buttons Standard, Warm, Cool and Contrast, keyboard and logo lighting effects with brightness sliders, and switches to turn the lighting off with the screen, after an idle time (10 min) and below a battery charge (20%)">
 </p>
 
 <p align="center">
@@ -75,7 +75,7 @@ Everything the original does still works the same way; on top of it:
 - **Battery details** (in Energy, or More details on the battery): power in or out, time left, charge, health, voltage.
 - **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
 - **Profiles for each power source** chosen in Energy: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
-- **Keyboard off with the screen** (optional, in Display and lighting).
+- **Keyboard light off by itself** (optional, in Display and lighting): with the screen, after 1 to 30 minutes without a key or the mouse, or on battery below 10 to 50%. It comes back at the brightness it had once none of these holds (a key press after idle brings it back within a second).
 - **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script or with one click in Energy; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 

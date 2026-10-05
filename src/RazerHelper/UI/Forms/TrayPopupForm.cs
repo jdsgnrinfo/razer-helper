@@ -45,6 +45,9 @@ public sealed class TrayPopupForm : Form
     private readonly ProfileToast _profileToast = new();
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
+
+    // While the light is to go off when idle or on low battery: checks both once a second.
+    private readonly System.Windows.Forms.Timer _lightsOffTimer = new() { Interval = 1_000 };
     private readonly ColorProfileService _colorProfiles;
     private readonly ColorProfileSection _colorProfileSection;
 
@@ -168,7 +171,8 @@ public sealed class TrayPopupForm : Form
 
         // The keyboard goes dark with the screen, and comes back with it.
         _keyboardScreenOff = new KeyboardScreenOffService(lightingService);
-        _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
+        _lightsOffTimer.Tick += (_, _) => CheckLightsOff();
+        ApplyLightsOff();
         _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
 
         // The screen's color profile, put back whenever Windows may have reset it.
@@ -412,6 +416,7 @@ public sealed class TrayPopupForm : Form
     {
         // Nothing is left watching the fans once the app is gone.
         _performanceSection.TurnOffMaxFanBeforeExit();
+        _lightsOffTimer.Stop();
         _keyboardScreenOff.Restore(); // Never leave the keyboard dark behind.
         _colorProfiles.Restore(); // Nor the screens in a color they did not have.
         _silentTimer.Stop();
@@ -443,11 +448,23 @@ public sealed class TrayPopupForm : Form
     {
         var performancePage = new Pages.PerformancePage(_performanceSection, _fanSection, _batterySection);
 
-        var displayPage = new Pages.DisplayPage(_displaySection, _colorProfileSection, _lightingSection, _settings.KeyboardOffWithScreen);
-        displayPage.KeyboardOffWithScreenChanged += (_, enabled) =>
+        var displayPage = new Pages.DisplayPage(_displaySection, _colorProfileSection, _lightingSection, new Pages.LightsOffChoices(
+            _settings.KeyboardOffWithScreen,
+            _settings.LightsOffWhenIdle,
+            _settings.LightsOffIdleMinutes,
+            _settings.LightsOffOnLowBattery,
+            _settings.LightsOffBatteryPercent));
+        displayPage.LightsOffChanged += (_, choices) =>
         {
-            SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
-            _keyboardScreenOff.SetEnabled(enabled);
+            SaveSettings(_settings with
+            {
+                KeyboardOffWithScreen = choices.WithScreen,
+                LightsOffWhenIdle = choices.WhenIdle,
+                LightsOffIdleMinutes = choices.IdleMinutes,
+                LightsOffOnLowBattery = choices.OnLowBattery,
+                LightsOffBatteryPercent = choices.BatteryPercent
+            });
+            ApplyLightsOff();
         };
 
         var powerPage = new Pages.PowerPage(
@@ -862,6 +879,40 @@ public sealed class TrayPopupForm : Form
     // returned value is not disposed.
     private OpenHold KeepOpen() => new(this);
 
+    // Puts the saved lighting choices into effect: which reasons turn the
+    // keyboard light off, and the check for idle and low battery while either is on.
+    private void ApplyLightsOff()
+    {
+        _keyboardScreenOff.SetEnabled(LightsOffReason.Screen, _settings.KeyboardOffWithScreen);
+        _keyboardScreenOff.SetEnabled(LightsOffReason.Idle, _settings.LightsOffWhenIdle);
+        _keyboardScreenOff.SetEnabled(LightsOffReason.LowBattery, _settings.LightsOffOnLowBattery);
+
+        if (_settings.LightsOffWhenIdle || _settings.LightsOffOnLowBattery)
+        {
+            CheckLightsOff();
+            _lightsOffTimer.Start();
+        }
+        else
+        {
+            _lightsOffTimer.Stop();
+        }
+    }
+
+    // Idle: no key or mouse for the chosen minutes. Low battery: unplugged,
+    // below the chosen charge. A key press brings the light back within a second.
+    private void CheckLightsOff()
+    {
+        _keyboardScreenOff.SetActive(LightsOffReason.Idle,
+            _settings.LightsOffWhenIdle && UserIdle.Time() >= TimeSpan.FromMinutes(_settings.LightsOffIdleMinutes));
+
+        var power = SystemInformation.PowerStatus;
+        var low = power.PowerLineStatus == PowerLineStatus.Offline
+            && power.BatteryLifePercent <= 1
+            && power.BatteryLifePercent * 100 < _settings.LightsOffBatteryPercent;
+
+        _keyboardScreenOff.SetActive(LightsOffReason.LowBattery, _settings.LightsOffOnLowBattery && low);
+    }
+
     // A change of screen or mode may reset the ramps.
     private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => ScheduleColorReapply();
 
@@ -1011,6 +1062,7 @@ public sealed class TrayPopupForm : Form
             SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
             SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
             _colorReapplyTimer.Dispose();
+            _lightsOffTimer.Dispose();
             _fadeTimer.Dispose();
             _silentTimer.Dispose();
             _dgpuCoordinator.Dispose();
