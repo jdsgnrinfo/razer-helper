@@ -30,6 +30,10 @@ namespace RazerHelper
             if (HibernationCommand.TryRun(args, WindowsHibernation.SetEnabled) is int hibernationExitCode)
                 return hibernationExitCode;
 
+            // And for clearing Windows Update's and Delivery Optimization's caches.
+            if (WindowsCachesCommand.TryRun(args, WindowsCaches.CleanElevated) is int cachesExitCode)
+                return cachesExitCode;
+
             // After a restart from Settings, let the old copy finish exiting first:
             // it still holds the single-instance lock below until it is gone.
             AppRestart.WaitForPreviousCopy(args);

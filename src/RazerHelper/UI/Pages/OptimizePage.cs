@@ -26,6 +26,7 @@ internal sealed class OptimizePage : PageView
     private readonly CleanRow _shaders;
     private readonly ToggleSwitch _closeGpuApps;
     private readonly Hibernation? _hibernation;
+    private readonly ExtraCleaning? _extras;
     private readonly ToggleSwitch _hibernationSwitch;
     private readonly Label _hibernationHint;
     private readonly Control _servicesDivider;
@@ -38,8 +39,20 @@ internal sealed class OptimizePage : PageView
     /// <summary>Windows' hibernation: whether it is on, its file's size, and turning it off or on (with administrator rights).</summary>
     internal sealed record Hibernation(Func<bool?> IsEnabled, Func<long?> FileBytes, Func<bool, Task<ElevatedResult>> SetAsync);
 
+    /// <summary>
+    /// What Temporary files clears beyond the temporary folder: the Recycle
+    /// Bin, and Windows Update's and Delivery Optimization's caches (with
+    /// administrator rights; Windows Update's is read without them).
+    /// </summary>
+    internal sealed record ExtraCleaning(
+        Func<RecycleBinContents> RecycleBin,
+        Func<bool> EmptyRecycleBin,
+        TempCleaner WindowsUpdate,
+        Func<Task<ElevatedResult>> CleanWindowsCachesAsync);
+
     /// <param name="cache">Left out (previews), Free up memory does not touch the cache.</param>
     /// <param name="hibernation">Left out (previews), the hibernation row shows it on and changes nothing.</param>
+    /// <param name="extraCleaning">Left out (previews), Temporary files is only the temporary folder.</param>
     public OptimizePage(
         MemoryTrimmer trimmer,
         TempCleaner cleaner,
@@ -47,11 +60,13 @@ internal sealed class OptimizePage : PageView
         ServicesSection services,
         bool closeGpuAppsOnUnplug,
         MemoryCache? cache = null,
-        Hibernation? hibernation = null)
+        Hibernation? hibernation = null,
+        ExtraCleaning? extraCleaning = null)
     {
         _trimmer = trimmer;
         _cache = cache;
         _hibernation = hibernation;
+        _extras = extraCleaning;
 
         _memorySlot = new BusySlot(CreateRowButton("Free up"));
         _memorySlot.Button.Click += async (_, _) => await FreeUpMemoryAsync();
@@ -254,6 +269,22 @@ internal sealed class OptimizePage : PageView
             if (IsDisposed)
                 return;
 
+            // Temporary files counts the Recycle Bin and Windows Update's downloads too.
+            if (row == _temp && _extras is { } extras)
+            {
+                var (bin, update) = await Task.Run(() => (extras.RecycleBin(), extras.WindowsUpdate.Scan()));
+
+                if (IsDisposed)
+                    return;
+
+                var total = found.Bytes + bin.Bytes + update.Bytes;
+                row.Hint.Text = total == 0
+                    ? L.T("Nothing to clean right now.")
+                    : L.F("{0} to clean: temporary files, Recycle Bin and Windows Update.", FormatSize(total));
+                row.Slot.Button.Enabled = total > 0;
+                return;
+            }
+
             row.Hint.Text = !exists ? L.T(row.Texts.Missing)
                 : found.Files == 0 ? L.T(row.Texts.Nothing)
                 : L.F(row.Texts.Found, FormatSize(found.Bytes), found.Files.ToString("N0", CultureInfo.CurrentCulture));
@@ -274,6 +305,33 @@ internal sealed class OptimizePage : PageView
 
     private async Task CleanAsync(CleanRow row)
     {
+        var extras = row == _temp ? _extras : null;
+        var emptyBin = false;
+        var bin = new RecycleBinContents(0, 0);
+
+        // What is in the Recycle Bin cannot be recovered once it is emptied, so it is asked first.
+        if (extras is not null)
+        {
+            bin = await Task.Run(extras.RecycleBin);
+
+            if (bin.Items > 0)
+            {
+                using var hold = KeepOpen();
+                var answer = MessageBox.Show(
+                    FindForm(),
+                    L.F("Empty the Recycle Bin too? It holds {0} in {1} items, which cannot be recovered afterwards.", FormatSize(bin.Bytes), bin.Items.ToString("N0", CultureInfo.CurrentCulture)),
+                    L.T("Temporary files"),
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (answer == DialogResult.Cancel)
+                    return;
+
+                emptyBin = answer == DialogResult.Yes;
+            }
+        }
+
         // Nothing is left to clean afterwards, so the button stays off until the next scan.
         row.Slot.Button.Enabled = false;
         row.Slot.Busy = true;
@@ -286,6 +344,12 @@ internal sealed class OptimizePage : PageView
 
             if (IsDisposed)
                 return;
+
+            if (extras is not null)
+            {
+                row.Hint.Text = await CleanMoreAsync(extras, result.Bytes, emptyBin ? bin : null);
+                return;
+            }
 
             var cleaned = L.F("{0} freed ({1} files).", FormatSize(result.Bytes), result.Files.ToString("N0", CultureInfo.CurrentCulture));
             row.Hint.Text = result.Skipped == 0
@@ -304,6 +368,38 @@ internal sealed class OptimizePage : PageView
             if (!IsDisposed)
                 row.Slot.Busy = false;
         }
+    }
+
+    // After the temporary folder: the Recycle Bin when the user said so, then
+    // Windows' caches, which Windows asks administrator permission for.
+    // Declining leaves those as they were. Says how much went in all.
+    private async Task<string> CleanMoreAsync(ExtraCleaning extras, long freed, RecycleBinContents? bin)
+    {
+        if (bin is not null && await Task.Run(extras.EmptyRecycleBin))
+        {
+            freed += bin.Bytes;
+            AppLog.Info($"Recycle Bin emptied: {bin.Items} items, {bin.Bytes} bytes.");
+        }
+
+        var before = await Task.Run(() => extras.WindowsUpdate.Scan().Bytes);
+        ElevatedResult result;
+
+        // Windows' permission prompt takes the focus from the window.
+        using (KeepOpen())
+            result = await extras.CleanWindowsCachesAsync();
+
+        var after = await Task.Run(() => extras.WindowsUpdate.Scan().Bytes);
+        freed += Math.Max(0, before - after);
+
+        var line = L.F("{0} freed.", FormatSize(freed));
+
+        if (result.UserDeclined)
+            return $"{line} {L.T("Windows' caches were kept: administrator permission was not given.")}";
+
+        if (result.ExitCode != WindowsCachesCommand.Success)
+            return $"{line} {L.T("Windows' caches could not all be cleared.")}";
+
+        return line;
     }
 
     // --- Hibernation ----------------------------------------------------------

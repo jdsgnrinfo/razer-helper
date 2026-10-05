@@ -469,7 +469,8 @@ public sealed class TrayPopupForm : Form
             _servicesSection,
             _settings.CloseGpuAppsOnUnplug,
             new Pages.OptimizePage.MemoryCache(WindowsMemoryCache.CachedBytes, () => ElevatedRunner.RunAsync(MemoryCacheCommand.Arguments())),
-            new Pages.OptimizePage.Hibernation(WindowsHibernation.IsEnabled, WindowsHibernation.FileBytes, enabled => ElevatedRunner.RunAsync(HibernationCommand.Arguments(enabled))));
+            new Pages.OptimizePage.Hibernation(WindowsHibernation.IsEnabled, WindowsHibernation.FileBytes, enabled => ElevatedRunner.RunAsync(HibernationCommand.Arguments(enabled))),
+            new Pages.OptimizePage.ExtraCleaning(WindowsCaches.RecycleBin, WindowsCaches.EmptyRecycleBin, WindowsCaches.WindowsUpdate(), () => ElevatedRunner.RunAsync(WindowsCachesCommand.Arguments())));
         _optimizePage.FreeUpGpu = FreeUpGpuAsync;
         _optimizePage.CloseGpuAppsOnUnplugChanged += (_, enabled) =>
         {
