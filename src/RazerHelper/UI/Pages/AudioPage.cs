@@ -40,8 +40,8 @@ internal sealed record AudioBackend(
 internal sealed record AudioChoices(EqPreset[] Presets, Dictionary<string, AudioDeviceEq> Devices);
 
 /// <summary>
-/// The output device and its equalizer. Top: which device, and making it
-/// Windows' default. Below: the equalizer, with Reset and its on/off switch
+/// The output device and its equalizer. Top: the device Windows plays to;
+/// picking another in the list switches Windows to it. Below: the equalizer, with Reset and its on/off switch
 /// beside its title, its preset with Save, New and Delete, the ten bands with
 /// their curve, then Bass enhancer, Dynamic boost and Clarity, ten levels each, added to
 /// whatever curve plays. At the bottom, only while it is needed, why the
@@ -70,7 +70,6 @@ internal sealed class AudioPage : PageView
     private string? _deviceId;
 
     private readonly DropdownButton _deviceList;
-    private readonly Button _makeDefault;
     private readonly ToggleSwitch _enabled;
     private readonly DropdownButton _presetList;
     private readonly Button _save;
@@ -106,9 +105,8 @@ internal sealed class AudioPage : PageView
         {
             Font = SemiBoldTitleFont(16)
         };
-        _makeDefault = SizedButton("Set as default");
 
-        Add(Row(RowHeight, (_deviceList, Fill: true), (_makeDefault, Fill: false)));
+        Add(Row(RowHeight, (_deviceList, Fill: true)));
 
         var divider = CreateDivider();
         divider.Margin = new Padding(0, S(22), 0, S(20));
@@ -176,9 +174,12 @@ internal sealed class AudioPage : PageView
         _deviceList.SelectionChanged += (_, _) =>
         {
             if (_deviceList.SelectedIndex >= 0)
-                ShowDevice(_shownDevices[_deviceList.SelectedIndex].Id);
+            {
+                var id = _shownDevices[_deviceList.SelectedIndex].Id;
+                MakeDefault(id);
+                ShowDevice(id);
+            }
         };
-        _makeDefault.Click += (_, _) => MakeDefault();
 
         _enabled.CheckedChanged += (_, _) =>
         {
@@ -270,8 +271,8 @@ internal sealed class AudioPage : PageView
         _deviceList.Replace([.. _shownDevices.Select(device => device.Name)]);
 
         var defaultId = _backend.DefaultDeviceId();
-        var keep = _shownDevices.FirstOrDefault(device => Same(device.Id, _deviceId))
-                   ?? _shownDevices.FirstOrDefault(device => Same(device.Id, defaultId))
+        var keep = _shownDevices.FirstOrDefault(device => Same(device.Id, defaultId))
+                   ?? _shownDevices.FirstOrDefault(device => Same(device.Id, _deviceId))
                    ?? _shownDevices.FirstOrDefault();
 
         if (keep is null)
@@ -320,11 +321,6 @@ internal sealed class AudioPage : PageView
     private void ShowState()
     {
         var hasDevice = _deviceId is not null;
-        var isDefault = hasDevice && Same(_deviceId, _backend.DefaultDeviceId());
-
-        SetAvailability(_makeDefault, hasDevice && !isDefault, _toolTip,
-            hasDevice ? "Windows already plays to this device." : "No output device is plugged in.");
-
         var installed = _backend.EqualizerInstalled();
         var hooked = installed && hasDevice && _backend.EqualizerOnDevice(_deviceId!);
 
@@ -465,21 +461,17 @@ internal sealed class AudioPage : PageView
         Commit();
     }
 
-    private void MakeDefault()
+    // The device picked becomes the one Windows plays to.
+    private void MakeDefault(string id)
     {
-        if (_deviceId is null || _makeDefault.Cursor != Cursors.Hand)
-            return;
-
         try
         {
-            _backend.SetDefaultDevice(_deviceId);
+            _backend.SetDefaultDevice(id);
         }
         catch (Exception exception) when (exception is System.Runtime.InteropServices.COMException or InvalidCastException)
         {
             AppLog.Error("Could not change the default audio output.", exception);
         }
-
-        ShowState();
     }
 
     private async Task NoticeClickedAsync()
