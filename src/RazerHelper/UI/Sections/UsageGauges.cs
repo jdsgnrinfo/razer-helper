@@ -97,7 +97,11 @@ internal sealed class UsageGauges : Control
 
         if (gauge.Percent is { } percent && percent > 0)
         {
-            using var brush = new LinearGradientBrush(ring, ArcStartColor, RazerGreen, LinearGradientMode.Horizontal);
+            // The gradient spans the whole stroke, which reaches half its width
+            // outside the ring; beyond its own bounds the brush would start
+            // again, bright green over the dark start at the left.
+            var span = RectangleF.Inflate(ring, RingThickness, RingThickness);
+            using var brush = new LinearGradientBrush(span, ArcStartColor, RazerGreen, LinearGradientMode.Horizontal) { WrapMode = WrapMode.TileFlipX };
             using var arc = new Pen(brush, RingThickness) { StartCap = LineCap.Round, EndCap = LineCap.Round };
             graphics.DrawArc(arc, ring, 135, (float)Math.Max(1, 270 * Math.Min(percent, 100) / 100));
         }
