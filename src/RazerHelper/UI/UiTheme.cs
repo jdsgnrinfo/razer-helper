@@ -31,16 +31,16 @@ internal static class UiTheme
     public static readonly Color BackgroundColor = Color.FromArgb(0x10, 0x10, 0x10);
 
     /// <summary>The sidebar of sections down the left of the main window: a step lighter than the page beside it.</summary>
-    public static readonly Color SidebarColor = Color.FromArgb(0x18, 0x18, 0x18);
+    public static readonly Color SidebarColor = Color.FromArgb(0x16, 0x16, 0x16);
 
     /// <summary>An unselected button's or drop-down's flat fill.</summary>
-    public static readonly Color ButtonColor = Color.FromArgb(0x24, 0x24, 0x24);
+    public static readonly Color ButtonColor = Color.FromArgb(0x20, 0x20, 0x20);
 
     /// <summary>A button's fill under the pointer: a touch lighter.</summary>
-    public static readonly Color ButtonHoverColor = Color.FromArgb(0x30, 0x30, 0x30);
+    public static readonly Color ButtonHoverColor = Color.FromArgb(0x26, 0x26, 0x26);
 
     /// <summary>The thin lines between sections and between rows.</summary>
-    public static readonly Color DividerColor = Color.FromArgb(0x22, 0x22, 0x22);
+    public static readonly Color DividerColor = Color.FromArgb(0x20, 0x20, 0x20);
 
     /// <summary>The 1px outline of menus and other quiet edges.</summary>
     public static readonly Color ButtonBorderColor = Color.FromArgb(0x2E, 0x2E, 0x2E);
