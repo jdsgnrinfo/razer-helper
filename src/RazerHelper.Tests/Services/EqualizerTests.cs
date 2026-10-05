@@ -12,11 +12,11 @@ public class EqualizerTests
         Assert.Equal("{afad2450-a064-4347-82d4-d9dcebb60cdd}", EqualizerApoConfig.DeviceGuid(Speakers));
 
     [Fact]
-    public void EachDeviceThatIsOn_GetsItsOwnSection_WithItsPreampAndTenBands()
+    public void EachDeviceThatIsOn_GetsItsOwnSection_WithTheRoomItsBoostNeedsAndTenBands()
     {
         var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq>
         {
-            [Speakers] = new(true, "Bass boost", -6, [6, 5.5, 4, 2, 0, -1, 0, 1.5, 2.5, 3])
+            [Speakers] = new(true, "Bass boost", [6, 5.5, 4, 2, 0, -1, 0, 1.5, 2.5, 3])
         });
 
         Assert.StartsWith(EqualizerApoConfig.Marker, text);
@@ -30,7 +30,7 @@ public class EqualizerTests
     {
         var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq>
         {
-            [Speakers] = new(false, "Bass boost", -6, [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]),
+            [Speakers] = new(false, "Bass boost", [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]),
             [Headphones] = AudioDeviceEq.Default
         });
 
@@ -50,9 +50,10 @@ public class EqualizerTests
     [Fact]
     public void ACurveFromAHandEditedFile_IsKeptToTheBands()
     {
-        var curve = new AudioDeviceEq(true, null, -40, [30, -30, 1.26]).Normalized();
+        var curve = new AudioDeviceEq(true, null, [30, -30, 1.26], BassBoost: 40, DynamicBoost: -3).Normalized();
 
-        Assert.Equal(EqBands.PreampMinimum, curve.Preamp);
+        Assert.Equal(10, curve.BassBoost);
+        Assert.Equal(0, curve.DynamicBoost);
         Assert.Equal([12, -12, 1.5, 0, 0, 0, 0, 0, 0, 0], curve.Gains);
     }
 
@@ -64,7 +65,7 @@ public class EqualizerTests
 
         try
         {
-            var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq> { [Speakers] = new(true, null, -3, [5.5, 0, 0, 0, 0, 0, 0, 0, 0, 0]) });
+            var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq> { [Speakers] = new(true, null, [5.5, 0, 0, 0, 0, 0, 0, 0, 0, 0]) });
             Assert.Contains("31 5.5;", text);
         }
         finally
@@ -74,13 +75,41 @@ public class EqualizerTests
     }
 
     [Fact]
-    public void EveryBuiltInPreset_HasTenBands_AndAPreampThatLeavesRoomForItsBoost()
+    public void EveryBuiltInPreset_HasTenBands() =>
+        Assert.All(EqPreset.BuiltIn, preset => Assert.Equal(EqBands.Count, preset.Gains.Length));
+
+    [Fact]
+    public void AFlatCurveWithNoBoost_IsNotTurnedDown()
     {
-        Assert.All(EqPreset.BuiltIn, preset =>
+        var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq> { [Speakers] = AudioDeviceEq.Default });
+
+        Assert.Contains("Preamp: 0 dB", text);
+        Assert.DoesNotContain("Filter:", text);
+    }
+
+    [Fact]
+    public void TheBoosts_WriteTheirFiltersByLevel()
+    {
+        var text = EqualizerApoConfig.Build(new Dictionary<string, AudioDeviceEq>
         {
-            Assert.Equal(EqBands.Count, preset.Gains.Length);
-            Assert.True(preset.Preamp <= -preset.Gains.Max() + 0.001 || preset.Gains.Max() <= 0, preset.Name);
+            [Speakers] = AudioDeviceEq.Default with { BassBoost = 5, DynamicBoost = 10 }
         });
+
+        Assert.Contains("Filter: ON LS Fc 120 Hz Gain 5 dB", text);
+        Assert.Contains("Filter: ON LS Fc 80 Hz Gain 4 dB", text);
+        Assert.Contains("Filter: ON PK Fc 3000 Hz Gain 3 dB Q 1", text);
+        Assert.Contains("Filter: ON HS Fc 7000 Hz Gain 6 dB", text);
+    }
+
+    [Fact]
+    public void TheVolumeComesDown_AsFarAsTheCurveAndBoostsLiftTheLoudestFrequency()
+    {
+        var bands = AudioDeviceEq.Default with { Gains = [6, 5, 4, 2, 0, 0, 0, 0, 0, 0] };
+        var boosted = bands with { BassBoost = 10 };
+
+        Assert.Equal(6, bands.Headroom());
+        Assert.InRange(boosted.Headroom(), 15.5, 16.5); // The bass shelf's 10 dB on top of the curve's 6.
+        Assert.Equal(0, AudioDeviceEq.Default.Headroom());
     }
 
     [Fact]

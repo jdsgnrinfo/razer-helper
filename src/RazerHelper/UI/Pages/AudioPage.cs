@@ -41,22 +41,25 @@ internal sealed record AudioChoices(EqPreset[] Presets, Dictionary<string, Audio
 
 /// <summary>
 /// The output device and its equalizer. Top: which device, and making it
-/// Windows' default. Below: the equalizer, on or off, its preset with Save,
-/// New and Delete, the ten bands with their curve, the preamp and Reset.
-/// At the bottom, only while it is needed, why the equalizer cannot play
-/// yet: Equalizer APO is missing (with its download), or not hooked into
-/// this device (with its Device Selector).
+/// Windows' default. Below: the equalizer, with Reset and its on/off switch
+/// beside its title, its preset with Save, New and Delete, the ten bands with
+/// their curve, then Bass boost and Dynamic boost, ten levels each, added to
+/// whatever curve plays. At the bottom, only while it is needed, why the
+/// equalizer cannot play yet: Equalizer APO is missing (with its download),
+/// or not hooked into this device (with its Device Selector).
 /// </summary>
 /// <remarks>
-/// Each device keeps its own curve, which plays as soon as it changes:
-/// Equalizer APO reads its file again by itself. A preset is where a curve
-/// starts; changing a band leaves the preset named until Save keeps the
-/// change in it (the app's own presets are never changed: Save asks for a
-/// new name instead).
+/// Each device keeps its own curve and boosts, which play as soon as they
+/// change: Equalizer APO reads its file again by itself. There is no preamp
+/// to set: the app lowers the volume by as much as the curve and boosts lift
+/// the loudest frequency, so nothing clips. A preset is where a curve starts;
+/// changing a band leaves the preset named until Save keeps the change in it
+/// (the app's own presets are never changed: Save asks for a new name instead).
 /// </remarks>
 internal sealed class AudioPage : PageView
 {
     private static int RowHeight => S(40);
+    private static int BoostRowHeight => S(36);
 
     private readonly AudioBackend _backend;
     private readonly List<EqPreset> _savedPresets;
@@ -69,14 +72,15 @@ internal sealed class AudioPage : PageView
     private readonly DropdownButton _deviceList;
     private readonly Button _makeDefault;
     private readonly ToggleSwitch _enabled;
-    private readonly Label _enabledText;
     private readonly DropdownButton _presetList;
     private readonly Button _save;
     private readonly Button _new;
     private readonly Button _delete;
     private readonly EqualizerGraph _graph;
-    private readonly ThemedSlider _preamp;
-    private readonly Label _preampValue;
+    private readonly ThemedSlider _bassBoost;
+    private readonly ThemedSlider _dynamicBoost;
+    private readonly Label _bassBoostValue;
+    private readonly Label _dynamicBoostValue;
     private readonly Panel _notice;
     private readonly Label _noticeText;
     private readonly RoundedButton _noticeButton;
@@ -92,15 +96,6 @@ internal sealed class AudioPage : PageView
         _devices = new Dictionary<string, AudioDeviceEq>(choices.Devices, StringComparer.OrdinalIgnoreCase);
 
         // Output device.
-        _enabled = new ToggleSwitch { AccessibleName = L.T("Equalizer"), Margin = Padding.Empty };
-        _enabledText = new Label
-        {
-            AutoSize = true,
-            Font = SemiBoldFont(14),
-            ForeColor = Color.White,
-            Margin = Padding.Empty
-        };
-
         var first = HeaderRow("Output device");
         first.Margin = new Padding(0, S(18), 0, 0);
         Add(first);
@@ -117,8 +112,23 @@ internal sealed class AudioPage : PageView
         divider.Margin = new Padding(0, S(22), 0, S(20));
         Add(divider);
 
-        // Equalizer.
-        var onOff = new FlowLayoutPanel
+        // Equalizer: Reset, in grey that turns green under the pointer, and the switch, beside the title.
+        _enabled = new ToggleSwitch { AccessibleName = L.T("Equalizer"), Margin = Padding.Empty };
+
+        var reset = new Label
+        {
+            AutoSize = true,
+            Cursor = Cursors.Hand,
+            Font = SemiBoldFont(13),
+            ForeColor = SubtleTextColor,
+            Margin = new Padding(0, S(4), S(16), 0),
+            Text = L.T("Reset")
+        };
+        reset.MouseEnter += (_, _) => reset.ForeColor = RazerGreen;
+        reset.MouseLeave += (_, _) => reset.ForeColor = SubtleTextColor;
+        _toolTip.SetToolTip(reset, L.T("Back to flat, with both boosts off"));
+
+        var beside = new FlowLayoutPanel
         {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -126,10 +136,9 @@ internal sealed class AudioPage : PageView
             Margin = Padding.Empty,
             WrapContents = false
         };
-        _enabledText.Margin = new Padding(0, S(3), S(10), 0);
-        onOff.Controls.Add(_enabledText);
-        onOff.Controls.Add(_enabled);
-        Add(HeaderRow("Equalizer", onOff));
+        beside.Controls.Add(reset);
+        beside.Controls.Add(_enabled);
+        Add(HeaderRow("Equalizer", beside));
 
         _presetList = new DropdownButton([]) { Font = SemiBoldTitleFont(16), Width = S(228) };
         _save = SizedButton("Save");
@@ -140,35 +149,18 @@ internal sealed class AudioPage : PageView
         _graph = new EqualizerGraph
         {
             Margin = new Padding(0, S(16), 0, 0),
-            Size = new Size(ContentWidth, S(276))
+            Size = new Size(ContentWidth, S(232))
         };
         Add(_graph);
 
-        // Preamp, and Reset.
-        _preamp = new ThemedSlider(EqBands.PreampMinimum, 0, 1) { Anchor = AnchorStyles.Left | AnchorStyles.Right };
-        _preampValue = new Label
-        {
-            AutoSize = false,
-            Font = DesignFont(16, FontStyle.Bold),
-            ForeColor = Color.White,
-            Margin = Padding.Empty,
-            Size = new Size(S(64), RowHeight),
-            TextAlign = ContentAlignment.MiddleRight
-        };
-        var preampName = new Label
-        {
-            AutoSize = false,
-            Font = DesignFont(15),
-            ForeColor = Color.White,
-            Margin = Padding.Empty,
-            Size = new Size(S(72), RowHeight),
-            Text = L.T("Preamp"),
-            TextAlign = ContentAlignment.MiddleLeft
-        };
-        var reset = SizedButton("Reset");
-        var preampRow = Row(RowHeight, (preampName, Fill: false), (_preamp, Fill: true), (_preampValue, Fill: false), (reset, Fill: false));
-        preampRow.Margin = new Padding(0, S(14), 0, 0);
-        Add(preampRow);
+        // The boosts, under the curve.
+        (var bassRow, _bassBoost, _bassBoostValue) = BoostRow("Bass enhancer");
+        bassRow.Margin = new Padding(0, S(14), 0, 0);
+        Add(bassRow);
+
+        (var dynamicRow, _dynamicBoost, _dynamicBoostValue) = BoostRow("Dynamic boost");
+        dynamicRow.Margin = new Padding(0, S(6), 0, 0);
+        Add(dynamicRow);
 
         // Why the equalizer cannot play yet, when it cannot.
         (_notice, _noticeText, _noticeButton) = CreateNotice();
@@ -184,8 +176,9 @@ internal sealed class AudioPage : PageView
 
         _enabled.CheckedChanged += (_, _) =>
         {
-            _enabledText.Text = L.T(_enabled.Checked ? "On" : "Off");
             _graph.Active = _enabled.Checked;
+            _bassBoost.Available = _enabled.Checked;
+            _dynamicBoost.Available = _enabled.Checked;
 
             if (!_showing)
                 Change(device => device with { Enabled = _enabled.Checked });
@@ -205,17 +198,25 @@ internal sealed class AudioPage : PageView
 
         _graph.GainsChanged += (_, _) => Change(device => device with { Gains = [.. _graph.Gains] });
 
-        _preamp.ValueChanged += (_, _) =>
+        _bassBoost.ValueChanged += (_, _) =>
         {
-            _preampValue.Text = $"{_preamp.Value} dB";
+            _bassBoostValue.Text = $"{_bassBoost.Value}";
 
             if (!_showing)
-                Change(device => device with { Preamp = _preamp.Value });
+                Change(device => device with { BassBoost = _bassBoost.Value });
+        };
+
+        _dynamicBoost.ValueChanged += (_, _) =>
+        {
+            _dynamicBoostValue.Text = $"{_dynamicBoost.Value}";
+
+            if (!_showing)
+                Change(device => device with { DynamicBoost = _dynamicBoost.Value });
         };
 
         reset.Click += (_, _) =>
         {
-            Change(device => device.WithPreset(EqPreset.BuiltIn[0]));
+            Change(device => device.WithPreset(EqPreset.BuiltIn[0]) with { BassBoost = 0, DynamicBoost = 0 });
             ShowCurve();
         };
 
@@ -225,7 +226,6 @@ internal sealed class AudioPage : PageView
             Commit();
         };
 
-        _enabledText.Text = L.T("On");
         RefreshPresetList();
     }
 
@@ -284,11 +284,14 @@ internal sealed class AudioPage : PageView
 
         _showing = true;
         _enabled.Checked = device.Enabled;
-        _preamp.Value = (int)device.Preamp;
-        _preampValue.Text = $"{(int)device.Preamp} dB";
         _graph.Show(device.Gains);
         _graph.Active = device.Enabled;
-        _enabledText.Text = L.T(device.Enabled ? "On" : "Off");
+        _bassBoost.Value = device.BassBoost;
+        _bassBoostValue.Text = $"{device.BassBoost}";
+        _dynamicBoost.Value = device.DynamicBoost;
+        _dynamicBoostValue.Text = $"{device.DynamicBoost}";
+        _bassBoost.Available = device.Enabled;
+        _dynamicBoost.Available = device.Enabled;
         _showing = false;
 
         RefreshPresetList();
@@ -311,7 +314,7 @@ internal sealed class AudioPage : PageView
         _notice.Tag = installed ? "selector" : "download";
         _noticeText.ForeColor = SubtleTextColor;
         _noticeText.Text = !installed
-            ? L.T("Equalizer APO is required for the equalizer to work.")
+            ? L.T("The equalizer needs Equalizer APO.")
             : hasDevice
                 ? L.T("Equalizer APO isn't turned on for this device yet.")
                 : L.T("No output device is plugged in.");
@@ -393,7 +396,7 @@ internal sealed class AudioPage : PageView
 
         if (current.Preset is { } name && !EqPreset.IsBuiltIn(name) && IndexOfPreset(name) >= 0)
         {
-            Keep(new EqPreset(name, current.Preamp, [.. current.Gains]));
+            Keep(new EqPreset(name, [.. current.Gains]));
             return;
         }
 
@@ -412,7 +415,7 @@ internal sealed class AudioPage : PageView
             return;
 
         var current = Current;
-        Keep(new EqPreset(ask.PresetName, current.Preamp, [.. current.Gains]));
+        Keep(new EqPreset(ask.PresetName, [.. current.Gains]));
     }
 
     // Adds or replaces one of the user's presets and makes it the device's.
@@ -551,6 +554,36 @@ internal sealed class AudioPage : PageView
         }
 
         return row;
+    }
+
+    // A boost's row: its name, its slider from 0 (off) to 10, and the level at the right.
+    private static (TableLayoutPanel Row, ThemedSlider Slider, Label Value) BoostRow(string text)
+    {
+        var name = new Label
+        {
+            AutoSize = false,
+            Font = DesignFont(15),
+            ForeColor = Color.White,
+            Margin = Padding.Empty,
+            Size = new Size(S(156), BoostRowHeight),
+            Text = L.T(text),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        var slider = new ThemedSlider(0, EqBoosts.Levels, 1) { AccessibleName = L.T(text) };
+
+        var value = new Label
+        {
+            AutoSize = false,
+            Font = DesignFont(16, FontStyle.Bold),
+            ForeColor = Color.White,
+            Margin = Padding.Empty,
+            Size = new Size(S(32), BoostRowHeight),
+            Text = "0",
+            TextAlign = ContentAlignment.MiddleRight
+        };
+
+        return (Row(BoostRowHeight, (name, Fill: false), (slider, Fill: true), (value, Fill: false)), slider, value);
     }
 
     // A button as wide as its text needs, 16px each side.

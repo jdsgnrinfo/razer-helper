@@ -17,9 +17,6 @@ internal static class EqBands
     /// <summary>The smallest move, in dB.</summary>
     public const double Step = 0.5;
 
-    /// <summary>The preamp's lowest setting, in dB; its highest is 0.</summary>
-    public const int PreampMinimum = -24;
-
     /// <summary>A band's frequency as it is written under it: 31, 500, 1k, 16k.</summary>
     public static string Label(int frequency) =>
         frequency >= 1000 ? $"{frequency / 1000}k" : frequency.ToString(CultureInfo.InvariantCulture);
@@ -32,51 +29,131 @@ internal static class EqBands
 }
 
 /// <summary>A named curve to start from: one of the app's, or one the user saved.</summary>
-internal sealed record EqPreset(string Name, double Preamp, double[] Gains)
+internal sealed record EqPreset(string Name, double[] Gains)
 {
     /// <summary>The app's own, in the list's order; their names are translated on screen.</summary>
     public static readonly IReadOnlyList<EqPreset> BuiltIn =
     [
-        new("Flat", 0, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-        new("Bass boost", -6, [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]),
-        new("Treble boost", -6, [0, 0, 0, 0, 0, 1, 2, 4, 5, 6]),
-        new("Vocal", -4, [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1]),
-        new("Gaming", -5, [3, 2, 0, -1, 0, 2, 4, 5, 4, 2]),
-        new("Loudness", -6, [6, 4, 1, 0, -1, 0, 0, 2, 4, 5])
+        new("Flat", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+        new("Bass boost", [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]),
+        new("Treble boost", [0, 0, 0, 0, 0, 1, 2, 4, 5, 6]),
+        new("Vocal", [-2, -1, 0, 2, 4, 4, 3, 1, 0, -1]),
+        new("Gaming", [3, 2, 0, -1, 0, 2, 4, 5, 4, 2]),
+        new("Loudness", [6, 4, 1, 0, -1, 0, 0, 2, 4, 5])
     ];
 
     public static bool IsBuiltIn(string name) =>
         BuiltIn.Any(preset => string.Equals(preset.Name, name, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>Whether a device's curve is exactly this one.</summary>
-    public bool Matches(AudioDeviceEq device) =>
-        Preamp == device.Preamp && Gains.SequenceEqual(device.Gains);
+    /// <summary>Whether a device's curve is exactly this one (the boosts are the device's own, not the preset's).</summary>
+    public bool Matches(AudioDeviceEq device) => Gains.SequenceEqual(device.Gains);
+}
+
+/// <summary>
+/// The two boosts beside the equalizer, each from 0 (off) to 10, added to
+/// whatever curve plays. Bass boost lifts everything under about 120 Hz;
+/// Dynamic boost brings out both ends and the presence range, for a fuller,
+/// punchier sound.
+/// </summary>
+internal static class EqBoosts
+{
+    public const int Levels = 10;
+
+    // What each boost writes, per level: a filter's type, frequency, gain per level, and Q (peaks only).
+    internal static readonly (string Type, double Frequency, double GainPerLevel, double Q)[] Bass =
+    [
+        ("LS", 120, 1.0, 0)
+    ];
+
+    internal static readonly (string Type, double Frequency, double GainPerLevel, double Q)[] Dynamic =
+    [
+        ("LS", 80, 0.4, 0),
+        ("PK", 3000, 0.3, 1.0),
+        ("HS", 7000, 0.6, 0)
+    ];
+
+    public static int Clamp(int level) => Math.Clamp(level, 0, Levels);
 }
 
 /// <summary>
 /// One output device's equalizer: on or off, the preset it came from (if it
-/// still has one), and its own curve, which is what plays.
+/// still has one), its own curve, and its two boosts, which is what plays.
 /// </summary>
-internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double Preamp, double[] Gains)
+internal sealed record AudioDeviceEq(bool Enabled, string? Preset, double[] Gains, int BassBoost = 0, int DynamicBoost = 0)
 {
     /// <summary>A device seen for the first time: on, and flat, so nothing changes until the curve does.</summary>
-    public static AudioDeviceEq Default => new(true, "Flat", 0, EqBands.Flat());
+    public static AudioDeviceEq Default => new(true, "Flat", EqBands.Flat());
 
-    /// <summary>The curve with its gains trimmed to the bands (a hand-edited settings file may hold anything).</summary>
+    /// <summary>The curve with its gains and boosts trimmed to their ranges (a hand-edited settings file may hold anything).</summary>
     public AudioDeviceEq Normalized() => this with
     {
-        Preamp = Math.Clamp(Math.Round(Preamp), EqBands.PreampMinimum, 0),
-        Gains = [.. Enumerable.Range(0, EqBands.Count).Select(band => EqBands.Snap(band < (Gains?.Length ?? 0) ? Gains![band] : 0))]
+        Gains = [.. Enumerable.Range(0, EqBands.Count).Select(band => EqBands.Snap(band < (Gains?.Length ?? 0) ? Gains![band] : 0))],
+        BassBoost = EqBoosts.Clamp(BassBoost),
+        DynamicBoost = EqBoosts.Clamp(DynamicBoost)
     };
 
     public AudioDeviceEq WithPreset(EqPreset preset) =>
-        this with { Preset = preset.Name, Preamp = preset.Preamp, Gains = [.. preset.Gains] };
+        this with { Preset = preset.Name, Gains = [.. preset.Gains] };
+
+    /// <summary>
+    /// How far the curve and the boosts together lift the loudest frequency,
+    /// in dB (0 when nothing is lifted): the preamp takes that much off, so a
+    /// boost never clips. Estimated on a fine grid across the audible range.
+    /// </summary>
+    public double Headroom()
+    {
+        var curve = Normalized();
+        var highest = 0.0;
+
+        for (var octave = Math.Log2(20); octave <= Math.Log2(20000); octave += 1.0 / 24)
+            highest = Math.Max(highest, curve.LevelAt(Math.Pow(2, octave)));
+
+        return Math.Ceiling(highest / EqBands.Step) * EqBands.Step;
+    }
+
+    // The change at one frequency, in dB: the bands joined in straight lines
+    // on a log scale (as Equalizer APO joins them), plus the boosts' filters.
+    private double LevelAt(double frequency)
+    {
+        var bands = EqBands.Frequencies;
+        double level;
+
+        if (frequency <= bands[0])
+            level = Gains[0];
+        else if (frequency >= bands[^1])
+            level = Gains[^1];
+        else
+        {
+            var upper = Array.FindIndex(bands, band => band >= frequency);
+            var share = Math.Log(frequency / bands[upper - 1]) / Math.Log((double)bands[upper] / bands[upper - 1]);
+            level = Gains[upper - 1] + (Gains[upper] - Gains[upper - 1]) * share;
+        }
+
+        foreach (var (filters, boost) in new[] { (EqBoosts.Bass, BassBoost), (EqBoosts.Dynamic, DynamicBoost) })
+        {
+            foreach (var (type, center, perLevel, q) in filters)
+            {
+                var gain = perLevel * boost;
+                var ratio = frequency / center;
+
+                level += type switch
+                {
+                    "LS" => gain / (1 + ratio * ratio * ratio * ratio),
+                    "HS" => gain * ratio * ratio * ratio * ratio / (1 + ratio * ratio * ratio * ratio),
+                    _ => gain / (1 + Math.Pow(q * (ratio - 1 / ratio), 2))
+                };
+            }
+        }
+
+        return level;
+    }
 }
 
 /// <summary>
 /// The file Equalizer APO plays: a section per output device whose equalizer
-/// is on, picked by the device's id, with its preamp and its ten bands. A
-/// device that is off, or not in the file, plays as it is.
+/// is on, picked by the device's id, with the preamp that keeps it from
+/// clipping, its ten bands and its boosts. A device that is off, or not in
+/// the file, plays as it is.
 /// </summary>
 internal static class EqualizerApoConfig
 {
@@ -105,9 +182,18 @@ internal static class EqualizerApoConfig
 
             text.AppendLine();
             text.AppendLine($"Device: {DeviceGuid(endpointId)}");
-            text.AppendLine($"Preamp: {Number(curve.Preamp)} dB");
+            text.AppendLine($"Preamp: {Number(-curve.Headroom() + 0.0)} dB"); // + 0.0: never "-0".
             text.AppendLine("GraphicEQ: " + string.Join("; ",
                 EqBands.Frequencies.Select((frequency, band) => $"{frequency} {Number(curve.Gains[band])}")));
+
+            foreach (var (filters, boost) in new[] { (EqBoosts.Bass, curve.BassBoost), (EqBoosts.Dynamic, curve.DynamicBoost) })
+            {
+                if (boost == 0)
+                    continue;
+
+                foreach (var (type, frequency, perLevel, q) in filters)
+                    text.AppendLine($"Filter: ON {type} Fc {Number(frequency)} Hz Gain {Number(perLevel * boost)} dB" + (type == "PK" ? $" Q {Number(q)}" : ""));
+            }
         }
 
         return text.ToString();
