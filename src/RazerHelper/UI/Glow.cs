@@ -46,9 +46,10 @@ internal static class Glow
         }
     }
 
+    /// <summary>The glow around <paramref name="body"/>, in the graphics' coordinates.</summary>
     // Rings of green a pixel apart, strongest at the edge and fading out
     // smoothly (eased), from the outside in.
-    private static void Paint(Graphics graphics, RectangleF body)
+    internal static void Paint(Graphics graphics, RectangleF body)
     {
         var smoothing = graphics.SmoothingMode;
         graphics.SmoothingMode = SmoothingMode.AntiAlias;

@@ -108,30 +108,11 @@ internal static class Glyphs
 
     // Outlined icons, drawn as lines 2 units wide on their own grid, as they
     // are in the SVG they come from (stroke-width 2, round ends and joins).
-    // The outlined icons' line width, widened only while a glow is drawn.
-    [ThreadStatic]
-    private static float _strokeWidth;
-
-    /// <summary>
-    /// A soft glow behind an outlined icon (the sidebar's): the same lines,
-    /// wider and faint, to draw before the icon itself.
-    /// </summary>
-    public static void DrawGlow(Graphics graphics, Glyph icon, RectangleF bounds, Color color)
-    {
-        foreach (var (width, alpha) in new[] { (6.5f, 26), (4.5f, 46) })
-        {
-            _strokeWidth = width;
-            Draw(graphics, icon, bounds, Color.FromArgb(alpha, color));
-        }
-
-        _strokeWidth = 0;
-    }
-
     private static void StrokeSetIcon(Graphics graphics, SetIcon icon, Color color)
     {
         var state = graphics.Save();
         graphics.ScaleTransform(Grid / icon.Grid, Grid / icon.Grid);
-        using var pen = new Pen(color, _strokeWidth > 0 ? _strokeWidth : 2f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+        using var pen = new Pen(color, 2f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
         graphics.DrawPath(pen, icon.Path);
         graphics.Restore(state);
     }
