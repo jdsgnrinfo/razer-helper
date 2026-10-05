@@ -10,7 +10,7 @@ namespace RazerHelper.UI;
 internal sealed class LoadingSpinner : Control
 {
     // Base-design pixels.
-    private const int Diameter = 36;
+    private const int DefaultDiameter = 36;
     private const float Thickness = 4f;
 
     // One full turn a second, as a quarter-circle arc.
@@ -19,6 +19,11 @@ internal sealed class LoadingSpinner : Control
 
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 15 };
     private readonly System.Diagnostics.Stopwatch _clock = new();
+
+    /// <summary>The circle's size in base-design pixels: 36 unless set smaller, as in a button's place.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public int Diameter { get; init; } = DefaultDiameter;
 
     public LoadingSpinner()
     {

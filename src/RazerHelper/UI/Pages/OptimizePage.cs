@@ -248,7 +248,7 @@ internal sealed class OptimizePage : PageView
     // System shows while it reads) for as long as its job runs.
     private sealed class BusySlot : Panel
     {
-        private readonly LoadingSpinner _spinner = new() { Dock = DockStyle.Fill, Visible = false };
+        private readonly LoadingSpinner _spinner = new() { Diameter = 28, Dock = DockStyle.Fill, Visible = false };
 
         public BusySlot(Button button)
         {
