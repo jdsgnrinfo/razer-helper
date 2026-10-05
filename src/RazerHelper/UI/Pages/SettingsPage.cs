@@ -39,7 +39,7 @@ internal sealed class SettingsPage : PageView
         _startAtLoginBox = AddOption("Start at login", "Opens in the tray when you sign in.");
         _hideWhenClickedAwayBox = AddOption("Hide when clicking away", "Off, it stays open until you click the tray icon.");
         _alwaysOnTopBox = AddOption("Always on top", L.F("Stays above other windows and games. {0} shows or hides it.", GlobalHotkey.Text));
-        _profileShortcutsBox = AddOption("Performance mode shortcuts", "Ctrl+Shift+F1 and F2 switch to Balanced and Silent.");
+        _profileShortcutsBox = AddOption("Performance mode shortcuts", "Ctrl+Shift+F1, F2 and F3: Balanced, Silent and Custom.");
 
         _errorLabel = new Label
         {

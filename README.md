@@ -69,7 +69,7 @@ Everything the original does still works the same way; on top of it:
 
 - **Razer Blade 15 Base (2020) support**, tested on the laptop itself: Max fan through the model's manual fan method, and keyboard colors. Features the firmware does not really support (charge limit, the max fan flag) are marked unavailable instead of pretending to work.
 - **Spanish translation**, chosen in Settings (English stays the default).
-- **Performance mode shortcuts:** Ctrl+Shift+F1/F2 switch to Balanced and Silent from any program, with a small notice at the top right.
+- **Performance mode shortcuts:** Ctrl+Shift+F1/F2/F3 switch to Balanced, Silent and Custom (with its last CPU and GPU levels) from any program, with a HUD-style notice at the top right.
 - **Silent without turbo:** in Silent the CPU always stays at its base frequency (Windows' processor boost is turned off in the active power plan), cooler and quieter. Part of the mode, with no switch; Balanced or Custom give the boost back, closing the app leaves it as it is.
 - **Tray icon in the mode's color:** green for Balanced, blue for Silent, purple for Custom, and "RazerHelper (Silent)" on hover.
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
@@ -99,7 +99,7 @@ Everything the original does still works the same way; on top of it:
 - **Audio** (its own section): the output devices plugged in, in a list that shows the one Windows plays to; picking another switches Windows to it, for everything (games and music, calls and system sounds), as its own sound settings do. Each device has its own **equalizer**: ten bands from 31 Hz to 16 kHz, ±12 dB in half steps (drag a band, scroll over it, or double-click it back to 0), a green curve that follows them, and **Reset** (beside the title) back to flat with the boosts off. Under the curve, **Bass enhancer** (a lift under about 120 Hz), **Dynamic boost** (both ends and the presence range, for a fuller, punchier sound) and **Clarity** (the mids and treble, for crisper voices and detail), from 0 to 10, are added to whatever curve plays. There is no preamp to set: the app turns the sound down by as much as the curve and boosts lift the loudest frequency, so nothing clips. Start from a preset (Flat, Bass boost, Treble boost, Vocal, Gaming, Loudness) or one of your own: **Save** keeps a change in your preset, **New** saves it under a new name, **Delete** removes one of yours. A switch turns the equalizer off without losing the curve. The sound itself goes through [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) (free, open source, installed separately): the app writes the curves into its settings file, which it plays at once, with no administrator rights; the file it found first is kept beside it as `config.before-RazerHelper.txt`. While Equalizer APO is not installed, the section offers its download; while it is not turned on for the chosen device, **Turn on** opens its Device Selector to tick it (Windows asks for administrator permission). The equalizer keeps playing with the app closed. Programs that take a device for themselves (exclusive mode, ASIO) bypass it.
 - **Razer background services:** shows how many are running, and can stop and restore them (see below).
 - **Tray icon:** its disc takes the color of the current mode (green Balanced, blue Silent, purple Custom), and hovering it names the mode, as in "RazerHelper (Silent)". A mode changed outside the app (the laptop's own keys, Synapse) shows once the window is next opened.
-- **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2** switch to Balanced and Silent with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
+- **Keyboard shortcuts**, in any program, even a game: **Fn+Del** shows or hides the window, and **Ctrl+Shift+F1 / F2 / F3** switch to Balanced, Silent and Custom with a small notice at the top right (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Settings** (its own section): the language, start at login, hide the window when you click away, keep it always on top, the performance mode shortcuts, shortcuts to Razer's drivers and support page and to the log folder, and **Reset to defaults**.
 
 **Reset to defaults** (in Settings) puts the app back the way it was the first time you opened it, if something ever seems stuck. After you confirm, it clears your saved settings, turns off Start at login, sets the laptop to Balanced mode with no battery charge limit, and restarts. It does not touch Razer's background services (the record of what they were set to is kept, so Start can still restore them) or anything else on your PC.
@@ -113,6 +113,7 @@ They work in any program, even a game, and are always on: no setting needed.
 | **Fn+Del** | Shows the window, or hides it if it is in front |
 | **Ctrl+Shift+F1** | Switches to **Balanced** |
 | **Ctrl+Shift+F2** | Switches to **Silent** |
+| **Ctrl+Shift+F3** | Switches to **Custom**, with the CPU and GPU levels it last had |
 
 ### Open it from anywhere
 
@@ -124,9 +125,9 @@ Press **Fn+Del** in any program, even a game, to bring the window to the front, 
 
 ### Switch performance mode from anywhere
 
-**Ctrl+Shift+F1** and **F2** switch to Balanced and Silent, as clicking their buttons would, without opening the window.
+**Ctrl+Shift+F1**, **F2** and **F3** switch to Balanced, Silent and Custom, as clicking their buttons would, without opening the window. Custom comes back with the CPU and GPU levels it last had.
 
-- A small notice at the top right of the screen shows the mode's icon, its name and how it went: "Active" (green icon), or why not (grey icon), such as "Needs to be plugged in" or "Not supported on this laptop".
+- A notice at the top right of the screen, drawn like a game HUD (a strip in Chroma's colors down its left edge and the top right corner cut on a slant), shows the mode's icon, "PERFORMANCE MODE", the mode's name in capitals and how it went: "Active" (green icon), or why not (grey icon and an amber strip), such as "Needs to be plugged in" or "Not supported on this laptop".
 - It never takes the focus from the game or program in front, and fades out after two seconds. In a game in exclusive fullscreen Windows draws nothing over it, so the mode still changes but the notice is not seen; in windowed or borderless fullscreen it shows.
 - Like Fn+Del, they cost nothing when unused. If another program already uses one, the window says so at the top and the others still work.
 - They are on from the start. To free them for another program, or if you would rather not have them, turn off **Performance mode shortcuts** in Settings.
