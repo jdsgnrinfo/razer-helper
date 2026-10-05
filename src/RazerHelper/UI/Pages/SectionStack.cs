@@ -17,7 +17,7 @@ internal sealed class SectionStack : TableLayoutPanel
     // Measured from a glowing row's glow room, which adds its own 12px.
     private static int JoinedGap => S(16) - UiControls.GlowRoom;
 
-    private readonly List<(Control Section, Func<int> Height, bool Joined, bool Wide)> _rows = [];
+    private readonly List<(Control Section, Func<int> Height, bool Joined, bool Wide, int ExtraGap)> _rows = [];
 
     public SectionStack()
     {
@@ -35,9 +35,10 @@ internal sealed class SectionStack : TableLayoutPanel
     /// <param name="height">The section's own height, without the gap below it; asked again on every <see cref="Relayout"/>.</param>
     /// <param name="joined">Part of the section above: close under it, with no line between.</param>
     /// <param name="wide">Holds glowing buttons, so it fills the stack's whole width and keeps its own glow room.</param>
-    public void AddSection(Control section, Func<int> height, bool joined = false, bool wide = false)
+    /// <param name="extraGap">More room above a joined section than the usual close gap.</param>
+    public void AddSection(Control section, Func<int> height, bool joined = false, bool wide = false, int extraGap = 0)
     {
-        _rows.Add((section, height, joined, wide));
+        _rows.Add((section, height, joined, wide, extraGap));
         RowCount = _rows.Count;
         RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
         Controls.Add(section, 0, _rows.Count - 1);
@@ -51,9 +52,9 @@ internal sealed class SectionStack : TableLayoutPanel
 
         for (var index = 0; index < _rows.Count; index++)
         {
-            var (section, height, _, wide) = _rows[index];
+            var (section, height, _, wide, _) = _rows[index];
             var own = height();
-            var gap = own > 0 && NextShown(index) is { } next ? (_rows[next].Joined ? JoinedGap : SectionPanel.GapBelow) : 0;
+            var gap = own > 0 && NextShown(index) is { } next ? (_rows[next].Joined ? JoinedGap + _rows[next].ExtraGap : SectionPanel.GapBelow) : 0;
 
             var side = wide ? 0 : UiControls.GlowRoom;
             section.Margin = new Padding(side, 0, side, gap);

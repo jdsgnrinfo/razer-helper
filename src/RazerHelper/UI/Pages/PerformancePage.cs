@@ -24,9 +24,9 @@ internal sealed class PerformancePage : PageView
     {
         _custom = new CustomBoostPanel(performance.BoostSelectors) { Visible = false };
 
-        _stack.AddSection(performance, () => SectionHeaderHeight + S(150) + GlowRoom, wide: true);
+        _stack.AddSection(performance, () => SectionHeaderHeight + S(142) + GlowRoom, wide: true);
         _stack.AddSection(_custom, () => _customShown ? CustomBoostPanel.PanelHeight : 0, joined: true, wide: true);
-        _stack.AddSection(_gauges, () => UsageGauges.GaugesHeight, joined: true);
+        _stack.AddSection(_gauges, () => UsageGauges.GaugesHeight, joined: true, extraGap: S(8));
         _stack.AddSection(fans, () => SectionHeaderHeight + RadioOption.PreferredHeight +
             (fans.AreReadingsShown ? FanSection.ReadingsHeight : 0));
         _stack.AddSection(battery, () => BatterySection.ContentHeight);
