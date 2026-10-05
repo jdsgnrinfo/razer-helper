@@ -18,7 +18,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 
 - **Performance:** Silent, Balanced and Custom as large buttons, with live CPU, GPU and RAM usage rings, temperatures and clocks under them, the fans, and the battery charge limit.
 - **Custom levels in place:** choosing Custom opens the CPU and GPU boost levels right under the modes.
-- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), keyboard and logo effects with their brightness, and the keyboard off with the screen.
+- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), color profile (Standard, Warm, Cool, Contrast), keyboard and logo effects with their brightness, and the keyboard off with the screen.
 - **Energy:** live battery details, a performance profile for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
 - **System:** the model, Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
 - **Optimize:** free up memory, clean temporary files and the NVIDIA shader cache, close the apps keeping the dedicated GPU awake, and turn off hibernation to free its file.
@@ -33,7 +33,7 @@ One window, in sections, like Synapse: a sidebar on the left and the chosen sect
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, keyboard and logo lighting effects with brightness sliders, and the keyboard off with the screen switch">
+  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, color profile buttons Standard, Warm, Cool and Contrast, keyboard and logo lighting effects with brightness sliders, and the keyboard off with the screen switch">
 </p>
 
 <p align="center">
@@ -85,6 +85,7 @@ Everything the original does still works the same way; on top of it:
 - **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Energy, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** any percentage from 60% to 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
+- **Color profile:** Standard, Warm (less blue, about 5000 K, easier on the eyes at night), Cool (about 8000 K) or Contrast (darker shadows, brighter highlights), on every screen and in every app, games included. It changes the curve the graphics card sends the colors through, as f.lux does, and needs no administrator rights. Standard, and closing the app, give the screen back exactly the curve it had (a calibration included). It is put back after sleep or a change of screen, when Windows may reset it. It cannot make colors more saturated, and it adds to Windows' Night light if that is on.
 - **Temperatures:** CPU and GPU, shown beside the usage rings under the performance modes (with each one's usage and clock, and the RAM's use, speed and free memory), only while the window is open. The GPU reading comes from the graphics driver (the same source Task Manager uses). The CPU reading comes from the laptop's own controller. Compared with MSI Afterburner under load on the developer's laptop it was very close, but it updates more slowly, so Afterburner's number moves faster (hover it for a reminder). It is not read from the CPU die itself. The GPU is read every 2 seconds and the CPU every 4, and nothing is read while the window is closed.
 - **Fans:** live CPU and GPU fan speed, and **Max** fan speed (both fans flat out). Max is a one-off that needs AC power and, on most models, Custom mode; **Auto** turns it off, and it clears by itself when you change mode. On the Blade 15 Base (2020) it runs both fans at full power through their manual setting instead, which works in any mode but Silent.
 - **Lighting:** the keyboard backlight (Off, Static green, Spectrum, Wave, Breathing) and the Razer logo on the lid (Off, On, Breathing), each with a brightness slider. Always available, on battery or plugged in.

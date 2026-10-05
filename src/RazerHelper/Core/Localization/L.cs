@@ -210,6 +210,12 @@ internal static class L
 
         // Display.
         ["Display"] = "Pantalla",
+        ["Color profile"] = "Perfil de color",
+        ["Standard"] = "Estándar",
+        ["Warm"] = "Cálido",
+        ["Cool"] = "Frío",
+        ["Contrast"] = "Contraste",
+        ["This screen does not take it"] = "Esta pantalla no lo admite",
         ["Current: -- Hz"] = "Actual: -- Hz",
         ["Auto: power source unavailable."] = "Auto: no se sabe si está enchufado.",
         ["Auto: waiting for the game"] = "Auto: esperando al juego",

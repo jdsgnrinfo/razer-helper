@@ -53,4 +53,7 @@ internal sealed record AppSettings(
     string? Language = null,
     // Left by an earlier version's Idle option, when it ended with its plan
     // switched: the plan it replaced, given back once at startup, then cleared.
-    Guid? PlanBeforeIdle = null);
+    Guid? PlanBeforeIdle = null,
+    // The screen's color profile (Warm, Cool, Contrast); null is Standard,
+    // the screen as it was.
+    string? ColorProfile = null);

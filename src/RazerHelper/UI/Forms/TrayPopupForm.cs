@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.ServiceProcess;
 using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Hardware;
@@ -44,6 +45,12 @@ public sealed class TrayPopupForm : Form
     private readonly ProfileToast _profileToast = new();
     private readonly DisplayStateWatcher _displayWatcher = new();
     private readonly KeyboardScreenOffService _keyboardScreenOff;
+    private readonly ColorProfileService _colorProfiles;
+    private readonly ColorProfileSection _colorProfileSection;
+
+    // Windows may reset the screens' ramps a moment after waking or a change of
+    // screen; the color profile goes back on once things have settled.
+    private readonly System.Windows.Forms.Timer _colorReapplyTimer = new() { Interval = 1_500 };
     private readonly SilentPlanOverride _silentTurbo;
     // Checks Silent's boost every couple of seconds, whatever the window does.
     private readonly System.Windows.Forms.Timer _silentTimer = new() { Interval = 2_000 };
@@ -71,7 +78,8 @@ public sealed class TrayPopupForm : Form
             fullscreenDetector: new WindowsFullscreenDetector(),
             cpuBoost: PowerPlanValue.BoostMode(),
             cpuEfficiency: PowerPlanValue.EfficiencyPreference(),
-            powerPlans: new WindowsPowerPlans())
+            powerPlans: new WindowsPowerPlans(),
+            gammaRamps: new WindowsGammaRamps())
     {
     }
 
@@ -94,7 +102,8 @@ public sealed class TrayPopupForm : Form
         IFullscreenDetector? fullscreenDetector = null,
         IPowerPlanValue? cpuBoost = null,
         IPowerPlanValue? cpuEfficiency = null,
-        IPowerPlans? powerPlans = null)
+        IPowerPlans? powerPlans = null,
+        IGammaRamps? gammaRamps = null)
     {
         _transport = transport;
         _powerSource = powerSource;
@@ -161,6 +170,25 @@ public sealed class TrayPopupForm : Form
         _keyboardScreenOff = new KeyboardScreenOffService(lightingService);
         _keyboardScreenOff.SetEnabled(_settings.KeyboardOffWithScreen);
         _displayWatcher.DisplayChanged += (_, on) => _keyboardScreenOff.OnDisplayChanged(on);
+
+        // The screen's color profile, put back whenever Windows may have reset it.
+        // Left out (tests, previews), no screen is touched.
+        _colorProfiles = new ColorProfileService(gammaRamps ?? new NoGammaRamps());
+        _colorProfiles.Apply(ColorProfiles.Parse(_settings.ColorProfile));
+        _colorProfileSection = new ColorProfileSection(_colorProfiles);
+        _colorProfileSection.ProfileChosen += (_, profile) => SaveSettings(_settings with { ColorProfile = ColorProfiles.ToSetting(profile) });
+        _colorReapplyTimer.Tick += (_, _) =>
+        {
+            _colorReapplyTimer.Stop();
+            _colorProfiles.Reapply();
+        };
+        _displayWatcher.DisplayChanged += (_, on) =>
+        {
+            if (on)
+                ScheduleColorReapply();
+        };
+        SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
+        SystemEvents.PowerModeChanged += SystemEvents_PowerModeChanged;
 
         // Silent keeps the CPU at its base frequency, always: part of the
         // mode, with no switch. Balanced and Custom give the boost back. Left
@@ -385,6 +413,7 @@ public sealed class TrayPopupForm : Form
         // Nothing is left watching the fans once the app is gone.
         _performanceSection.TurnOffMaxFanBeforeExit();
         _keyboardScreenOff.Restore(); // Never leave the keyboard dark behind.
+        _colorProfiles.Restore(); // Nor the screens in a color they did not have.
         _silentTimer.Stop();
 
         _allowClose = true;
@@ -414,7 +443,7 @@ public sealed class TrayPopupForm : Form
     {
         var performancePage = new Pages.PerformancePage(_performanceSection, _fanSection, _batterySection);
 
-        var displayPage = new Pages.DisplayPage(_displaySection, _lightingSection, _settings.KeyboardOffWithScreen);
+        var displayPage = new Pages.DisplayPage(_displaySection, _colorProfileSection, _lightingSection, _settings.KeyboardOffWithScreen);
         displayPage.KeyboardOffWithScreenChanged += (_, enabled) =>
         {
             SaveSettings(_settings with { KeyboardOffWithScreen = enabled });
@@ -832,6 +861,40 @@ public sealed class TrayPopupForm : Form
     // returned value is not disposed.
     private OpenHold KeepOpen() => new(this);
 
+    // A change of screen or mode may reset the ramps.
+    private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e) => ScheduleColorReapply();
+
+    // So may sleep.
+    private void SystemEvents_PowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume)
+            ScheduleColorReapply();
+    }
+
+    // Only a profile the app put on needs putting back; SystemEvents may call
+    // from another thread, so the timer is started on the window's.
+    private void ScheduleColorReapply()
+    {
+        if (_colorProfiles.Current == ColorProfile.Standard)
+            return;
+
+        _uiContext.Post(_ =>
+        {
+            _colorReapplyTimer.Stop();
+            _colorReapplyTimer.Start();
+        }, null);
+    }
+
+    // No screens, for tests and previews.
+    private sealed class NoGammaRamps : IGammaRamps
+    {
+        public IReadOnlyList<string> Displays() => [];
+
+        public ushort[]? Get(string display) => null;
+
+        public bool Set(string display, ushort[] ramp) => false;
+    }
+
     // No power plans, for tests and previews.
     private sealed class NoPowerPlans : IPowerPlans
     {
@@ -944,6 +1007,9 @@ public sealed class TrayPopupForm : Form
             _profileShortcuts.Dispose();
             _profileToast.Dispose();
             _displayWatcher.Dispose();
+            SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
+            SystemEvents.PowerModeChanged -= SystemEvents_PowerModeChanged;
+            _colorReapplyTimer.Dispose();
             _fadeTimer.Dispose();
             _silentTimer.Dispose();
             _dgpuCoordinator.Dispose();

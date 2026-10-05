@@ -45,6 +45,7 @@ Changes made in this fork by [jdsgnrinfo](https://github.com/jdsgnrinfo) on top 
 - **Optimize's buttons** give their place to the turning circle System shows while it reads, for as long as Free up memory, Temporary files or Free up GPU is working.
 - **GitHub** beside the version in Settings opens the project's page; grey, green under the pointer, like Close.
 - **Optimize** gains **NVIDIA shader cache**, which shows the size of the graphics driver's shader cache and clears it (files a game has open stay), and **Hibernation**, a switch that shows the size of the hibernation file and turns hibernation off or on with administrator permission (off also turns off fast startup).
+- **Color profile** in Display and lighting: Standard, Warm, Cool or Contrast, applied at once to every screen through its gamma ramp and remembered. Standard and closing the app give each screen back the ramp it had; the profile is put back after sleep, the screen turning on or a change of screen.
 - **New previews** in the README: one picture of each section (Performance, Custom, Display and lighting, Energy, System, Optimize, Settings), drawn at 1.5 times the base size, with a short summary of each.
 - The charge limit slider shows the chosen limit at its right, like the lighting sliders.
 - **Any percentage on every slider:** the charge limit takes any value from 60% to 100% (it offered only 60, 80 and 100) and the lighting brightness any value from 0% to 100% (it went in steps of 5). The thumb follows the pointer while dragging and glides into place on release.
