@@ -114,7 +114,7 @@ internal sealed class Sidebar : Panel
         bottom.Controls.Add(_error);
 
         // Hides the window to the tray, from any section: the app keeps running.
-        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = aside, LineAbove = true };
+        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = aside, LineAbove = true, GreenHover = true };
         close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
         _toolTip.SetToolTip(close, L.T("Close (RazerHelper keeps running in the tray)"));
         bottom.Controls.Add(close);
@@ -266,6 +266,11 @@ internal sealed class Sidebar : Panel
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool LineAbove { get; init; }
 
+        /// <summary>Under the pointer, only the icon and text turn green, with no fill (Close).</summary>
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public bool GreenHover { get; init; }
+
         [System.ComponentModel.Browsable(false)]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool Selected
@@ -310,7 +315,7 @@ internal sealed class Sidebar : Panel
 
             var body = Body;
 
-            if (_selected || _hovered)
+            if (_selected || (_hovered && !GreenHover))
             {
                 var fillColor = !_selected ? ButtonColor : _hovered ? RazerGreenHover : RazerGreen;
                 using var fill = new SolidBrush(fillColor);
@@ -318,7 +323,7 @@ internal sealed class Sidebar : Panel
                 graphics.FillPath(fill, path);
             }
 
-            var color = _selected ? OnGreenTextColor : _hovered ? Color.White : SubtleTextColor;
+            var color = _selected ? OnGreenTextColor : !_hovered ? SubtleTextColor : GreenHover ? RazerGreen : Color.White;
             var middle = body.Top + body.Height / 2f;
             var icon = new RectangleF(body.Left + S(12), middle - IconSize / 2f, IconSize, IconSize);
             Glyphs.Draw(graphics, _glyph, icon, color);
