@@ -79,6 +79,9 @@ internal sealed class CustomBoostSelectors : IDisposable
         {
             var level = Enum.Parse<TLevel>((string)button.Tag!);
             buttons[level] = button;
+
+            // The chips' font, as Energy's: four levels to a half-width row leave little room.
+            button.Font = SemiBoldTitleFont(15);
             button.Click += (_, _) => onSelected(level);
         }
 

@@ -80,7 +80,7 @@ internal sealed class FanSection : SectionPanel
         // Automatic | Max RPM, as in Synapse's "Max Fan Speed Mode", side by
         // side as two options with a line each on what they do. Max is only
         // offered when the laptop allows it; Automatic turns it off again.
-        _autoButton = new RadioOption(L.T("Automatic RPM"), L.T("The system picks the speed based on how it is used"))
+        _autoButton = new RadioOption(L.T("Automatic RPM"), L.T("The system sets the speed as needed"))
         {
             Cursor = Cursors.Hand,
             Dock = DockStyle.Fill,

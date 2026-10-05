@@ -186,7 +186,7 @@ internal static class L
         ["GPU Fan"] = "Ventilador GPU",
         ["Max"] = "Máx.",
         ["Automatic RPM"] = "RPM Automática",
-        ["The system picks the speed based on how it is used"] = "El sistema elige la velocidad según el uso",
+        ["The system sets the speed as needed"] = "El sistema elige la velocidad según el uso",
         ["Max RPM"] = "RPM Máxima",
         ["Always runs at 100%, however it is used"] = "Siempre al 100 %, sin importar el uso",
         ["Needs Custom mode, plugged in"] = "Requiere modo Personalizado y el cargador conectado",
