@@ -114,7 +114,7 @@ internal sealed class Sidebar : Panel
         bottom.Controls.Add(_error);
 
         // Hides the window to the tray, from any section: the app keeps running.
-        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = aside, LineAbove = true, GreenHover = true };
+        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = aside, LineAbove = true };
         close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
         _toolTip.SetToolTip(close, L.T("Close (RazerHelper keeps running in the tray)"));
         bottom.Controls.Add(close);
@@ -220,10 +220,10 @@ internal sealed class Sidebar : Panel
     }
 
     /// <summary>
-    /// A section's entry: its name (with an icon before it, on Close), grey at rest; under the pointer
-    /// a dark fill and white text; and when its section is on show, a green
-    /// fill (lighter under the pointer) with dark icon and text, and a soft
-    /// green glow around it, as the app's selected buttons have.
+    /// An entry: its name (with an icon before it, on Close), grey at rest,
+    /// green under the pointer, with no fill; and when its section is on show,
+    /// a green fill (lighter under the pointer) with dark text and a soft green
+    /// glow around it, as the app's selected buttons have.
     /// </summary>
     private sealed class NavButton : Control
     {
@@ -265,11 +265,6 @@ internal sealed class Sidebar : Panel
         [System.ComponentModel.Browsable(false)]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public bool LineAbove { get; init; }
-
-        /// <summary>Under the pointer, only the icon and text turn green, with no fill (Close).</summary>
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public bool GreenHover { get; init; }
 
         [System.ComponentModel.Browsable(false)]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
@@ -315,15 +310,15 @@ internal sealed class Sidebar : Panel
 
             var body = Body;
 
-            if (_selected || (_hovered && !GreenHover))
+            if (_selected)
             {
-                var fillColor = !_selected ? ButtonColor : _hovered ? RazerGreenHover : RazerGreen;
+                var fillColor = _hovered ? RazerGreenHover : RazerGreen;
                 using var fill = new SolidBrush(fillColor);
                 using var path = RoundedButton.RoundedPath(body, S(RoundedButton.CornerRadius));
                 graphics.FillPath(fill, path);
             }
 
-            var color = _selected ? OnGreenTextColor : !_hovered ? SubtleTextColor : GreenHover ? RazerGreen : Color.White;
+            var color = _selected ? OnGreenTextColor : _hovered ? RazerGreen : SubtleTextColor;
             var middle = body.Top + body.Height / 2f;
 
             // An icon only on Close; the sections are their names alone.
