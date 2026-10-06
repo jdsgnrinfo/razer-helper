@@ -209,9 +209,9 @@ internal sealed class Sidebar : Panel
     {
         private static readonly Font NameFont = SemiBoldFont(14);
 
-        // The laptop: a screen and the small stand under it.
-        private static Size ScreenSize => new(S(40), S(25));
-        private static Size StandSize => new(S(14), S(4));
+        // The laptop: its screen, and the base it opens from, a little wider.
+        private static Size ScreenSize => new(S(36), S(23));
+        private static Size StandSize => new(S(46), S(5));
 
         public DeviceBadge()
         {
@@ -236,8 +236,10 @@ internal sealed class Sidebar : Panel
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
         }
 
-        // A screen outlined in green over a faint green fill, with rounded
-        // corners, and a solid green stand centred under it; its top middle at <paramref name="top"/>.
+        // A laptop, open: the screen outlined in green over a faint green fill,
+        // with rounded corners, on a solid green base a little wider than it,
+        // rounded at the front, with the notch for opening the lid; its top
+        // middle at <paramref name="top"/>.
         private static void PaintLaptop(Graphics graphics, PointF top)
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -254,8 +256,28 @@ internal sealed class Sidebar : Panel
                 graphics.DrawPath(pen, shape);
             }
 
-            using var stand = new SolidBrush(RazerGreen);
-            graphics.FillRectangle(stand, top.X - StandSize.Width / 2f, screen.Bottom, StandSize.Width, StandSize.Height);
+            var baseBounds = new RectangleF(top.X - StandSize.Width / 2f, screen.Bottom, StandSize.Width, StandSize.Height);
+
+            using (var deck = new SolidBrush(RazerGreen))
+            using (var shape = BasePath(baseBounds, S(2.5f)))
+                graphics.FillPath(deck, shape);
+
+            using var notch = new SolidBrush(SidebarColor);
+            var notchWidth = S(9f);
+            using var notchShape = RoundedButton.RoundedPath(new RectangleF(top.X - notchWidth / 2, baseBounds.Top - S(1f), notchWidth, S(2.5f)), S(1.2f));
+            graphics.FillPath(notch, notchShape);
+        }
+
+        // The base: square at the back, where the screen meets it, rounded at the front.
+        private static System.Drawing.Drawing2D.GraphicsPath BasePath(RectangleF bounds, float radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            var diameter = Math.Min(radius * 2, bounds.Height * 2);
+            path.AddLine(bounds.Left, bounds.Top, bounds.Right, bounds.Top);
+            path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            return path;
         }
     }
 }
