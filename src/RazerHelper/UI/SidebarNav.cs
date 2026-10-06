@@ -36,10 +36,10 @@ internal sealed class SidebarNav : Control
 
     private const double PressedScale = 0.97;
 
-    // Quicker than the sliders: the pill settles in about a fifth of a second
-    // with a hint of bounce, the highlight and the press in about a seventh.
-    private static readonly Spring.Feel PillFeel = Spring.Feel.Of(0.22, 0.12);
-    private static readonly Spring.Feel QuickFeel = Spring.Feel.Of(0.15, 0.05);
+    // Quicker than the sliders: the pill settles in about a sixth of a second
+    // with a hint of bounce, the highlight and the press in about a tenth.
+    private static readonly Spring.Feel PillFeel = Spring.Feel.Of(0.16, 0.1);
+    private static readonly Spring.Feel QuickFeel = Spring.Feel.Of(0.11, 0.05);
 
     private readonly (DashboardPage Page, string Text)[] _entries;
     private readonly Spring _pill = new(0, 0.05);
