@@ -279,6 +279,8 @@ internal static class L
         ["On"] = "Encendido",
         ["Static"] = "Fijo",
         ["Static green"] = "Verde fijo",
+        ["Color"] = "Color",
+        ["{0} brightness"] = "Brillo de {0}",
         ["Spectrum"] = "Espectro",
         ["Breathing"] = "Respiración",
         ["Wave"] = "Onda",
