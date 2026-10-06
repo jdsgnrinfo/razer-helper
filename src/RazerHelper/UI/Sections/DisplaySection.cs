@@ -55,7 +55,7 @@ internal sealed class DisplaySection : SectionPanel
         _statusLabel = CreateHeaderValueLabel();
         _statusLabel.Text = L.T("Current: -- Hz");
 
-        header.Controls.Add(CreateSectionLabel("Display"), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Refresh rate"), 0, 0);
         header.Controls.Add(_statusLabel, 1, 0);
 
         var modes = OfferedModes();

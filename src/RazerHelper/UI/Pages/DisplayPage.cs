@@ -10,7 +10,7 @@ internal sealed class DisplayPage : PageView
         : base("Display")
     {
         var stack = new SectionStack();
-        stack.AddSection(display, () => SectionHeaderHeight + UiTheme.S(68) + GlowRoom, wide: true);
+        stack.AddSection(display, () => SectionHeaderHeight + UiTheme.S(96) + GlowRoom, wide: true);
         stack.AddSection(colorProfile, () => ColorProfileSection.SectionHeight, wide: true);
         AddWide(stack);
     }

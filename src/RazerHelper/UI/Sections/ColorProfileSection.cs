@@ -55,8 +55,8 @@ internal sealed class ColorProfileSection : SectionPanel
         Show(_service.Current, applied: true);
     }
 
-    /// <summary>How tall the section is: its title and a row of buttons, with their glow room.</summary>
-    public static int SectionHeight => SectionHeaderHeight + S(44) + GlowRoom;
+    /// <summary>How tall the section is: its title and a row of large buttons, with their glow room.</summary>
+    public static int SectionHeight => SectionHeaderHeight + S(74) + GlowRoom;
 
     /// <summary>Raised with the profile chosen, after it is applied.</summary>
     public event EventHandler<ColorProfile>? ProfileChosen;

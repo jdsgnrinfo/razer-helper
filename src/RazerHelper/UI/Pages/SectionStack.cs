@@ -5,10 +5,9 @@ namespace RazerHelper.UI.Pages;
 
 /// <summary>
 /// The popup's sections, one under another as they were in the old single
-/// window: each row as tall as its section asks, with the gap and the thin
-/// line between one section and the next (none after the last). A section
-/// that asks for no height takes none, and its line goes with it; one joined
-/// to the section above follows it closely, with no line between them. The
+/// window: each row as tall as its section asks, with the gap between one
+/// section and the next (none after the last). A section that asks for no
+/// height takes none; one joined to the section above follows it closely. The
 /// stack is <see cref="PageView.WideWidth"/> wide: a section with glowing
 /// buttons fills it, the rest keep the glow room clear at each side.
 /// </summary>
@@ -23,13 +22,11 @@ internal sealed class SectionStack : TableLayoutPanel
     {
         BackColor = BackgroundColor;
         ColumnCount = 1;
-        // Room above the first title, so it starts where the other pages' first text does.
-        Margin = new Padding(0, S(18), 0, 0);
+        Margin = Padding.Empty;
         Padding = Padding.Empty;
         Width = PageView.WideWidth;
 
         ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        Paint += PaintDividers;
     }
 
     /// <param name="height">The section's own height, without the gap below it; asked again on every <see cref="Relayout"/>.</param>
@@ -76,21 +73,5 @@ internal sealed class SectionStack : TableLayoutPanel
         }
 
         return null;
-    }
-
-    private void PaintDividers(object? sender, PaintEventArgs e)
-    {
-        using var line = new SolidBrush(DividerColor);
-        float top = 0;
-
-        for (var index = 0; index < _rows.Count; index++)
-        {
-            var height = RowStyles[index].Height;
-
-            if (height > 0 && NextShown(index) is { } next && !_rows[next].Joined)
-                e.Graphics.FillRectangle(line, UiControls.GlowRoom, top + height - SectionPanel.GapBelow + SectionPanel.DividerOffset, PageView.ContentWidth, S(1));
-
-            top += height;
-        }
     }
 }

@@ -124,7 +124,7 @@ internal abstract class PageView : UserControl
         words.Controls.Add(new Label
         {
             AutoSize = true,
-            Font = SemiBoldFont(16),
+            Font = DesignFont(15),
             ForeColor = Color.White,
             Margin = Padding.Empty,
             MaximumSize = new Size(ContentWidth - control.Width - S(24), 0),
@@ -136,9 +136,9 @@ internal abstract class PageView : UserControl
             words.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = DesignFont(14),
+                Font = DesignFont(13),
                 ForeColor = SubtleTextColor,
-                Margin = new Padding(0, S(2), 0, 0),
+                Margin = new Padding(0, S(1), 0, 0),
                 MaximumSize = new Size(ContentWidth - control.Width - S(24), 0),
                 Text = L.T(hint)
             });

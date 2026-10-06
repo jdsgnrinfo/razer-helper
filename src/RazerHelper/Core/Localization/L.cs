@@ -59,6 +59,7 @@ internal static class L
         // The sidebar's sections and their pages.
         ["Performance"] = "Rendimiento",
         ["Power profiles"] = "Perfiles de energía",
+        ["Refresh rate"] = "Frecuencia de actualización",
         ["Device"] = "Equipo",
         ["Assistant"] = "Asistente",
         ["Connected"] = "Conectado",
