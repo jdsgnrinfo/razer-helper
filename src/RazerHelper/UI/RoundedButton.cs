@@ -26,6 +26,17 @@ internal class RoundedButton : Button
     private float _hover;
     private float _hoverFrom;
 
+    // The bounce of a button becoming selected: its size, 1 at rest.
+    private readonly Spring _bounceScale = new(1, 0.0005);
+    private readonly System.Windows.Forms.Timer _bounceFrames = new() { Interval = 15 };
+    private readonly System.Diagnostics.Stopwatch _bounceClock = System.Diagnostics.Stopwatch.StartNew();
+    private double _lastBounceFrame;
+    private bool _wasGreen;
+
+    // Selected, it shrinks to this and springs back past its size before settling.
+    private const double BounceFrom = 0.92;
+    private static readonly Spring.Feel BounceFeel = Spring.Feel.Of(0.38, 0.45);
+
     public RoundedButton()
     {
         FlatStyle = FlatStyle.Flat;
@@ -40,6 +51,7 @@ internal class RoundedButton : Button
             true);
 
         _hoverAnimation.Tick += (_, _) => StepHover();
+        _bounceFrames.Tick += (_, _) => StepBounce();
     }
 
     /// <summary>A rounded rectangle filling <paramref name="bounds"/>.</summary>
@@ -71,7 +83,7 @@ internal class RoundedButton : Button
         // The button itself, inside the room kept for its glow (none on most).
         // Its row paints the glow; what of it falls on this button is painted here first.
         var glow = GlowRoom;
-        var body = new RectangleF(glow, glow, Width - 2 * glow, Height - 2 * glow);
+        var body = Body;
 
         if (glow > 0)
             Glow.PaintBehind(graphics, this);
@@ -116,12 +128,16 @@ internal class RoundedButton : Button
             var textHeight = TextRenderer.MeasureText(graphics, Text, Font, textBounds.Size, TextFormatFlags.SingleLine).Height;
             var top = textBounds.Top + (textBounds.Height - (CircleSize + StackedGlyphGap + textHeight)) / 2;
             var circle = new RectangleF(textBounds.Left + (textBounds.Width - CircleSize) / 2f, top, CircleSize, CircleSize);
+            // The icon and its circle bounce with the button.
+            var shrink = CircleSize * (1 - BounceScale) / 2;
+            circle.Inflate(-shrink, -shrink);
 
             using (var circleFill = new SolidBrush(IsGreen ? SelectedIconCircleColor : IconCircleColor))
                 graphics.FillEllipse(circleFill, circle);
 
             var iconColor = !IsUsable ? textColor : IsGreen ? OnGreenTextColor : RazerGreen;
-            var icon = RectangleF.Inflate(circle, -(CircleSize - StackedGlyphSize) / 2f, -(CircleSize - StackedGlyphSize) / 2f);
+            var iconInset = (CircleSize - StackedGlyphSize) / 2f * BounceScale;
+            var icon = RectangleF.Inflate(circle, -iconInset, -iconInset);
             Glyphs.Draw(graphics, Glyph.Value, icon, iconColor);
 
             var textArea = new Rectangle(textBounds.Left, top + CircleSize + StackedGlyphGap, textBounds.Width, textHeight);
@@ -225,13 +241,44 @@ internal class RoundedButton : Button
     /// <summary>True when selected: green.</summary>
     internal bool IsGreen => BackColor.ToArgb() == RazerGreen.ToArgb();
 
-    /// <summary>The button itself, inside its glow room, in its own coordinates.</summary>
-    internal RectangleF Body => new(GlowRoom, GlowRoom, Width - 2 * GlowRoom, Height - 2 * GlowRoom);
+    /// <summary>The button itself, inside its glow room, in its own coordinates; smaller while it bounces.</summary>
+    internal RectangleF Body
+    {
+        get
+        {
+            var body = new RectangleF(GlowRoom, GlowRoom, Width - 2 * GlowRoom, Height - 2 * GlowRoom);
+            var scale = BounceScale;
+            body.Inflate(-body.Width * (1 - scale) / 2, -body.Height * (1 - scale) / 2);
+            return body;
+        }
+    }
+
+    /// <summary>
+    /// Whether becoming selected makes the button bounce: it shrinks a little
+    /// and springs back, just past its size, before settling. Off by default.
+    /// </summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public bool BounceOnSelect { get; set; }
+
+    private float BounceScale => (float)_bounceScale.Position;
 
     // Selecting or unselecting a glowing button changes its neighbours' underlay too.
     protected override void OnBackColorChanged(EventArgs e)
     {
         base.OnBackColorChanged(e);
+
+        var green = IsGreen;
+
+        if (BounceOnSelect && green && !_wasGreen && IsHandleCreated && Visible && !Motion.Reduced)
+        {
+            _bounceScale.Jump(BounceFrom);
+            _bounceScale.To(1, BounceFeel);
+            _lastBounceFrame = _bounceClock.Elapsed.TotalSeconds;
+            _bounceFrames.Start();
+        }
+
+        _wasGreen = green;
 
         if (GlowRoom > 0)
             Parent?.Invalidate(true);
@@ -269,9 +316,28 @@ internal class RoundedButton : Button
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             _hoverAnimation.Dispose();
+            _bounceFrames.Dispose();
+        }
 
         base.Dispose(disposing);
+    }
+
+    private void StepBounce()
+    {
+        var now = _bounceClock.Elapsed.TotalSeconds;
+        var moving = _bounceScale.Step(Math.Min(0.032, now - _lastBounceFrame));
+        _lastBounceFrame = now;
+
+        if (!moving)
+            _bounceFrames.Stop();
+
+        // The glow, painted by the row, follows the button's size.
+        if (GlowRoom > 0 && Parent is { } row)
+            row.Invalidate(true);
+        else
+            Invalidate();
     }
 
     private static Color Lighten(Color color, float amount) => Color.FromArgb(

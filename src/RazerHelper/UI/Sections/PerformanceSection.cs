@@ -76,7 +76,11 @@ internal sealed class PerformanceSection : SectionPanel
             button.Font = ProfileButtonFont;
 
             if (button is RoundedButton rounded)
+            {
                 rounded.Glyph = GlyphFor(mode);
+                // The chosen mode answers with a little bounce.
+                rounded.BounceOnSelect = true;
+            }
         }
 
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
