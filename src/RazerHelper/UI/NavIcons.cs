@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace RazerHelper.UI;
 
-/// <summary>The sidebar's pictures: one per section, and the menu's three lines.</summary>
+/// <summary>The outlined pictures: the sidebar's, one per section, and the menu's three lines; and those before the settings rows.</summary>
 internal enum NavIcon
 {
     Performance,
@@ -14,7 +14,21 @@ internal enum NavIcon
     Optimize,
     System,
     Settings,
-    Menu
+    Menu,
+
+    // The settings rows' own pictures.
+    Cpu,
+    Gpu,
+    ChargeLimit,
+    Fan,
+    Speaker,
+    Plug,
+    Battery,
+    Memory,
+    Trash,
+    ShaderCache,
+    FreeGpu,
+    Moon
 }
 
 /// <summary>
@@ -56,7 +70,43 @@ internal static class NavIcons
             "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"), null),
 
         // Three lines, for opening and closing the menu.
-        [NavIcon.Menu] = (SvgPath.Parse("M3 6h18M3 12h18M3 18h18"), null)
+        [NavIcon.Menu] = (SvgPath.Parse("M3 6h18M3 12h18M3 18h18"), null),
+
+        // A chip with its pins.
+        [NavIcon.Cpu] = (SvgPath.Parse(Rect(6, 6, 12, 12, 1.5f) + "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"), null),
+
+        // A graphics card: its two fans and the pins below.
+        [NavIcon.Gpu] = (SvgPath.Parse(Rect(2, 6, 20, 11, 1.5f) + Circle(8, 11.5f, 2.5f) + Circle(16, 11.5f, 2.5f) + "M5 17v3M9 17v3"), null),
+
+        // A battery part full.
+        [NavIcon.ChargeLimit] = (SvgPath.Parse(Rect(2, 7, 17, 10, 2) + "M22 11v2"), SvgPath.Parse(Rect(5, 10, 9, 4))),
+
+        // A fan's three blades round its hub.
+        [NavIcon.Fan] = (SvgPath.Parse(Circle(12, 12, 2) + "M12 3c2.5 0 3.5 2 2.6 4.4L13 10M21 15.5c-1.3 2.1-3.6 2.4-5.2.5L14 13.5M3 15.5c-1.2-1.8.2-3.7 2.7-4H9"), null),
+
+        // A speaker.
+        [NavIcon.Speaker] = (SvgPath.Parse("M11 5 6 9H3v6h3l5 4z"), null),
+
+        // A plug.
+        [NavIcon.Plug] = (SvgPath.Parse("M9 2v5M15 2v5M7 7h10v4a5 5 0 0 1-10 0zM12 16v6"), null),
+
+        // A battery.
+        [NavIcon.Battery] = (SvgPath.Parse(Rect(2, 7, 17, 10, 2) + "M22 11v2"), null),
+
+        // A memory stick.
+        [NavIcon.Memory] = (SvgPath.Parse(Rect(3, 7, 18, 10, 1) + "M7 7v10M11 7v10M15 7v10"), null),
+
+        // A bin.
+        [NavIcon.Trash] = (SvgPath.Parse("M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"), null),
+
+        // A graphics card, for its shader cache.
+        [NavIcon.ShaderCache] = (SvgPath.Parse(Rect(2, 6, 20, 11, 1.5f) + Circle(8, 11.5f, 2.5f) + Circle(16, 11.5f, 2.5f)), null),
+
+        // A chip with a square at its heart, for the graphics chip.
+        [NavIcon.FreeGpu] = (SvgPath.Parse(Rect(6, 6, 12, 12, 1.5f) + Rect(9.5f, 9.5f, 5, 5) + "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"), null),
+
+        // A crescent moon, for hibernation.
+        [NavIcon.Moon] = (SvgPath.Parse("M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"), null)
     };
 
     public static void Draw(Graphics graphics, NavIcon icon, RectangleF bounds, Color color)

@@ -82,21 +82,18 @@ internal sealed class PerformanceSection : SectionPanel
         _customRow.CpuSelected += async (_, level) => await SelectCpuAsync(level);
         _customRow.GpuSelected += async (_, level) => await SelectGpuAsync(level);
 
-        // The title, as far in as the buttons' glow room, so it lines up
-        // with them; their glow takes the rest of the usual gap below it.
-        var header = CreateHeaderLayout();
-        header.Height = SectionHeaderHeight - GlowRoom;
-        header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
-        header.Controls.Add(CreateSectionLabel("Performance Mode"), 0, 0);
-
-        // Dock order: the header docks first, and the mode buttons fill whatever is left.
         Controls.Add(grid);
-        Controls.Add(header);
 
         UpdateButtonStates();
 
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
     }
+
+    /// <summary>The mode buttons' height, without their glow room.</summary>
+    public static int ButtonHeight => S(150);
+
+    /// <summary>The mode and levels the section shows: what the EC last reported.</summary>
+    public PerformanceState State => _state;
 
     /// <summary>Raised after the user changes a profile and the EC confirms it.</summary>
     public event EventHandler<PowerProfileChange>? ProfileChanged;

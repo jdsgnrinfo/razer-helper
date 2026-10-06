@@ -2,31 +2,22 @@ using RazerHelper.Core.Diagnostics;
 using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
-using static RazerHelper.UI.UiControls;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// The power source and battery charge ("Plugged in · 84%") in the header,
-/// and the charge-limit slider with the chosen limit under it. Reports its
-/// results through events so the host decides how to persist and display them.
+/// The battery's charge limit, as one settings row: its name with where the
+/// power comes from and the charge under it ("Plugged in · 84%"), the slider,
+/// and the chosen limit at the right. Reports its results through events so
+/// the host decides how to persist and display them.
 /// </summary>
 internal sealed class BatterySection : SectionPanel
 {
-    /// <summary>The title row: taller than the others, to fit the "More details" button, then the 8px gap.</summary>
-    private static int HeaderHeight => S(30 + 8);
-
-    /// <summary>The header and the slider with the chosen limit beside it.</summary>
-    public static int ContentHeight => HeaderHeight + S(24);
-
-    /// <summary>Raised when the user asks for the battery details. The window shows Energy.</summary>
-    public event EventHandler? DetailsRequested;
-
     private readonly BatteryChargeLimitService _chargeLimitService;
     private readonly IPowerSource _powerSource;
+    private readonly SettingRow _row;
     private readonly ThemedSlider _slider;
-    private readonly Label _powerLabel;
     private readonly Label _limitLabel;
     private readonly ThemedToolTip _toolTip = new();
 
@@ -44,76 +35,37 @@ internal sealed class BatterySection : SectionPanel
 
         var initialLimit = BatteryLimitRange.Normalize(savedLimit ?? BatteryLimitRange.NoLimit);
 
-        // Header, right: how full the battery is and where the power comes
-        // from ("84% (Plugged in)"), then More details, which goes to
-        // Energy.
-        _powerLabel = CreateHeaderValueLabel();
-        _powerLabel.Font = CapsTitleFont();
-        _powerLabel.Dock = DockStyle.None;
-        _powerLabel.Anchor = AnchorStyles.Right;
-
-        var details = CreateSmallButton("More details");
-        details.Anchor = AnchorStyles.Right;
-        details.Margin = new Padding(S(12), 0, 0, 0);
-        details.Click += (_, _) => DetailsRequested?.Invoke(this, EventArgs.Empty);
-
-        var header = new TableLayoutPanel
-        {
-            BackColor = CardColor,
-            ColumnCount = 3,
-            Dock = DockStyle.Top,
-            Height = HeaderHeight,
-            Margin = Padding.Empty,
-            Padding = new Padding(0, 0, 0, S(8)),
-            RowCount = 1
-        };
-
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        header.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        header.Controls.Add(CreateSectionLabel("Battery Charge Limit"), 0, 0);
-        header.Controls.Add(_powerLabel, 1, 0);
-        header.Controls.Add(details, 2, 0);
-
-        // The slider, with the chosen limit at its right, as the lighting sliders show brightness.
         _slider = new ThemedSlider(BatteryLimitRange.Minimum, BatteryLimitRange.Maximum, BatteryLimitRange.Step)
         {
+            AccessibleName = L.T("Charge limit"),
             Format = value => $"{value} %",
-            Dock = DockStyle.Fill,
-            Margin = Padding.Empty
+            Height = S(30)
         };
 
         _limitLabel = new RollingLabel
         {
             AutoSize = false,
-            Dock = DockStyle.Fill,
-            Font = DesignFont(16, FontStyle.Bold),
+            Font = SemiBoldFont(14),
             ForeColor = Color.White,
-            Margin = Padding.Empty,
+            Size = new Size(S(50), S(24)),
             TextAlign = ContentAlignment.MiddleRight
         };
 
         _slider.ValueChanged += (_, _) => _limitLabel.Text = $"{_slider.Value} %";
         _slider.Value = initialLimit;
         _limitLabel.Text = $"{_slider.Value} %";
-
-        var limit = CreateTwoColumnLayout(100F, 0F);
-        limit.ColumnStyles[1] = new ColumnStyle(SizeType.Absolute, S(68));
-        limit.Dock = DockStyle.Top;
-        limit.Height = S(24);
-        limit.Controls.Add(_slider, 0, 0);
-        limit.Controls.Add(_limitLabel, 1, 0);
-
         _slider.Committed += async (_, _) => await CommitAsync();
 
-        // Dock order: the last added docks first, so the header is on top.
-        Controls.Add(limit);
-        Controls.Add(header);
+        _row = new SettingRow("Charge limit", string.Empty, NavIcon.ChargeLimit) { Dock = DockStyle.Top, TextWidth = S(150) };
+        _row.Add(_limitLabel).Fill(_slider);
+        Controls.Add(_row);
 
         UpdatePowerLabel();
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
     }
+
+    /// <summary>The row's height.</summary>
+    public int RowHeight => _row.Height;
 
     /// <summary>
     /// Re-reads the battery charge. Windows only tells listeners when the power
@@ -136,7 +88,7 @@ internal sealed class BatterySection : SectionPanel
     private void PowerSource_PowerSourceChanged(object? sender, EventArgs e) =>
         PostToUi(UpdatePowerLabel);
 
-    // "84% (Plugged in)" or "62% (On battery)"; without a reading, just the source.
+    // "Plugged in · 84%" or "On battery · 62%"; without a reading, just the source.
     private void UpdatePowerLabel()
     {
         var source = _powerSource.IsPluggedIn switch
@@ -146,8 +98,8 @@ internal sealed class BatterySection : SectionPanel
             null => string.Empty
         };
 
-        _powerLabel.Text = _powerSource.BatteryPercent is { } percent
-            ? source.Length > 0 ? $"{percent}% ({source})" : $"{percent}%"
+        _row.Hint.Text = _powerSource.BatteryPercent is { } percent
+            ? source.Length > 0 ? $"{source} · {percent}%" : $"{percent}%"
             : source;
     }
 

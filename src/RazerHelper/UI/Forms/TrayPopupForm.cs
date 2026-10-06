@@ -530,8 +530,6 @@ public sealed class TrayPopupForm : Form
         _sidebar.Select(_currentPage);
         _sidebar.PageRequested += (_, page) => ShowPage(page);
 
-        // The battery's More details goes to its section.
-        _batterySection.DetailsRequested += (_, _) => ShowPage(DashboardPage.Power);
 
         // The close button at the top right, over every page: hides the window to the tray, and the app keeps running.
         _titleBar.CloseControl.AccessibleName = L.T("Close");
@@ -903,8 +901,13 @@ public sealed class TrayPopupForm : Form
         SaveSettings(_settings with { RazerLoginApprovals = approvals.Count > 0 ? approvals : null });
 
     // The fan buttons ask, the performance section does it (it owns the EC conversation).
-    private void FanSection_MaxFanRequested(object? sender, bool enabled) =>
-        _ = _performanceSection.SetMaxFanAsync(enabled);
+    // The switch moves at once; whatever the laptop ends up doing (a change
+    // refused, or one not sent while another was on its way), it then shows.
+    private async void FanSection_MaxFanRequested(object? sender, bool enabled)
+    {
+        await _performanceSection.SetMaxFanAsync(enabled);
+        _fanSection.ShowPerformanceState(_performanceSection.State);
+    }
 
     // Max fan speed only exists in Custom mode, so the fan buttons follow the performance state.
     /// <summary>Raised with the performance mode the laptop is in after every confirmed change (null when unknown), for the tray icon.</summary>

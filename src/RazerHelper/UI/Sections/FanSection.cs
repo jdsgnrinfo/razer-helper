@@ -3,13 +3,13 @@ using RazerHelper.Core.Hardware;
 using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
 using RazerHelper.Core.Services;
-using static RazerHelper.UI.UiControls;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// CPU and GPU fan speed readout. Every poll it also reads the CPU and GPU
+/// Max RPM, as one settings row: its switch, and under its name the CPU and
+/// GPU fans' speeds as they are now. Every poll it also reads the CPU and GPU
 /// temperatures and announces them (<see cref="TemperaturesRead"/>), for the
 /// host to show wherever it likes. Polls only while the host says the popup is
 /// visible, so nothing is read (and neither chip is asked anything) while the
@@ -30,12 +30,15 @@ internal sealed class FanSection : SectionPanel
     {
         Interval = PollIntervalMilliseconds
     };
-    private readonly Label _cpuFanLabel;
-    private readonly Label _gpuFanLabel;
-    private readonly TableLayoutPanel _readings;
-    private readonly Button[] _modeButtons;
-    private readonly Button _autoButton;
-    private readonly Button _maxButton;
+    private readonly SettingRow _row;
+    private readonly ToggleSwitch _maxSwitch;
+
+    // The fans' last speeds, null until read.
+    private int? _cpuRpm;
+    private int? _gpuRpm;
+
+    // Set while the switch is moved to show the laptop's state, not by a click.
+    private bool _showingState;
 
     private PerformanceState _performanceState = PerformanceState.Unknown;
     private bool _isMaxAvailable;
@@ -54,81 +57,39 @@ internal sealed class FanSection : SectionPanel
         _cpuTemperature = cpuTemperature;
         _gpuTemperature = gpuTemperature;
 
-        _cpuFanLabel = CreateReadingLabel($"{L.T("CPU Fan")}: -- RPM");
-        _gpuFanLabel = CreateReadingLabel($"{L.T("GPU Fan")}: -- RPM");
-
-        // Each reading sits above its own button: CPU over Auto, GPU over Max,
-        // side by side. The columns are the same width as the button cells
-        // below, so the text lines up with the left edge of each button.
-        var readings = _readings = new TableLayoutPanel
+        // Max fan, as in Synapse's "Max Fan Speed Mode": on, the fans run flat
+        // out however the laptop is used; off, the system sets their speed.
+        // Only offered when the laptop allows it; turning it off always is.
+        _maxSwitch = new ToggleSwitch { AccessibleName = L.T("Max RPM"), Name = "MaxFanSwitch" };
+        _maxSwitch.CheckedChanged += (_, _) =>
         {
-            BackColor = CardColor,
-            ColumnCount = 2,
-            Dock = DockStyle.Top,
-            Height = ReadingsHeight,
-            Margin = Padding.Empty,
-            Padding = S(new Padding(0, 0, 0, 2)),
-            RowCount = 1
+            if (!_showingState)
+                RequestMaxFan(_maxSwitch.Checked);
         };
 
-        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        readings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        readings.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        readings.Controls.Add(_cpuFanLabel, 0, 0);
-        readings.Controls.Add(_gpuFanLabel, 1, 0);
+        _row = new SettingRow("Max RPM", string.Empty, NavIcon.Fan) { Dock = DockStyle.Top, Divided = true };
+        _row.Add(_maxSwitch).FlipsOnClick(_maxSwitch);
+        Controls.Add(_row);
 
-        // Automatic | Max RPM, as in Synapse's "Max Fan Speed Mode", side by
-        // side as two options with a line each on what they do. Max is only
-        // offered when the laptop allows it; Automatic turns it off again.
-        _autoButton = new RadioOption(L.T("Automatic RPM"), L.T("The system sets the speed as needed"))
-        {
-            Cursor = Cursors.Hand,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(0, 0, S(12), 0),
-            Name = "AutoFanModeButton"
-        };
-        _maxButton = new RadioOption(L.T("Max RPM"), L.T("Always runs at 100%, however it is used"))
-        {
-            Cursor = Cursors.Hand,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(S(12), 0, 0, 0),
-            Name = "MaxFanModeButton"
-        };
-        _modeButtons = [_autoButton, _maxButton];
-
-        var modeGrid = CreateTwoColumnLayout(50F, 50F);
-        modeGrid.Controls.Add(_autoButton, 0, 0);
-        modeGrid.Controls.Add(_maxButton, 1, 0);
-
-        _autoButton.Click += (_, _) => RequestMaxFan(false);
-        _maxButton.Click += (_, _) => RequestMaxFan(true);
-        UpdateModeButtons();
-
-        // Dock order: the header docks first, then the readings, and the mode
-        // buttons fill what is left.
-        Controls.Add(modeGrid);
-        Controls.Add(readings);
-        Controls.Add(CreateSectionHeader("Fans", string.Empty));
+        ShowReadings();
+        UpdateSwitch();
 
         _pollTimer.Tick += PollTimer_Tick;
         _powerSource.PowerSourceChanged += PowerSource_PowerSourceChanged;
     }
 
-    /// <summary>The height of the fan speed line, which goes away on a laptop that does not report fan speeds.</summary>
-    public static int ReadingsHeight => S(24);
+    /// <summary>The row's height.</summary>
+    public int RowHeight => _row.Height;
 
-    /// <summary>False once the fan speed line has been removed.</summary>
+    /// <summary>False once the fan speeds have been taken away.</summary>
     // Tracked in a field: Control.Visible reads false whenever the popup is hidden.
     public bool AreReadingsShown => !_readingsHidden;
 
     private bool _readingsHidden;
 
-    /// <summary>Raised once, when the fan speed line is removed, so the host can shrink the row.</summary>
-    public event EventHandler? ReadingsHidden;
-
     /// <summary>
-    /// Removes the CPU and GPU fan speed line for a laptop that does not report
-    /// fan speeds, rather than showing placeholders that never fill in.
+    /// Takes the CPU and GPU fan speeds away for a laptop that does not report
+    /// them, rather than showing placeholders that never fill in.
     /// </summary>
     public void HideReadings()
     {
@@ -136,8 +97,7 @@ internal sealed class FanSection : SectionPanel
             return;
 
         _readingsHidden = true;
-        _readings.Visible = false;
-        ReadingsHidden?.Invoke(this, EventArgs.Empty);
+        ShowReadings();
     }
 
     /// <summary>Raised when the user asks for max fan speed on (true) or off (false). The host performs it.</summary>
@@ -146,11 +106,11 @@ internal sealed class FanSection : SectionPanel
     /// <summary>Raised after every poll with the temperatures read, each null when there is no reading for it.</summary>
     public event EventHandler<TemperatureReading>? TemperaturesRead;
 
-    /// <summary>Tells the fan buttons which performance mode the laptop is in, since Max depends on it.</summary>
+    /// <summary>Tells the switch which performance mode the laptop is in, since Max depends on it.</summary>
     public void ShowPerformanceState(PerformanceState state)
     {
         _performanceState = state;
-        UpdateModeButtons();
+        UpdateSwitch();
     }
 
     /// <summary>Starts polling and takes an immediate reading.</summary>
@@ -187,48 +147,54 @@ internal sealed class FanSection : SectionPanel
     }
 
     private void PowerSource_PowerSourceChanged(object? sender, EventArgs e) =>
-        PostToUi(UpdateModeButtons);
+        PostToUi(UpdateSwitch);
 
-    // Shows what the laptop is doing (Max when its flag is on, otherwise Auto)
-    // and whether Max can be chosen. When it cannot (see
-    // PowerProfileRules.CanUseMaxFan) the button is drawn like a disabled one and hovering it says
-    // why. It is deliberately still enabled underneath, because WinForms shows
-    // no tooltip on a disabled control, so RequestMaxFan must refuse the click.
-    private void UpdateModeButtons()
+    // Shows what the laptop is doing (on when its Max flag is) and whether Max
+    // can be turned on. When it cannot (see PowerProfileRules.CanUseMaxFan)
+    // and it is off, the switch is greyed out and hovering the row says why;
+    // on, it can always be turned off.
+    private void UpdateSwitch()
     {
         var pluggedIn = PowerProfileRules.TreatAsPluggedIn(_powerSource.IsPluggedIn);
         _isMaxAvailable = PowerProfileRules.CanUseMaxFan(_performanceState, pluggedIn, _maxFanMethod);
 
-        // Highlighting resets the text colors, so the unavailable look goes on after it.
-        HighlightSelected(_modeButtons, _performanceState.MaxFan == true ? _maxButton : _autoButton);
-        SetAvailability(
-            _maxButton,
-            _isMaxAvailable,
-            _toolTip,
-            _maxFanMethod switch
-            {
-                MaxFanMethod.ControllerFlag => L.T("Needs Custom mode, plugged in"),
-                MaxFanMethod.ManualFan => L.T("Needs to be plugged in, and not in Silent mode"),
-                _ => L.T("This laptop does not support max fan speed")
-            });
+        var on = _performanceState.MaxFan == true;
+        _showingState = true;
+        _maxSwitch.Checked = on;
+        _showingState = false;
+        _maxSwitch.Enabled = on || _isMaxAvailable;
+
+        var reason = on || _isMaxAvailable ? string.Empty : _maxFanMethod switch
+        {
+            MaxFanMethod.ControllerFlag => L.T("Needs Custom mode, plugged in"),
+            MaxFanMethod.ManualFan => L.T("Needs to be plugged in, and not in Silent mode"),
+            _ => L.T("This laptop does not support max fan speed")
+        };
+
+        foreach (var part in new Control[] { _row, _row.Title, _row.Hint })
+            _toolTip.SetToolTip(part, reason);
     }
 
-    /// <summary>Tells the fan buttons how this laptop runs its fans flat out, which decides when Max is offered.</summary>
+    /// <summary>Tells the switch how this laptop runs its fans flat out, which decides when Max is offered.</summary>
     public void SetMaxFanMethod(MaxFanMethod method)
     {
         _maxFanMethod = method;
-        UpdateModeButtons();
+        UpdateSwitch();
     }
 
     private void RequestMaxFan(bool enabled)
     {
-        // Turning it on needs Max to be available; turning it off never does.
-        if (enabled && !_isMaxAvailable)
-            return;
-
         // Already in that state: nothing to change.
         if (enabled == (_performanceState.MaxFan == true))
             return;
+
+        // Turning it on needs Max to be available; turning it off never does.
+        // Refused, the switch goes back to what the laptop is doing.
+        if (enabled && !_isMaxAvailable)
+        {
+            PostToUi(UpdateSwitch);
+            return;
+        }
 
         MaxFanRequested?.Invoke(this, enabled);
     }
@@ -255,7 +221,7 @@ internal sealed class FanSection : SectionPanel
 
             TemperaturesRead?.Invoke(this, temperature);
 
-            // A laptop that turns out not to report fan speeds loses the line.
+            // A laptop that turns out not to report fan speeds loses them.
             if (!_telemetryService.IsSupported)
             {
                 HideReadings();
@@ -265,8 +231,9 @@ internal sealed class FanSection : SectionPanel
             if (reading is null)
                 return;
 
-            ShowReading(_cpuFanLabel, "CPU Fan", reading.CpuFanRpm);
-            ShowReading(_gpuFanLabel, "GPU Fan", reading.GpuFanRpm);
+            _cpuRpm = reading.CpuFanRpm;
+            _gpuRpm = reading.GpuFanRpm;
+            ShowReadings();
         }
         catch (Exception exception)
         {
@@ -274,8 +241,8 @@ internal sealed class FanSection : SectionPanel
 
             if (_isPolling)
             {
-                ShowReading(_cpuFanLabel, "CPU Fan", null);
-                ShowReading(_gpuFanLabel, "GPU Fan", null);
+                _cpuRpm = _gpuRpm = null;
+                ShowReadings();
                 TemperaturesRead?.Invoke(this, TemperatureReading.None);
             }
         }
@@ -308,17 +275,12 @@ internal sealed class FanSection : SectionPanel
         }
     }
 
-    private static void ShowReading(Label label, string name, int? rpm) =>
-        label.Text = rpm is null ? $"{L.T(name)}: -- RPM" : $"{L.T(name)}: {rpm} RPM";
+    // Under the name: the CPU and GPU fans' speeds now, or, on a laptop that
+    // does not report them, what Max does.
+    private void ShowReadings() =>
+        _row.Hint.Text = _readingsHidden
+            ? L.T("Always runs at 100%, however it is used")
+            : L.F("Now {0} · {1} RPM", Rpm(_cpuRpm), Rpm(_gpuRpm));
 
-    private static Label CreateReadingLabel(string text) => new()
-    {
-        AutoSize = false,
-        Dock = DockStyle.Fill,
-        Font = DesignFont(12),
-        ForeColor = Color.White,
-        Margin = Padding.Empty,
-        Text = text,
-        TextAlign = ContentAlignment.MiddleLeft
-    };
+    private static string Rpm(int? rpm) => rpm?.ToString(System.Globalization.CultureInfo.CurrentCulture) ?? "--";
 }

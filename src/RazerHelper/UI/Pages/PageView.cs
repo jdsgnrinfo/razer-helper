@@ -51,15 +51,25 @@ internal abstract class PageView : UserControl
 
         Controls.Add(_body);
 
-        Add(new Label
+        _title = new Label
         {
             AutoSize = true,
             Font = DesignFont(22, FontStyle.Bold),
             ForeColor = Color.White,
             Margin = new Padding(0, 0, 0, TitleGap),
             Text = L.T(title)
-        });
+        };
+        Add(_title);
     }
+
+    private readonly Label _title;
+
+    /// <summary>
+    /// For a page that starts with glowing buttons: brings them up by their
+    /// glow room, so what shows of them is the usual gap under the title.
+    /// </summary>
+    protected void TuckUnderTitle() =>
+        _title.Margin = new Padding(_title.Margin.Left, 0, _title.Margin.Right, TitleGap - UiControls.GlowRoom);
 
     /// <summary>The room under the page's title.</summary>
     protected static int TitleGap => S(22);

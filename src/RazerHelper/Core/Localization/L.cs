@@ -67,7 +67,6 @@ internal static class L
         ["Collapse menu"] = "Contraer menú",
         ["Expand menu"] = "Expandir menú",
         ["System"] = "Sistema",
-        ["More details"] = "Más detalles",
         ["Power source profiles"] = "Perfiles por fuente de energía",
         ["Power plan"] = "Plan de energía",
         ["The one Windows uses."] = "El que usa Windows.",
@@ -220,7 +219,7 @@ internal static class L
         ["Could not check the dedicated GPU. Details are in the log."] = "No se pudo revisar la GPU dedicada. Los detalles están en el registro.",
 
         // Performance.
-        ["Performance Mode"] = "Modo de rendimiento",
+        ["System monitor"] = "Monitor del sistema",
         ["Balanced"] = "Equilibrado",
         ["Gaming"] = "Juego",
         ["Custom"] = "Personalizado",
@@ -246,13 +245,9 @@ internal static class L
         ["Performance profile applied."] = "Perfil de rendimiento aplicado.",
 
         // Fans.
-        ["Fans"] = "Ventiladores",
-        ["CPU Fan"] = "Ventilador CPU",
-        ["GPU Fan"] = "Ventilador GPU",
         ["Max"] = "Máx.",
-        ["Automatic RPM"] = "RPM Automática",
-        ["The system sets the speed as needed"] = "El sistema elige la velocidad según el uso",
-        ["Max RPM"] = "RPM Máxima",
+        ["Max RPM"] = "RPM máximas",
+        ["Now {0} · {1} RPM"] = "Ahora {0} · {1} RPM",
         ["Always runs at 100%, however it is used"] = "Siempre al 100 %, sin importar el uso",
         ["Needs Custom mode, plugged in"] = "Requiere modo Personalizado y el cargador conectado",
         ["Needs to be plugged in, and not in Silent mode"] = "Requiere el cargador conectado y no estar en modo Silencio",
@@ -305,7 +300,7 @@ internal static class L
         ["Could not read the lighting state after a change."] = "No se pudo leer la iluminación después del cambio.",
 
         // Battery.
-        ["Battery Charge Limit"] = "Límite de carga",
+        ["Charge limit"] = "Límite de carga",
         ["Limit:"] = "Límite:",
         ["Plugged in"] = "Enchufado",
         ["On battery"] = "Con batería",
