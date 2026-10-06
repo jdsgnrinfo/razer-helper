@@ -45,7 +45,7 @@ internal sealed class DisplaySection : SectionPanel
         // Ascending and distinct, so the second-to-last entry is the next rate down from the fastest.
         _secondHz = detectedRates.Count >= 2 ? detectedRates[^2] : null;
 
-        // The title is short; the detected mode ("1920x1080 (120 Hz)") needs the room.
+        // The title is short; a note on a change that failed needs the room.
         var header = CreateHeaderLayout(40F, 60F);
 
         // Lined up with the buttons, inside their glow room.
@@ -53,7 +53,6 @@ internal sealed class DisplaySection : SectionPanel
         header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
 
         _statusLabel = CreateHeaderValueLabel();
-        _statusLabel.Text = L.T("Current: -- Hz");
 
         header.Controls.Add(CreateSectionLabel("Refresh rate", NavIcon.RefreshRate), 0, 0);
         header.Controls.Add(_statusLabel, 1, 0);
@@ -252,13 +251,6 @@ internal sealed class DisplaySection : SectionPanel
             _ = ApplyAutoAsync();
     }
 
-    private void UpdateDisplayStatus()
-    {
-        var displayInfo = _displayService.GetInternalDisplayInfo();
-
-        // Just the facts beside the "Display" title: "1920x1080 (120 Hz)".
-        _statusLabel.Text = displayInfo is null
-            ? L.T("Not available")
-            : $"{displayInfo.Width}x{displayInfo.Height} ({displayInfo.RefreshRateHz} Hz)";
-    }
+    // The line beside the title is only for when a change could not be made; once it is, it goes.
+    private void UpdateDisplayStatus() => _statusLabel.Text = string.Empty;
 }
