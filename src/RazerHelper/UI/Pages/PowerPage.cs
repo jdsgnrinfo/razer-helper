@@ -11,8 +11,9 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The battery's figures; the profiles for each power source, under the
-/// switch that changes between them with the charger, and hidden while it
+/// The battery's figures; the profiles for each power source, each a row
+/// with its icon and a list of modes, under the switch that changes
+/// between them with the charger, and hidden while it
 /// is off; and Windows' power plan, with a button to install ours while it
 /// is not there. Every change applies and is saved at once.
 /// </summary>
@@ -22,10 +23,9 @@ internal sealed class PowerPage : PageView
 
     private readonly BatteryDetailsView _battery;
     private readonly PerformanceSection _performance;
-    private readonly ThemedToolTip _toolTip = new();
     private readonly ToggleSwitch _profilesSwitch;
     private readonly FlowLayoutPanel _profiles;
-    private readonly Dictionary<bool, Dictionary<PerformanceMode, Button>> _profileButtons = [];
+    private readonly Dictionary<bool, ProfileList> _profileLists = [];
     private readonly IPowerPlans _plans;
     private readonly DropdownButton _planList;
     private readonly Button _installButton;
@@ -57,8 +57,8 @@ internal sealed class PowerPage : PageView
         Add(profilesCard);
 
         _profiles = CreateGroup();
-        _profiles.Controls.Add(CreateProfileRow("Plugged in", pluggedIn: true));
-        _profiles.Controls.Add(CreateProfileRow("On battery", pluggedIn: false));
+        _profiles.Controls.Add(CreateProfileRow("Plugged in", NavIcon.Plug, pluggedIn: true));
+        _profiles.Controls.Add(CreateProfileRow("On battery", NavIcon.Battery, pluggedIn: false));
         AddWide(_profiles);
 
         _profilesSwitch.Checked = autoSwitchProfiles;
@@ -136,7 +136,6 @@ internal sealed class PowerPage : PageView
         {
             _performance.ProfileChanged -= Performance_ProfileChanged;
             _performance.StateChanged -= Performance_StateChanged;
-            _toolTip.Dispose();
         }
 
         base.Dispose(disposing);
@@ -256,7 +255,6 @@ internal sealed class PowerPage : PageView
         WrapContents = false
     };
 
-    // "Plugged in" on the left and the three modes on the right.
     // A setting's row made as wide as the parts with glowing buttons (see
     // AddWide): the text keeps its place, and the control reaches into the
     // glow room at the right, so its buttons still end at the content's edge.
@@ -267,47 +265,66 @@ internal sealed class PowerPage : PageView
         return card;
     }
 
-    private Control CreateProfileRow(string text, bool pluggedIn)
+    // A source's row: its icon and name at the left, and at the right the
+    // list of the modes it can use (with the one it uses, should that no
+    // longer be offered). Picking one switches that source to it.
+    private Control CreateProfileRow(string text, NavIcon icon, bool pluggedIn)
     {
-        var grid = CreateButtonGrid(Modes.Select(mode => mode.ToString()).ToArray(), pluggedIn ? "PluggedInProfileButton" : "OnBatteryProfileButton", glowRoom: GlowRoom);
-        grid.Dock = DockStyle.None;
-        grid.Anchor = AnchorStyles.Right;
-        grid.Size = new Size(S(360) + 2 * GlowRoom, S(38) + 2 * GlowRoom);
-
-        var buttons = new Dictionary<PerformanceMode, Button>();
-
-        foreach (var button in grid.Controls.OfType<Button>())
+        var list = new DropdownButton([])
         {
-            var mode = Enum.Parse<PerformanceMode>((string)button.Tag!);
-            button.Font = SemiBoldTitleFont(15);
-            button.Click += async (_, _) =>
+            AccessibleName = L.T(text),
+            Font = SemiBoldTitleFont(16),
+            Size = S(new Size(190, 38))
+        };
+
+        var profile = new ProfileList(list);
+        _profileLists[pluggedIn] = profile;
+
+        list.SelectionChanged += async (_, _) =>
+        {
+            if (profile.Modes.ElementAtOrDefault(list.SelectedIndex) is var mode && list.SelectedIndex >= 0
+                && _performance.IsModeOffered(mode, pluggedIn))
             {
-                if (_performance.IsModeOffered(mode, pluggedIn))
-                    await _performance.SetModeForAsync(pluggedIn, mode);
-            };
-            buttons[mode] = button;
-        }
+                await _performance.SetModeForAsync(pluggedIn, mode);
+            }
 
-        _profileButtons[pluggedIn] = buttons;
+            ShowProfiles();
+        };
 
-        // The glow room above and below takes from the row's own padding.
-        var row = Widen(CreateCard(text, string.Empty, grid), grid);
-        row.Padding = new Padding(GlowRoom, 0, 0, Math.Max(0, S(8) - GlowRoom));
+        var row = new SettingRow(text, string.Empty, icon);
+        row.Add(list, outset: S(4));
         return row;
     }
 
     private void ShowProfiles()
     {
-        foreach (var (pluggedIn, buttons) in _profileButtons)
+        foreach (var (pluggedIn, profile) in _profileLists)
         {
-            var mode = _performance.ModeFor(pluggedIn);
-            HighlightSelected(buttons.Values, mode is { } chosen ? buttons.GetValueOrDefault(chosen) : null);
+            var chosen = _performance.ModeFor(pluggedIn);
+            PerformanceMode[] modes = [.. Modes.Where(mode => mode == chosen || _performance.IsModeOffered(mode, pluggedIn))];
 
-            foreach (var (each, button) in buttons)
+            if (!modes.SequenceEqual(profile.Modes))
             {
-                var reason = PowerProfileRules.IsModeAllowed(each, pluggedIn) ? "Not supported on this laptop" : "Needs to be plugged in";
-                SetAvailability(button, _performance.IsModeOffered(each, pluggedIn), _toolTip, reason);
+                profile.Modes = modes;
+                profile.List.Replace([.. modes.Select(ModeName)]);
             }
+
+            profile.List.Select(chosen is { } mode ? Array.IndexOf(modes, mode) : -1);
         }
+    }
+
+    private static string ModeName(PerformanceMode mode) => mode switch
+    {
+        PerformanceMode.Silent => L.T("Silent"),
+        PerformanceMode.Balanced => L.T("Balanced"),
+        _ => L.T("Custom")
+    };
+
+    // A source's list, and the modes it shows, in its order.
+    private sealed class ProfileList(DropdownButton list)
+    {
+        public DropdownButton List { get; } = list;
+
+        public PerformanceMode[] Modes { get; set; } = [];
     }
 }
