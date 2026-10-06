@@ -193,12 +193,19 @@ internal static class UiControls
         return grid;
     }
 
-    /// <summary>Highlights <paramref name="selected"/> and resets the rest; null clears the selection.</summary>
+    /// <summary>
+    /// Highlights <paramref name="selected"/> and resets the rest; null clears
+    /// the selection. A button that becomes the chosen one bounces softly, as
+    /// the performance modes do.
+    /// </summary>
     public static void HighlightSelected(IEnumerable<Button> buttons, Button? selected)
     {
         foreach (var button in buttons)
         {
             var isSelected = ReferenceEquals(button, selected);
+
+            if (button is RoundedButton rounded)
+                rounded.BounceOnSelect = true;
 
             button.BackColor = isSelected ? RazerGreen : ButtonColor;
             button.ForeColor = isSelected ? OnGreenTextColor : Color.White;
