@@ -4,63 +4,100 @@ using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
+/// <summary>One line of the sidebar's list: a section with its icon, or the name of a group of sections.</summary>
+internal sealed record NavEntry(DashboardPage? Page, string Text, NavIcon Icon = NavIcon.Menu)
+{
+    public static NavEntry Item(DashboardPage page, string text, NavIcon icon) => new(page, text, icon);
+
+    public static NavEntry Group(string text) => new(null, text);
+
+    public bool IsGroup => Page is null;
+}
+
 /// <summary>
-/// The sidebar's sections, drawn as one list so their two highlights can
-/// travel between them. A green pill, with a soft glow, marks the section on
-/// show and glides to another on a spring when it changes. A faint green
-/// highlight follows the pointer (or the keys) from entry to entry: it fades
-/// in where it lands when the pointer comes in from outside, travels between
-/// entries on a quicker spring, and fades out when the pointer leaves. An
-/// entry's name turns green under the highlight and dark where the pill
-/// covers it, changing right at their edges. A press dips the name a touch and
-/// deepens the highlight. Up and Down move along the list, Enter or Space
-/// opens the entry. With Windows' animation effects off, all of it jumps.
+/// A list of the sidebar's sections, each its icon and its name, under the
+/// quiet names of their groups, drawn as one so its two highlights can travel
+/// between them. The section on show has a green wash fading to the right,
+/// with a lit green bar at its left edge, its icon green and its name white;
+/// it glides to another on a spring. A faint highlight follows the pointer (or
+/// the keys) from entry to entry: it fades in where it lands when the pointer
+/// comes in from outside, travels between entries on a quicker spring, and
+/// fades out when the pointer leaves; under it the icon turns green and the
+/// name white. A press deepens it. When the section on show is in another
+/// list, the wash fades away. Folded (see <see cref="Folded"/>) the names and
+/// groups fade, leaving the icons. Up and Down move along the list, Enter or
+/// Space opens the entry. With Windows' animation effects off, all of it jumps.
 /// </summary>
 internal sealed class SidebarNav : Control
 {
-    /// <summary>One entry's fill height.</summary>
-    public static int EntryHeight => S(44);
+    /// <summary>One section's height.</summary>
+    public static int EntryHeight => S(40);
 
-    // From one entry's top to the next one's: the fills stay 4px apart.
-    private static int Pitch => S(48);
+    // A group's name: the room above its sections, its text at the foot.
+    private static int GroupHeight => S(24);
 
-    // The room around the list where the pill's glow shows.
-    private static int Room => Glow.Radius;
+    // The icon's and the name's left edges, and the icon's size.
+    private static int IconLeft => S(18);
+    private static int IconSize => S(20);
+    private static int TextLeft => IconLeft + IconSize + S(14);
 
-    // The selected entry's glow, a little softer than the buttons' own.
-    private const float GlowStrength = 0.7f;
+    // The lit bar at the left of the section on show.
+    private static int BarWidth => S(3);
+    private static int BarInset => S(6);
 
-    // The highlight's strength at rest and while pressed.
-    private const int HoverAlpha = 26;
-    private const int PressedAlpha = 46;
+    // The wash's strength at its left edge and at seven tenths across, after which it fades to nothing.
+    private const int WashAlpha = 77;
+    private const int WashMidAlpha = 15;
 
-    private const double PressedScale = 0.97;
+    // The highlight's white, at rest and while pressed.
+    private const int HoverAlpha = 13;
+    private const int PressedAlpha = 24;
 
-    // Quicker than the sliders: the pill settles in about a sixth of a second
-    // with a hint of bounce, the highlight and the press in about a tenth.
-    private static readonly Spring.Feel PillFeel = Spring.Feel.Of(0.16, 0.1);
+    private static readonly Color NameColor = Color.FromArgb(0xCF, 0xCF, 0xCF);
+    private static readonly Color IconColor = Color.FromArgb(0xBD, 0xBD, 0xBD);
+    private static readonly Color GroupColor = Color.FromArgb(0x58, 0x58, 0x58);
+
+    private static readonly Font NameFont = DesignFont(15);
+    private static readonly Font SelectedNameFont = SemiBoldFont(15);
+    private static readonly Font GroupFont = DesignFont(12);
+
+    // Quick, with a hint of bounce: the wash settles in about a sixth of a
+    // second, the highlight and the press in about a tenth.
+    private static readonly Spring.Feel WashFeel = Spring.Feel.Of(0.16, 0.1);
     private static readonly Spring.Feel QuickFeel = Spring.Feel.Of(0.11, 0.05);
 
-    private readonly (DashboardPage Page, string Text)[] _entries;
-    private readonly Spring _pill = new(0, 0.05);
+    private readonly NavEntry[] _entries;
+    private readonly int[] _tops;
+    private readonly Spring _wash = new(0, 0.05);
+    private readonly Spring _washShown = new(0, 0.002);
     private readonly Spring _highlight = new(0, 0.05);
     private readonly Spring _highlightShown = new(0, 0.002);
-    private readonly Spring _press = new(1, 0.0005);
     private readonly Spring _pressDepth = new(0, 0.002);
 
     private readonly System.Windows.Forms.Timer _frames = new() { Interval = 15 };
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private double _lastFrame;
 
-    private int _selected;
+    // -1 while the section on show is in another list.
+    private int _selected = -1;
     private int _hovered = -1;
     private int _pressed = -1;
     // Where the keys are, when they moved last; -1 when the pointer leads.
     private int _keyed = -1;
+    private float _folded;
 
-    public SidebarNav(IReadOnlyList<(DashboardPage Page, string Text)> entries)
+    public SidebarNav(IReadOnlyList<NavEntry> entries)
     {
         _entries = [.. entries];
+        _tops = new int[_entries.Length];
+
+        var top = 0;
+
+        for (var index = 0; index < _entries.Length; index++)
+        {
+            _tops[index] = top;
+            top += _entries[index].IsGroup ? GroupHeight : EntryHeight;
+        }
 
         SetStyle(
             ControlStyles.AllPaintingInWmPaint |
@@ -71,10 +108,8 @@ internal sealed class SidebarNav : Control
             true);
 
         AccessibleRole = AccessibleRole.List;
-        BackColor = SidebarColor;
         Cursor = Cursors.Hand;
-        Font = SemiBoldFont(14);
-        Height = 2 * Room + (_entries.Length - 1) * Pitch + EntryHeight;
+        Height = top;
         TabStop = true;
 
         _frames.Tick += (_, _) => Frame();
@@ -83,32 +118,43 @@ internal sealed class SidebarNav : Control
     /// <summary>Raised with the section whose entry was clicked, or opened with the keys.</summary>
     public event EventHandler<DashboardPage>? PageRequested;
 
-    /// <summary>The section on show.</summary>
-    public DashboardPage Selected => _entries[_selected].Page;
+    /// <summary>How far the list is folded to its icons: 0 open, 1 folded; the names and groups fade with it.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public float Folded
+    {
+        get => _folded;
+        set
+        {
+            _folded = Math.Clamp(value, 0, 1);
+            Invalidate();
+        }
+    }
 
-    /// <summary>Lights the entry of the section on show; on screen the pill glides there.</summary>
+    /// <summary>Lights the section on show, gliding there; a section not in this list fades the wash away.</summary>
     public void Select(DashboardPage page)
     {
         var index = Array.FindIndex(_entries, entry => entry.Page == page);
+        var animate = IsHandleCreated && Visible;
 
-        if (index < 0 || index == _selected && _pill.Target == TopOf(index))
+        if (index < 0)
+        {
+            _selected = -1;
+            Glide(_washShown, 0, QuickFeel, animate);
+            StartFrames();
             return;
+        }
+
+        // Coming from another list the wash appears in place; within the list it glides.
+        if (_selected < 0 || !animate)
+            _wash.Jump(_tops[index]);
+        else
+            Glide(_wash, _tops[index], WashFeel, animate);
 
         _selected = index;
+        Glide(_washShown, 1, QuickFeel, animate);
         AccessibilityNotifyClients(AccessibleEvents.Selection, index);
-
-        if (IsHandleCreated && Visible)
-            Animate(_pill, TopOf(index), PillFeel);
-        else
-            _pill.Jump(TopOf(index));
-
         StartFrames();
-    }
-
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-        _pill.Jump(TopOf(_selected));
     }
 
     protected override bool IsInputKey(Keys keyData) =>
@@ -155,17 +201,19 @@ internal sealed class SidebarNav : Control
     {
         base.OnKeyDown(e);
 
-        var from = _keyed >= 0 ? _keyed : _hovered >= 0 ? _hovered : _selected;
+        var items = Enumerable.Range(0, _entries.Length).Where(index => !_entries[index].IsGroup).ToArray();
+        var from = _keyed >= 0 ? _keyed : _hovered >= 0 ? _hovered : _selected >= 0 ? _selected : items[0];
+        var at = Array.IndexOf(items, from);
 
         switch (e.KeyCode)
         {
             case Keys.Up or Keys.Down or Keys.Home or Keys.End:
                 _keyed = e.KeyCode switch
                 {
-                    Keys.Up => Math.Max(0, from - 1),
-                    Keys.Down => Math.Min(_entries.Length - 1, from + 1),
-                    Keys.Home => 0,
-                    _ => _entries.Length - 1
+                    Keys.Up => items[Math.Max(0, at - 1)],
+                    Keys.Down => items[Math.Min(items.Length - 1, at + 1)],
+                    Keys.Home => items[0],
+                    _ => items[^1]
                 };
                 HoverOver(_keyed);
                 e.Handled = true;
@@ -195,11 +243,11 @@ internal sealed class SidebarNav : Control
     {
         base.OnGotFocus(e);
 
-        // Reached with Tab: the highlight starts on the section on show.
+        // Reached with Tab: the highlight starts on the section on show, or the first.
         if (ShowFocusCues && _hovered < 0)
         {
-            _keyed = _selected;
-            HoverOver(_selected);
+            _keyed = _selected >= 0 ? _selected : Array.FindIndex(_entries, entry => !entry.IsGroup);
+            HoverOver(_keyed);
         }
     }
 
@@ -222,59 +270,46 @@ internal sealed class SidebarNav : Control
         graphics.Clear(BackColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var corner = S(RoundedButton.CornerRadius);
-
-        // The highlight under the pointer, beneath the pill.
+        // The highlight under the pointer, beneath the wash.
         var shown = (float)Math.Clamp(_highlightShown.Position, 0, 1);
 
         if (shown > 0)
         {
             var alpha = HoverAlpha + (PressedAlpha - HoverAlpha) * (float)Math.Clamp(_pressDepth.Position, 0, 1);
-            using var tint = new SolidBrush(Color.FromArgb((int)(alpha * shown), RazerGreen));
-            using var path = RoundedButton.RoundedPath(Body((float)_highlight.Position), corner);
-            graphics.FillPath(tint, path);
+            using var tint = new SolidBrush(Color.FromArgb((int)(alpha * shown), Color.White));
+            graphics.FillRectangle(tint, Body((float)_highlight.Position));
         }
 
-        // The pill, with its glow.
-        var pill = Body((float)_pill.Position);
-        Glow.Paint(graphics, pill, GlowStrength);
+        var washShown = (float)Math.Clamp(_washShown.Position, 0, 1);
 
-        using (var fill = new SolidBrush(_hovered == _selected && !_pill.Moving ? RazerGreenHover : RazerGreen))
-        using (var path = RoundedButton.RoundedPath(pill, corner))
-            graphics.FillPath(fill, path);
+        if (washShown > 0)
+            PaintWash(graphics, Body((float)_wash.Position), washShown);
 
-        // The names in three colors, each kept to its own part of the list: dark
-        // inside the pill, green inside the highlight, grey elsewhere. So a
-        // name the pill is passing over changes color right at its edge.
-        using var pillShape = RoundedButton.RoundedPath(pill, corner);
-        using var highlightShape = RoundedButton.RoundedPath(Body((float)_highlight.Position), corner);
-
-        using (var rest = new Region(ClientRectangle))
+        for (var index = 0; index < _entries.Length; index++)
         {
-            rest.Exclude(pillShape);
+            var entry = _entries[index];
+            var body = new Rectangle(0, _tops[index], Width, entry.IsGroup ? GroupHeight : EntryHeight);
 
-            if (shown > 0)
-                rest.Exclude(highlightShape);
+            if (entry.IsGroup)
+            {
+                PaintName(graphics, entry.Text, GroupFont, GroupColor, new Rectangle(IconLeft, body.Top, Width - IconLeft, body.Height - S(2)), TextFormatFlags.Bottom);
+                continue;
+            }
 
-            PaintNames(graphics, rest, SubtleTextColor);
+            var lit = index == _selected || index == _hovered && shown > 0.5f;
+            var icon = new RectangleF(IconLeft, body.Top + (body.Height - IconSize) / 2f, IconSize, IconSize);
+            NavIcons.Draw(graphics, entry.Icon, icon, lit ? RazerGreen : IconColor);
+
+            PaintName(graphics, entry.Text, index == _selected ? SelectedNameFont : NameFont, lit ? Color.White : NameColor,
+                new Rectangle(TextLeft, body.Top, Width - TextLeft, body.Height), TextFormatFlags.VerticalCenter);
         }
-
-        if (shown > 0)
-        {
-            using var lit = new Region(highlightShape);
-            lit.Exclude(pillShape);
-            PaintNames(graphics, lit, Motion.Blend(SubtleTextColor, RazerGreen, shown));
-        }
-
-        using (var covered = new Region(pillShape))
-            PaintNames(graphics, covered, OnGreenTextColor);
 
         // Only keyboard focus shows a ring, round the entry the keys are on.
         if (Focused && ShowFocusCues && _keyed >= 0)
         {
             using var ring = new Pen(RazerGreen, S(1.5f));
-            using var path = RoundedButton.RoundedPath(RectangleF.Inflate(Body((float)_highlight.Position), S(2), S(2)), corner + S(2));
-            graphics.DrawPath(ring, path);
+            var body = Body((float)_highlight.Position);
+            graphics.DrawRectangle(ring, body.X + S(2), body.Y + S(1), body.Width - S(4), body.Height - S(2));
         }
     }
 
@@ -288,29 +323,46 @@ internal sealed class SidebarNav : Control
         base.Dispose(disposing);
     }
 
-    // Every name, in one color, inside <paramref name="clip"/>. A pressed name
-    // dips: it draws a touch in from its edge, as if shrunk to 97%.
-    private void PaintNames(Graphics graphics, Region clip, Color color)
+    // The green wash, strongest at the left and gone by the right edge, and the lit bar at its left.
+    private static void PaintWash(Graphics graphics, RectangleF body, float shown)
     {
-        var state = graphics.Save();
-        graphics.SetClip(clip, CombineMode.Intersect);
-
-        for (var index = 0; index < _entries.Length; index++)
+        using (var wash = new LinearGradientBrush(new RectangleF(body.Left - 1, body.Top, body.Width + 2, body.Height), Color.Transparent, Color.Transparent, LinearGradientMode.Horizontal))
         {
-            var body = Body(TopOf(index));
-            var left = body.Left + S(16);
-
-            if (index == _pressed || _press.Moving && index == _lastPressed)
-                left += (float)(1 - _press.Position) * (body.Width / 2 - S(16));
-
-            TextRenderer.DrawText(graphics, _entries[index].Text, Font, new Rectangle((int)Math.Round(left), (int)body.Top, (int)(body.Right - left), (int)body.Height), color,
-                TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.PreserveGraphicsClipping);
+            wash.InterpolationColors = new ColorBlend
+            {
+                Colors =
+                [
+                    Color.FromArgb((int)(WashAlpha * shown), RazerGreen),
+                    Color.FromArgb((int)(WashMidAlpha * shown), RazerGreen),
+                    Color.FromArgb(0, RazerGreen)
+                ],
+                Positions = [0f, 0.7f, 1f]
+            };
+            graphics.FillRectangle(wash, body);
         }
 
-        graphics.Restore(state);
+        var bar = new RectangleF(body.Left, body.Top + BarInset, BarWidth, body.Height - 2 * BarInset);
+
+        // Its light: a few faint layers spreading from the bar.
+        for (var layer = 4; layer >= 1; layer--)
+        {
+            using var light = new SolidBrush(Color.FromArgb((int)(18 * shown), RazerGreen));
+            graphics.FillRectangle(light, RectangleF.Inflate(bar, S(layer * 1.5f), S(layer * 1.5f)));
+        }
+
+        using var fill = new SolidBrush(Color.FromArgb((int)(255 * shown), RazerGreen));
+        graphics.FillRectangle(fill, bar);
     }
 
-    private int _lastPressed = -1;
+    // A name fading out as the list folds.
+    private void PaintName(Graphics graphics, string text, Font font, Color color, Rectangle bounds, TextFormatFlags place)
+    {
+        if (_folded >= 1)
+            return;
+
+        TextRenderer.DrawText(graphics, text, font, bounds, Motion.Blend(color, BackColor, _folded),
+            place | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+    }
 
     // Moves the highlight to an entry, or with -1 lets it fade where it is.
     private void HoverOver(int index)
@@ -323,17 +375,17 @@ internal sealed class SidebarNav : Control
 
         if (index < 0)
         {
-            Animate(_highlightShown, 0, QuickFeel);
+            Glide(_highlightShown, 0, QuickFeel);
         }
         else
         {
             // Coming in from outside it appears where it lands; between entries it travels.
             if (!wasShown && _highlightShown.Position < 0.05)
-                _highlight.Jump(TopOf(index));
+                _highlight.Jump(_tops[index]);
             else
-                Animate(_highlight, TopOf(index), QuickFeel);
+                Glide(_highlight, _tops[index], QuickFeel);
 
-            Animate(_highlightShown, 1, QuickFeel);
+            Glide(_highlightShown, 1, QuickFeel);
         }
 
         StartFrames();
@@ -341,9 +393,8 @@ internal sealed class SidebarNav : Control
 
     private void PressDown(int index)
     {
-        _pressed = _lastPressed = index;
-        Animate(_press, PressedScale, QuickFeel);
-        Animate(_pressDepth, 1, QuickFeel);
+        _pressed = index;
+        Glide(_pressDepth, 1, QuickFeel);
         StartFrames();
     }
 
@@ -353,26 +404,33 @@ internal sealed class SidebarNav : Control
             return;
 
         _pressed = -1;
-        Animate(_press, 1, QuickFeel);
-        Animate(_pressDepth, 0, QuickFeel);
+        Glide(_pressDepth, 0, QuickFeel);
         StartFrames();
     }
 
-    private void Open(int index) => PageRequested?.Invoke(this, _entries[index].Page);
-
-    private RectangleF Body(float top) => new(Room, top, Width - 2 * Room, EntryHeight);
-
-    private float TopOf(int index) => Room + index * Pitch;
-
-    private int EntryAt(int y)
+    private void Open(int index)
     {
-        var index = (int)Math.Floor((y - Room + (Pitch - EntryHeight) / 2f) / Pitch);
-        return index >= 0 && index < _entries.Length ? index : -1;
+        if (_entries[index].Page is { } page)
+            PageRequested?.Invoke(this, page);
     }
 
-    private static void Animate(Spring spring, double target, Spring.Feel feel)
+    private RectangleF Body(float top) => new(0, top, Width, EntryHeight);
+
+    // The section under <paramref name="y"/>; -1 over a group's name or past the list.
+    private int EntryAt(int y)
     {
-        if (Motion.Reduced)
+        for (var index = 0; index < _entries.Length; index++)
+        {
+            if (!_entries[index].IsGroup && y >= _tops[index] && y < _tops[index] + EntryHeight)
+                return index;
+        }
+
+        return -1;
+    }
+
+    private static void Glide(Spring spring, double target, Spring.Feel feel, bool animate = true)
+    {
+        if (Motion.Reduced || !animate)
             spring.Jump(target);
         else
             spring.To(target, feel);
@@ -395,20 +453,22 @@ internal sealed class SidebarNav : Control
         var seconds = Math.Min(0.032, now - _lastFrame);
         _lastFrame = now;
 
-        var moving = _pill.Step(seconds) | _highlight.Step(seconds) | _highlightShown.Step(seconds) | _press.Step(seconds) | _pressDepth.Step(seconds);
+        var moving = _wash.Step(seconds) | _washShown.Step(seconds) | _highlight.Step(seconds) | _highlightShown.Step(seconds) | _pressDepth.Step(seconds);
         Invalidate();
 
         if (!moving)
             _frames.Stop();
     }
 
-    // The list, and an item per entry, for screen readers.
+    // The list, and an item per section, for screen readers.
     private sealed class NavAccessible(SidebarNav owner) : ControlAccessibleObject(owner)
     {
-        public override int GetChildCount() => owner._entries.Length;
+        private int[] Items => [.. Enumerable.Range(0, owner._entries.Length).Where(index => !owner._entries[index].IsGroup)];
+
+        public override int GetChildCount() => Items.Length;
 
         public override AccessibleObject? GetChild(int index) =>
-            index >= 0 && index < owner._entries.Length ? new EntryAccessible(owner, this, index) : null;
+            index >= 0 && index < Items.Length ? new EntryAccessible(owner, this, Items[index]) : null;
     }
 
     private sealed class EntryAccessible(SidebarNav owner, AccessibleObject list, int index) : AccessibleObject
@@ -424,7 +484,7 @@ internal sealed class SidebarNav : Control
 
         public override string DefaultAction => "Open";
 
-        public override Rectangle Bounds => owner.RectangleToScreen(Rectangle.Round(owner.Body(owner.TopOf(index))));
+        public override Rectangle Bounds => owner.RectangleToScreen(Rectangle.Round(owner.Body(owner._tops[index])));
 
         public override void DoDefaultAction() => owner.Open(index);
     }

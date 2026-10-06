@@ -58,8 +58,13 @@ internal static class L
 
         // The sidebar's sections and their pages.
         ["Performance"] = "Rendimiento",
-        ["Display and lighting"] = "Pantalla e iluminación",
-        ["Energy"] = "Energía",
+        ["Power profiles"] = "Perfiles de energía",
+        ["Device"] = "Equipo",
+        ["Assistant"] = "Asistente",
+        ["Connected"] = "Conectado",
+        ["Not detected"] = "No detectado",
+        ["Collapse menu"] = "Contraer menú",
+        ["Expand menu"] = "Expandir menú",
         ["System"] = "Sistema",
         ["More details"] = "Más detalles",
         ["Power source profiles"] = "Perfiles por fuente de energía",

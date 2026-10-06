@@ -38,6 +38,7 @@ internal sealed class PowerPage : PageView
         PerformanceSection performance,
         bool autoSwitchProfiles,
         IPowerPlans plans)
+        : base("Power profiles")
     {
         _performance = performance;
         _plans = plans;

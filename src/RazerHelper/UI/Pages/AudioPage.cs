@@ -91,6 +91,7 @@ internal sealed class AudioPage : PageView
     private bool _showing;
 
     public AudioPage(AudioBackend backend, AudioChoices choices)
+        : base("Audio")
     {
         _backend = backend;
         _savedPresets = [.. choices.Presets.Where(preset => !EqPreset.IsBuiltIn(preset.Name))];

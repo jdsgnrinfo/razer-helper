@@ -4,15 +4,15 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// One section of the main window, shown beside the sidebar: what it holds,
-/// top to bottom, inside a 24px margin. Its name is the sidebar's lit entry,
-/// so the page does not repeat it. The window tells it when it comes on
-/// screen and when it leaves, so a page reads what it shows only meanwhile.
+/// One section of the main window, shown beside the sidebar: its name as a
+/// title, then what it holds, top to bottom, inside a 24px margin. The window
+/// tells it when it comes on screen and when it leaves, so a page reads what
+/// it shows only meanwhile.
 /// </summary>
 internal abstract class PageView : UserControl
 {
     /// <summary>The width of what a page holds: the page is this plus its 24px margins.</summary>
-    public static int ContentWidth => S(552);
+    public static int ContentWidth => S(592);
 
     /// <summary>The page's whole width.</summary>
     public static int PageWidth => ContentWidth + 2 * S(24);
@@ -21,7 +21,7 @@ internal abstract class PageView : UserControl
 
     private readonly FlowLayoutPanel _body;
 
-    protected PageView()
+    protected PageView(string title)
     {
         AutoScaleMode = AutoScaleMode.None;
         BackColor = BackgroundColor;
@@ -39,8 +39,8 @@ internal abstract class PageView : UserControl
             Location = Point.Empty,
             Margin = Padding.Empty,
             // 24px at the sides and foot, less at the sides the glow room of the parts that reach into it (see AddWide);
-            // 8px on top, under the window's bar with the X.
-            Padding = new Padding(S(24) - UiControls.GlowRoom, S(8), S(24) - UiControls.GlowRoom, S(24)),
+            // 16px above the title.
+            Padding = new Padding(S(24) - UiControls.GlowRoom, S(16), S(24) - UiControls.GlowRoom, S(24)),
             WrapContents = false
         };
 
@@ -50,7 +50,19 @@ internal abstract class PageView : UserControl
         Width = PageWidth;
 
         Controls.Add(_body);
+
+        Add(new Label
+        {
+            AutoSize = true,
+            Font = DesignFont(22, FontStyle.Bold),
+            ForeColor = Color.White,
+            Margin = new Padding(0, 0, 0, TitleGap),
+            Text = L.T(title)
+        });
     }
+
+    /// <summary>The room under the page's title.</summary>
+    protected static int TitleGap => S(22);
 
     /// <summary>
     /// Keeps the window open while a question or Windows' permission prompt

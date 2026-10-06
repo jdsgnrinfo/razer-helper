@@ -21,6 +21,7 @@ internal sealed class PerformancePage : PageView
     private bool _customShown;
 
     public PerformancePage(PerformanceSection performance, FanSection fans, BatterySection battery)
+        : base("Performance")
     {
         _custom = new CustomBoostPanel(performance.BoostSelectors) { Visible = false };
 

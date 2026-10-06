@@ -67,4 +67,6 @@ internal sealed record AppSettings(
     // The Audio page: the equalizer presets the user saved, and each output
     // device's equalizer, by Windows' endpoint id.
     RazerHelper.Core.Services.EqPreset[]? EqPresets = null,
-    Dictionary<string, RazerHelper.Core.Services.AudioDeviceEq>? AudioDevices = null);
+    Dictionary<string, RazerHelper.Core.Services.AudioDeviceEq>? AudioDevices = null,
+    // The main window's sidebar folded down to its icons, as it was left.
+    bool SidebarCollapsed = false);

@@ -1,0 +1,99 @@
+using System.Drawing.Drawing2D;
+using System.Globalization;
+
+namespace RazerHelper.UI;
+
+/// <summary>The sidebar's pictures: one per section, and the menu's three lines.</summary>
+internal enum NavIcon
+{
+    Performance,
+    Lighting,
+    Display,
+    Audio,
+    PowerProfiles,
+    Optimize,
+    System,
+    Settings,
+    Menu
+}
+
+/// <summary>
+/// Draws the sidebar's icons as thin outlines on a 24 by 24 grid, scaled to
+/// whatever box they are given, with round ends, as the rest of the outlined icons.
+/// </summary>
+internal static class NavIcons
+{
+    private const float Grid = 24f;
+    private const float StrokeWidth = 1.8f;
+
+    // Each icon's outlines, and the parts filled in solid (the power profiles' slider knobs).
+    private static readonly Dictionary<NavIcon, (GraphicsPath Stroke, GraphicsPath? Fill)> Shapes = new()
+    {
+        // A gauge: a dial, its needle and the arc of its scale.
+        [NavIcon.Performance] = (SvgPath.Parse(Circle(12, 13, 8) + "M12 13l4-4M8 17a5 5 0 0 1 1-6"), null),
+
+        // A sun.
+        [NavIcon.Lighting] = (SvgPath.Parse(Circle(12, 12, 4) + "M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"), null),
+
+        // A monitor on its stand.
+        [NavIcon.Display] = (SvgPath.Parse(Rect(3, 4, 18, 12, 1.5f) + "M8 20h8M12 16v4"), null),
+
+        // A speaker and two sound waves.
+        [NavIcon.Audio] = (SvgPath.Parse("M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"), null),
+
+        // Three sliders, their knobs at different heights.
+        [NavIcon.PowerProfiles] = (SvgPath.Parse("M5 4v16M12 4v16M19 4v16" + Rect(3, 7, 4, 3) + Rect(10, 13, 4, 3) + Rect(17, 9, 4, 3)),
+            SvgPath.Parse(Rect(3, 7, 4, 3) + Rect(10, 13, 4, 3) + Rect(17, 9, 4, 3))),
+
+        // A wrench.
+        [NavIcon.Optimize] = (SvgPath.Parse("M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"), null),
+
+        // A chip with its pins.
+        [NavIcon.System] = (SvgPath.Parse(Rect(6, 6, 12, 12, 1.5f) + "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"), null),
+
+        // A gear.
+        [NavIcon.Settings] = (SvgPath.Parse(Circle(12, 12, 3) +
+            "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"), null),
+
+        // Three lines, for opening and closing the menu.
+        [NavIcon.Menu] = (SvgPath.Parse("M3 6h18M3 12h18M3 18h18"), null)
+    };
+
+    public static void Draw(Graphics graphics, NavIcon icon, RectangleF bounds, Color color)
+    {
+        var state = graphics.Save();
+
+        try
+        {
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.TranslateTransform(bounds.X, bounds.Y);
+            graphics.ScaleTransform(bounds.Width / Grid, bounds.Height / Grid);
+
+            var (stroke, fill) = Shapes[icon];
+
+            if (fill is not null)
+            {
+                using var brush = new SolidBrush(color);
+                graphics.FillPath(brush, fill);
+            }
+
+            using var pen = new Pen(color, StrokeWidth) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+            graphics.DrawPath(pen, stroke);
+        }
+        finally
+        {
+            graphics.Restore(state);
+        }
+    }
+
+    // A circle as path data: two half arcs.
+    private static string Circle(float x, float y, float radius) =>
+        Invariant($"M{x - radius} {y}a{radius} {radius} 0 1 0 {2 * radius} 0a{radius} {radius} 0 1 0 {-2 * radius} 0z");
+
+    // A rectangle as path data, its corners rounded by <paramref name="radius"/>.
+    private static string Rect(float x, float y, float width, float height, float radius = 0) => radius <= 0
+        ? Invariant($"M{x} {y}h{width}v{height}h{-width}z")
+        : Invariant($"M{x + radius} {y}h{width - 2 * radius}a{radius} {radius} 0 0 1 {radius} {radius}v{height - 2 * radius}a{radius} {radius} 0 0 1 {-radius} {radius}h{-(width - 2 * radius)}a{radius} {radius} 0 0 1 {-radius} {-radius}v{-(height - 2 * radius)}a{radius} {radius} 0 0 1 {radius} {-radius}z");
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+}

@@ -28,6 +28,7 @@ internal sealed class SettingsPage : PageView
     private bool _isLoading = true;
 
     public SettingsPage(AppSettings settings, IStartupRegistration startupRegistration)
+        : base("Settings")
     {
         _startupRegistration = startupRegistration;
 

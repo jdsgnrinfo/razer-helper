@@ -62,6 +62,7 @@ internal sealed class OptimizePage : PageView
         MemoryCache? cache = null,
         Hibernation? hibernation = null,
         ExtraCleaning? extraCleaning = null)
+        : base("Optimize")
     {
         _trimmer = trimmer;
         _cache = cache;

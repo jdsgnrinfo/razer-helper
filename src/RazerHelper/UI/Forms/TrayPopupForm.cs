@@ -35,8 +35,8 @@ public sealed class TrayPopupForm : Form
     private readonly DgpuFreeUpCoordinator _dgpuCoordinator;
     private readonly FactoryReset _factoryReset;
     private readonly SynchronizationContext _uiContext;
-    private readonly Sidebar _sidebar = new(LoadLogo(S(28)));
-    private readonly WindowCloseButton _closeButton = new();
+    private readonly Sidebar _sidebar = new();
+    private readonly TitleBar _titleBar = new(LoadLogo(S(16)));
     private readonly ThemedToolTip _closeTip = new();
     private readonly Panel _pageHost = new() { AutoScroll = true, BackColor = BackgroundColor, Dock = DockStyle.Fill };
     private readonly Dictionary<DashboardPage, Pages.PageView> _pages = [];
@@ -143,6 +143,7 @@ public sealed class TrayPopupForm : Form
         // Found before the sections are built: which modes are offered depends on it.
         _model = new DeviceSupportService().TryGetPresentModel(out var model) ? model : null;
         _sidebar.DeviceName = SystemInfoText.ComputerName(_model?.Name, Environment.MachineName);
+        _sidebar.DeviceConnected = _model is not null;
 
         var maxFanMethod = _model?.MaxFan ?? MaxFanMethod.ControllerFlag;
 
@@ -447,7 +448,7 @@ public sealed class TrayPopupForm : Form
         // Every showing fades in from nothing (see OnFadeTick).
         Opacity = 0;
         // The sidebar and a page beside it, always the same size; a taller page scrolls (see FitToScreen).
-        ClientSize = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, WindowHeight);
+        ClientSize = new Size(WindowWidth, WindowHeight);
         Text = "RazerHelper";
         StartPosition = FormStartPosition.Manual;
 
@@ -459,13 +460,13 @@ public sealed class TrayPopupForm : Form
     {
         var performancePage = new Pages.PerformancePage(_performanceSection, _fanSection, _batterySection);
 
-        var displayPage = new Pages.DisplayPage(_displaySection, _colorProfileSection, _lightingSection, new Pages.LightsOffChoices(
+        var lightingPage = new Pages.LightingPage(_lightingSection, new Pages.LightsOffChoices(
             _settings.KeyboardOffWithScreen,
             _settings.LightsOffWhenIdle,
             _settings.LightsOffIdleMinutes,
             _settings.LightsOffOnLowBattery,
             _settings.LightsOffBatteryPercent));
-        displayPage.LightsOffChanged += (_, choices) =>
+        lightingPage.LightsOffChanged += (_, choices) =>
         {
             SaveSettings(_settings with
             {
@@ -507,7 +508,8 @@ public sealed class TrayPopupForm : Form
         };
 
         _pages[DashboardPage.Performance] = performancePage;
-        _pages[DashboardPage.Display] = displayPage;
+        _pages[DashboardPage.Lighting] = lightingPage;
+        _pages[DashboardPage.Display] = new Pages.DisplayPage(_displaySection, _colorProfileSection);
         _pages[DashboardPage.Audio] = CreateAudioPage();
         _pages[DashboardPage.Power] = powerPage;
         _pages[DashboardPage.System] = new Pages.SystemPage(SystemInfoReader.Read);
@@ -531,19 +533,21 @@ public sealed class TrayPopupForm : Form
         // The battery's More details goes to its section.
         _batterySection.DetailsRequested += (_, _) => ShowPage(DashboardPage.Power);
 
-        // The X at the top right, over every page: hides the window to the tray, and the app keeps running.
-        var topBar = new Panel { BackColor = BackgroundColor, Dock = DockStyle.Top, Height = TopBarHeight, Margin = Padding.Empty };
-        _closeButton.AccessibleName = L.T("Close");
-        _closeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        _closeButton.Click += (_, _) => RequestHide();
-        _closeTip.SetToolTip(_closeButton, L.T("Close (RazerHelper keeps running in the tray)"));
-        topBar.Controls.Add(_closeButton);
-        topBar.Resize += (_, _) => _closeButton.Location = new Point(topBar.Width - _closeButton.Width - S(12), S(10));
+        // The close button at the top right, over every page: hides the window to the tray, and the app keeps running.
+        _titleBar.CloseControl.AccessibleName = L.T("Close");
+        _titleBar.CloseRequested += (_, _) => RequestHide();
+        _closeTip.SetToolTip(_titleBar.CloseControl, L.T("Close (RazerHelper keeps running in the tray)"));
 
-        // Dock order: the sidebar docks first, then the bar above the pages, and the page fills what is left.
+        // Folding the sidebar to its icons narrows the window by as much, keeping
+        // its right edge where it is, by the tray; the pages keep their width.
+        _sidebar.WidthWanted += (_, width) => FitSidebar(width);
+        _sidebar.CollapsedChanged += (_, collapsed) => SaveSettings(_settings with { SidebarCollapsed = collapsed });
+        _sidebar.SetCollapsed(_settings.SidebarCollapsed, animate: false);
+
+        // Dock order: the bar across the top docks first, then the sidebar under it, and the page fills what is left.
         Controls.Add(_pageHost);
-        Controls.Add(topBar);
         Controls.Add(_sidebar);
+        Controls.Add(_titleBar);
 
         // The pages are as wide as the room left beside the scroll bar, so only a tall page scrolls, and only up and down.
         _pageHost.ClientSizeChanged += (_, _) =>
@@ -584,13 +588,24 @@ public sealed class TrayPopupForm : Form
             showing.OnPageShown();
     }
 
-    // The window's height in the base design, room for every section, even
-    // Performance with Custom's levels open, without scrolling.
-    private static int WindowHeight => S(680) + TopBarHeight - S(16);
+    // The window's height in the base design, the bar across the top included:
+    // room for every section, even Performance with Custom's levels open, without scrolling.
+    private static int WindowHeight => S(700);
 
-    // The strip above the pages holding the X; the pages start 8px under it
-    // instead of their usual 24 (see PageView), so it costs only 28px.
-    private static int TopBarHeight => S(44);
+    // The sidebar, as wide as it is now, open or folded, and a page beside it.
+    private int WindowWidth => _sidebar.CurrentWidth + Pages.PageView.PageWidth;
+
+    // Sets the sidebar to <paramref name="width"/>, the window narrowing or
+    // widening with it from its left edge, all in one move so nothing jumps.
+    private void FitSidebar(int width)
+    {
+        SuspendLayout();
+        var frame = Width - ClientSize.Width;
+        var wanted = width + Pages.PageView.PageWidth + frame;
+        SetBounds(Right - wanted, Top, wanted, Height);
+        _sidebar.Width = width;
+        ResumeLayout(true);
+    }
 
     // A screen too short for the window keeps it shorter (the page scrolls
     // then). Re-anchored to the taskbar so it does not end up floating or
@@ -598,7 +613,7 @@ public sealed class TrayPopupForm : Form
     private void FitToScreen()
     {
         var screen = Screen.FromPoint(Visible ? Location : Cursor.Position).WorkingArea;
-        var size = new Size(Sidebar.SidebarWidth + Pages.PageView.PageWidth, Math.Min(WindowHeight, screen.Height - S(16)));
+        var size = new Size(WindowWidth, Math.Min(WindowHeight, screen.Height - S(16)));
 
         if (ClientSize == size)
             return;

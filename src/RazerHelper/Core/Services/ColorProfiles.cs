@@ -1,6 +1,6 @@
 namespace RazerHelper.Core.Services;
 
-/// <summary>The screen's color profiles, as offered in Display and lighting.</summary>
+/// <summary>The screen's color profiles, as offered in Display.</summary>
 internal enum ColorProfile
 {
     /// <summary>The screen as it was before the app changed it.</summary>
