@@ -507,7 +507,7 @@ public sealed class TrayPopupForm : Form
 
         _pages[DashboardPage.Performance] = performancePage;
         _pages[DashboardPage.Lighting] = lightingPage;
-        _pages[DashboardPage.Display] = new Pages.DisplayPage(_displaySection, _colorProfileSection);
+        _pages[DashboardPage.Display] = new Pages.DisplayPage(_displaySection, _colorProfileSection, DisplayPanelReader.Read, new DisplayService().GetAvailableRefreshRates);
         _pages[DashboardPage.Audio] = CreateAudioPage();
         _pages[DashboardPage.Power] = powerPage;
         _pages[DashboardPage.System] = new Pages.SystemPage(SystemInfoReader.Read, _model);

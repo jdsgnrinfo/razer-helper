@@ -253,6 +253,16 @@ internal static class L
 
         // Display.
         ["Display"] = "Pantalla",
+        ["Panel"] = "Panel",
+        ["Size"] = "Tamaño",
+        ["Resolution"] = "Resolución",
+        ["Max refresh"] = "Frecuencia máxima",
+        ["Color depth"] = "Profundidad de color",
+        ["{0} bits"] = "{0} bits",
+        ["HDR"] = "HDR",
+        ["Supported"] = "Compatible",
+        ["Not supported"] = "No compatible",
+        ["Windows did not report the panel"] = "Windows no informó del panel",
         ["Color profile"] = "Perfil de color",
         ["Standard"] = "Estándar",
         ["Warm"] = "Cálido",

@@ -7,59 +7,73 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
-/// The screen's color profile: Standard, Warm, Cool or Contrast, each applied
-/// the moment it is clicked and kept on the screen (see
-/// <see cref="ColorProfileService"/>). Reports the choice so the host can save it.
+/// The screen's color profile, on one line: its title at the left and a list
+/// of the profiles at the right (Standard, Warm, Cool or Contrast), each
+/// applied the moment it is picked and kept on the screen (see
+/// <see cref="ColorProfileService"/>); before the list, a note when a screen
+/// did not take it. Reports the choice so the host can save it.
 /// </summary>
 internal sealed class ColorProfileSection : SectionPanel
 {
-    private static readonly (ColorProfile Profile, string Label)[] Profiles =
-    [
-        (ColorProfile.Standard, "Standard"),
-        (ColorProfile.Warm, "Warm"),
-        (ColorProfile.Cool, "Cool"),
-        (ColorProfile.Contrast, "Contrast")
-    ];
+    private static readonly ColorProfile[] Profiles = [ColorProfile.Standard, ColorProfile.Warm, ColorProfile.Cool, ColorProfile.Contrast];
 
     private readonly ColorProfileService _service;
+    private readonly Label _title;
     private readonly Label _statusLabel;
-    private readonly Dictionary<ColorProfile, Button> _buttons = [];
+    private readonly DropdownButton _list;
 
     public ColorProfileSection(ColorProfileService service)
     {
         _service = service;
 
-        var header = CreateHeaderLayout(50F, 50F);
-
-        // Lined up with the buttons, inside their glow room.
-        header.Height = SectionHeaderHeight - GlowRoom;
-        header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
+        _title = CreateSectionLabel("Color profile", NavIcon.Palette);
+        _title.Dock = DockStyle.None;
+        _title.BackColor = BackgroundColor;
 
         _statusLabel = CreateHeaderValueLabel();
-        header.Controls.Add(CreateSectionLabel("Color profile", NavIcon.Palette), 0, 0);
-        header.Controls.Add(_statusLabel, 1, 0);
+        _statusLabel.Dock = DockStyle.None;
+        _statusLabel.BackColor = BackgroundColor;
 
-        var grid = CreateButtonGrid(Profiles.Select(each => each.Label).ToArray(), "ColorProfileButton", glowRoom: GlowRoom);
-
-        foreach (var button in grid.Controls.OfType<Button>())
+        _list = new DropdownButton([.. Profiles.Select(Name)])
         {
-            var profile = Profiles.First(each => each.Label == (string)button.Tag!).Profile;
-            _buttons[profile] = button;
-            button.Font = SemiBoldTitleFont(15);
-            button.Click += (_, _) => Choose(profile);
-        }
+            AccessibleName = L.T("Color profile"),
+            Font = SemiBoldTitleFont(16),
+            Size = S(new Size(190, 38))
+        };
+        _list.SelectionChanged += (_, _) =>
+        {
+            if (_list.SelectedIndex >= 0)
+                Choose(Profiles[_list.SelectedIndex]);
+        };
 
-        Controls.Add(grid);
-        Controls.Add(header);
+        Controls.Add(_title);
+        Controls.Add(_statusLabel);
+        Controls.Add(_list);
+        Layout += (_, _) => Arrange();
 
         Show(_service.Current, applied: true);
     }
 
-    /// <summary>How tall the section is: its title and a row of large buttons, with their glow room.</summary>
-    public static int SectionHeight => SectionHeaderHeight + S(74) + GlowRoom;
+    /// <summary>How tall the section is: one line, as tall as the list.</summary>
+    public static int SectionHeight => S(38);
 
     /// <summary>Raised with the profile chosen, after it is applied.</summary>
     public event EventHandler<ColorProfile>? ProfileChosen;
+
+    // The title at the content's left, the list at its right edge, the note just before the list; all centred on the line.
+    // The section is as wide as the page's wide parts: the content starts and ends the glow room in.
+    private void Arrange()
+    {
+        var left = GlowRoom;
+        var right = Width - GlowRoom;
+
+        _title.Location = new Point(left, (Height - _title.Height) / 2);
+        _list.Location = new Point(right - _list.Width, (Height - _list.Height) / 2);
+
+        var status = _statusLabel.PreferredSize;
+        _statusLabel.Size = status;
+        _statusLabel.Location = new Point(_list.Left - S(14) - status.Width, (Height - status.Height) / 2);
+    }
 
     private void Choose(ColorProfile profile)
     {
@@ -72,10 +86,19 @@ internal sealed class ColorProfileSection : SectionPanel
         ProfileChosen?.Invoke(this, profile);
     }
 
-    // Lights the chosen profile; the line at the right says when a screen did not take it.
+    // Shows the chosen profile; the note says when a screen did not take it.
     private void Show(ColorProfile profile, bool applied)
     {
-        HighlightSelected(_buttons.Values, _buttons[profile]);
+        _list.Select(Array.IndexOf(Profiles, profile));
         _statusLabel.Text = applied ? string.Empty : L.T("This screen does not take it");
+        Arrange();
     }
+
+    private static string Name(ColorProfile profile) => profile switch
+    {
+        ColorProfile.Warm => L.T("Warm"),
+        ColorProfile.Cool => L.T("Cool"),
+        ColorProfile.Contrast => L.T("Contrast"),
+        _ => L.T("Standard")
+    };
 }
