@@ -142,8 +142,6 @@ public sealed class TrayPopupForm : Form
 
         // Found before the sections are built: which modes are offered depends on it.
         _model = new DeviceSupportService().TryGetPresentModel(out var model) ? model : null;
-        _sidebar.DeviceName = SystemInfoText.ComputerName(_model?.Name, Environment.MachineName);
-        _sidebar.DeviceConnected = _model is not null;
 
         var maxFanMethod = _model?.MaxFan ?? MaxFanMethod.ControllerFlag;
 

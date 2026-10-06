@@ -62,8 +62,6 @@ internal static class L
         ["Refresh rate"] = "Frecuencia de actualización",
         ["Device"] = "Equipo",
         ["Assistant"] = "Asistente",
-        ["Connected"] = "Conectado",
-        ["Not detected"] = "No detectado",
         ["Collapse menu"] = "Contraer menú",
         ["Expand menu"] = "Expandir menú",
         ["System"] = "Sistema",
