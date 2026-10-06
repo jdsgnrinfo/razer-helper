@@ -101,15 +101,17 @@ internal sealed class OptimizePage : PageView
                 return;
 
             gpuSlot.Busy = true;
+            var done = false;
 
             try
             {
                 await freeUp();
+                done = true;
             }
             finally
             {
                 if (!IsDisposed)
-                    gpuSlot.Busy = false;
+                    await gpuSlot.FinishAsync(done);
             }
         };
         Add(CreateDivider());
@@ -181,10 +183,12 @@ internal sealed class OptimizePage : PageView
     {
         _memorySlot.Busy = true;
         _memoryHint.Text = L.T("Freeing up memory...");
+        var done = false;
 
         try
         {
             var result = await Task.Run(_trimmer.Trim);
+            done = true;
             AppLog.Info($"Free up memory: {result.Programs} programs trimmed, {result.FreedBytes} bytes freed.");
             var trimmed = L.F("{0} freed from {1} programs in the background.", FormatSize(result.FreedBytes), result.Programs);
             _memoryHint.Text = trimmed;
@@ -204,7 +208,7 @@ internal sealed class OptimizePage : PageView
         finally
         {
             if (!IsDisposed)
-                _memorySlot.Busy = false;
+                await _memorySlot.FinishAsync(done);
         }
     }
 
@@ -336,10 +340,12 @@ internal sealed class OptimizePage : PageView
         row.Slot.Button.Enabled = false;
         row.Slot.Busy = true;
         row.Hint.Text = L.T(row.Texts.Working);
+        var done = false;
 
         try
         {
             var result = await Task.Run(row.Cleaner.Clean);
+            done = true;
             AppLog.Info($"{row.Texts.Name}: {result.Files} removed ({result.Bytes} bytes), {result.Skipped} in use left.");
 
             if (IsDisposed)
@@ -366,7 +372,7 @@ internal sealed class OptimizePage : PageView
         finally
         {
             if (!IsDisposed)
-                row.Slot.Busy = false;
+                await row.Slot.FinishAsync(done);
         }
     }
 
@@ -492,9 +498,25 @@ internal sealed class OptimizePage : PageView
             get => _spinner.Visible;
             set
             {
+                if (value)
+                    _spinner.Status = LoaderStatus.Loading;
+
                 _spinner.Visible = value;
                 Button.Visible = !value;
             }
+        }
+
+        /// <summary>
+        /// Shows how the job went (a green check, or a red cross) where the
+        /// circle turned, then, a moment later, gives the button back.
+        /// </summary>
+        public async Task FinishAsync(bool succeeded)
+        {
+            _spinner.Status = succeeded ? LoaderStatus.Success : LoaderStatus.Error;
+            await Task.Delay(Motion.Reduced ? 700 : 1100);
+
+            if (!IsDisposed)
+                Busy = false;
         }
     }
 }

@@ -51,6 +51,9 @@ internal static class L
         ["Open RazerHelper"] = "Abrir RazerHelper",
         ["Exit"] = "Salir",
         ["Close"] = "Cerrar",
+        ["Loading"] = "Cargando",
+        ["Done"] = "Hecho",
+        ["Failed"] = "Falló",
         ["Close (RazerHelper keeps running in the tray)"] = "Cerrar (RazerHelper sigue en la bandeja)",
 
         // The sidebar's sections and their pages.
