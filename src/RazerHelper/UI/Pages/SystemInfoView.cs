@@ -8,14 +8,15 @@ using static RazerHelper.UI.UiTheme;
 namespace RazerHelper.UI.Pages;
 
 /// <summary>
-/// The System page's figures: the laptop model and its maker across the
-/// top, then two to a row Windows and the processor, the graphics, memory
-/// (with a bar of how full it is) and the BIOS, and each drive letter with
-/// its drive and a bar. The fixed figures are read once in the background,
+/// The System page's figures: the laptop's picture, its model, its maker
+/// and whether its Razer controls were found across the top, then two to
+/// a row Windows and the processor, the graphics, memory (with a bar of
+/// how full it is) and the BIOS, and each drive letter with its drive and
+/// a bar. The fixed figures are read once in the background,
 /// the first time the page is shown; memory and drive space follow along
 /// while it is on screen.
 /// </summary>
-internal sealed class SystemInfoView(Func<SystemInfo> read) : DetailsView("System information", semiBoldValues: true)
+internal sealed class SystemInfoView(Func<SystemInfo> read, RazerLaptopModel? laptop) : DetailsView("System information", semiBoldValues: true)
 {
     private Task<SystemInfo>? _reading;
     private bool _loggedFailure;
@@ -69,16 +70,26 @@ internal sealed class SystemInfoView(Func<SystemInfo> read) : DetailsView("Syste
             return [new BentoCardSpec("System information", L.T("No information"), L.T("Windows did not report these figures"), Wide: true)];
         }
 
-        return CardsFor(Info.Result, CultureInfo.CurrentCulture);
+        return CardsFor(Info.Result, laptop, CultureInfo.CurrentCulture);
     }
 
-    private static List<BentoCardSpec> CardsFor(SystemInfo info, CultureInfo culture)
+    private static List<BentoCardSpec> CardsFor(SystemInfo info, RazerLaptopModel? laptop, CultureInfo culture)
     {
         var cards = new List<BentoCardSpec>();
 
-        // The model first, across the whole width, with its maker under it.
-        if (info.Model is { } model)
-            cards.Add(new BentoCardSpec("Model", SystemInfoText.ModelName(model), info.Manufacturer, Wide: true));
+        // The model first, across the whole width: its picture, then its name,
+        // its maker and whether the app found its Razer controls.
+        if ((info.Model is { } model ? SystemInfoText.ModelName(model) : laptop?.Name) is { } name)
+        {
+            cards.Add(new BentoCardSpec(
+                "Model",
+                name,
+                info.Manufacturer,
+                Wide: true,
+                Picture: LaptopPictures.For(laptop?.Name ?? name, BentoGrid.PictureSize),
+                Extra: laptop is null ? L.T("Razer controls not detected") : L.T("Razer controls connected"),
+                ExtraColor: laptop is null ? SubtleTextColor : RazerGreen));
+        }
 
         if (info.OsName is { } os)
             cards.Add(new BentoCardSpec("Operating system", SystemInfoText.OsName(os, info.OsBuild), SystemInfoText.OsDetail(info.OsVersion, info.OsBuild, info.OsRevision)));

@@ -510,7 +510,7 @@ public sealed class TrayPopupForm : Form
         _pages[DashboardPage.Display] = new Pages.DisplayPage(_displaySection, _colorProfileSection);
         _pages[DashboardPage.Audio] = CreateAudioPage();
         _pages[DashboardPage.Power] = powerPage;
-        _pages[DashboardPage.System] = new Pages.SystemPage(SystemInfoReader.Read);
+        _pages[DashboardPage.System] = new Pages.SystemPage(SystemInfoReader.Read, _model);
         _pages[DashboardPage.Optimize] = _optimizePage;
         _pages[DashboardPage.Settings] = CreateSettingsPage();
 

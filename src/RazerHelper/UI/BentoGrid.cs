@@ -4,7 +4,7 @@ using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
-/// <summary>One bento card's content: a small caption, the figure, a note, and an optional bar (0 to 1). Wide cards take a whole row. A wide card with a bar has its note at the right of the figure, as large; any other card has it under the figure, or at the right of it with DetailBeside.</summary>
+/// <summary>One bento card's content: a small caption, the figure, a note, and an optional bar (0 to 1). A card with a Picture shows it at its left, the words beside it, with an Extra line under the note. Wide cards take a whole row. A wide card with a bar has its note at the right of the figure, as large; any other card has it under the figure, or at the right of it with DetailBeside.</summary>
 internal sealed record BentoCardSpec(
     string Caption,
     string Value,
@@ -12,7 +12,10 @@ internal sealed record BentoCardSpec(
     bool Wide = false,
     double? Bar = null,
     Color? BarColor = null,
-    bool DetailBeside = false);
+    bool DetailBeside = false,
+    Image? Picture = null,
+    string? Extra = null,
+    Color? ExtraColor = null);
 
 /// <summary>
 /// Figures two to a row. A wide card takes a row of its own, and a narrow
@@ -24,6 +27,9 @@ internal sealed class BentoGrid : TableLayoutPanel
 {
     /// <summary>The space between a pair's figures and bars.</summary>
     private static int ColumnGap => S(24);
+
+    /// <summary>The room for a card's picture, at its left: wide enough for a laptop seen from the front.</summary>
+    public static Size PictureSize => new(S(156), S(100));
 
     private string _layoutKey = string.Empty;
     private readonly Font _valueFont;
@@ -146,8 +152,15 @@ internal sealed class BentoGrid : TableLayoutPanel
         private static int BottomGap => S(18);
 
         /// <summary>How tall a card is: the gap above, the caption, the figure, the bar or the note, and the gap below.</summary>
-        public static int HeightFor(BentoCardSpec spec) =>
-            TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (NoteUnder(spec) ? S(20) : 0) + BottomGap;
+        public static int HeightFor(BentoCardSpec spec) => spec.Picture is { } picture
+            ? TopGap + Math.Max(picture.Height, WordsHeight(spec)) + BottomGap
+            : TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (NoteUnder(spec) ? S(20) : 0) + BottomGap;
+
+        private static int PictureGap => S(22);
+
+        // The words beside a picture: the caption, the figure, the note and the extra line.
+        private static int WordsHeight(BentoCardSpec spec) =>
+            S(20 + 4 + 24) + (spec.Detail is null ? 0 : S(20)) + (spec.Extra is null ? 0 : S(4 + 20));
 
         // A wide card with a bar (a drive) has its note at the right of the figure; every other note goes under it, unless asked beside.
         private static bool NoteRight(BentoCardSpec spec) => spec.Wide && spec.Bar is not null;
@@ -201,13 +214,22 @@ internal sealed class BentoGrid : TableLayoutPanel
 
             const TextFormatFlags Line = TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine;
 
-            var width = Width - GapRight;
+            var left = 0;
             var y = TopGap;
 
-            TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
+            if (spec.Picture is { } picture)
+            {
+                graphics.DrawImageUnscaled(picture, 0, (Height - picture.Height) / 2);
+                left = picture.Width + PictureGap;
+                y = (Height - WordsHeight(spec)) / 2;
+            }
+
+            var width = Width - GapRight - left;
+
+            TextRenderer.DrawText(graphics, L.T(spec.Caption), CaptionFont, new Rectangle(left, y, width, S(20)), SubtleTextColor, Line);
             y += S(20 + 4);
 
-            var valueRow = new Rectangle(0, y, width, S(24));
+            var valueRow = new Rectangle(left, y, width, S(24));
             TextRenderer.DrawText(graphics, spec.Value, _valueFont, valueRow, Color.White, Line);
             y += S(24);
 
@@ -224,14 +246,20 @@ internal sealed class BentoGrid : TableLayoutPanel
                 }
                 else
                 {
-                    TextRenderer.DrawText(graphics, detail, DetailFont, new Rectangle(0, y, width, S(20)), SubtleTextColor, Line);
+                    TextRenderer.DrawText(graphics, detail, DetailFont, new Rectangle(left, y, width, S(20)), SubtleTextColor, Line);
                     y += S(20);
                 }
             }
 
+            if (spec.Extra is { } extra)
+            {
+                TextRenderer.DrawText(graphics, extra, DetailFont, new Rectangle(left, y + S(4), width, S(20)), spec.ExtraColor ?? SubtleTextColor, Line);
+                y += S(4 + 20);
+            }
+
             if (spec.Bar is { } fraction)
             {
-                var bar = new RectangleF(0, y + S(8), width, S(6));
+                var bar = new RectangleF(left, y + S(8), width, S(6));
 
                 using (var track = new SolidBrush(TrackColor))
                 using (var trackShape = RoundedButton.RoundedPath(bar, S(3)))

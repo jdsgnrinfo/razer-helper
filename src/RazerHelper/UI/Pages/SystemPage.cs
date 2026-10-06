@@ -7,10 +7,10 @@ internal sealed class SystemPage : PageView
 {
     private readonly SystemInfoView _info;
 
-    public SystemPage(Func<SystemInfo> read)
+    public SystemPage(Func<SystemInfo> read, RazerLaptopModel? laptop)
         : base("System")
     {
-        _info = new SystemInfoView(read);
+        _info = new SystemInfoView(read, laptop);
         Add(_info);
     }
 

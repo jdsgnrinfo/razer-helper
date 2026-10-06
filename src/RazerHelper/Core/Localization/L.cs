@@ -328,6 +328,8 @@ internal static class L
         ["System information"] = "Información del equipo",
         ["Reading..."] = "Leyendo...",
         ["Model"] = "Modelo",
+        ["Razer controls connected"] = "Controles de Razer conectados",
+        ["Razer controls not detected"] = "Controles de Razer no detectados",
         ["Operating system"] = "Sistema operativo",
         ["Integrated GPU"] = "GPU integrada",
         ["{0} of {1}"] = "{0} de {1}",
