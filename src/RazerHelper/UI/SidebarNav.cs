@@ -36,6 +36,11 @@ internal sealed class SidebarNav : Control
 
     private const double PressedScale = 0.97;
 
+    // Quicker than the sliders: the pill settles in about a fifth of a second
+    // with a hint of bounce, the highlight and the press in about a seventh.
+    private static readonly Spring.Feel PillFeel = Spring.Feel.Of(0.22, 0.12);
+    private static readonly Spring.Feel QuickFeel = Spring.Feel.Of(0.15, 0.05);
+
     private readonly (DashboardPage Page, string Text)[] _entries;
     private readonly Spring _pill = new(0, 0.05);
     private readonly Spring _highlight = new(0, 0.05);
@@ -93,7 +98,7 @@ internal sealed class SidebarNav : Control
         AccessibilityNotifyClients(AccessibleEvents.Selection, index);
 
         if (IsHandleCreated && Visible)
-            Animate(_pill, TopOf(index), Spring.Morph);
+            Animate(_pill, TopOf(index), PillFeel);
         else
             _pill.Jump(TopOf(index));
 
@@ -318,7 +323,7 @@ internal sealed class SidebarNav : Control
 
         if (index < 0)
         {
-            Animate(_highlightShown, 0, Spring.Snappy);
+            Animate(_highlightShown, 0, QuickFeel);
         }
         else
         {
@@ -326,9 +331,9 @@ internal sealed class SidebarNav : Control
             if (!wasShown && _highlightShown.Position < 0.05)
                 _highlight.Jump(TopOf(index));
             else
-                Animate(_highlight, TopOf(index), Spring.Snappy);
+                Animate(_highlight, TopOf(index), QuickFeel);
 
-            Animate(_highlightShown, 1, Spring.Snappy);
+            Animate(_highlightShown, 1, QuickFeel);
         }
 
         StartFrames();
@@ -337,8 +342,8 @@ internal sealed class SidebarNav : Control
     private void PressDown(int index)
     {
         _pressed = _lastPressed = index;
-        Animate(_press, PressedScale, Spring.Snappy);
-        Animate(_pressDepth, 1, Spring.Snappy);
+        Animate(_press, PressedScale, QuickFeel);
+        Animate(_pressDepth, 1, QuickFeel);
         StartFrames();
     }
 
@@ -348,8 +353,8 @@ internal sealed class SidebarNav : Control
             return;
 
         _pressed = -1;
-        Animate(_press, 1, Spring.Snappy);
-        Animate(_pressDepth, 0, Spring.Snappy);
+        Animate(_press, 1, QuickFeel);
+        Animate(_pressDepth, 0, QuickFeel);
         StartFrames();
     }
 
