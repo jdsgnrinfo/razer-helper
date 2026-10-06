@@ -75,7 +75,7 @@ Everything the original does still works the same way; on top of it:
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
-- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Audio, Energy, System, Optimize, Settings, and Close at the bottom) and the chosen section beside it.
+- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Audio, Energy, System, Optimize, Settings, and the computer's name at the bottom) and the chosen section beside it, with an X at the top right that closes the window to the tray.
 - **Custom levels in place:** choosing Custom opens its CPU and GPU levels under the mode buttons, side by side.
 - **Battery details** (in Energy, or More details on the battery): power in or out, time left, charge, health, voltage.
 - **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.

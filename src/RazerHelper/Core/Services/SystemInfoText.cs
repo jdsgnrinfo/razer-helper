@@ -26,6 +26,17 @@ internal static partial class SystemInfoText
             _ => null
         };
 
+    /// <summary>
+    /// The computer's name at the sidebar's foot: the laptop's model without
+    /// the year in brackets, "Razer Blade 15 Base (2020)" as "Razer Blade 15 Base";
+    /// with no model found, Windows' name for the computer.
+    /// </summary>
+    public static string ComputerName(string? model, string machineName) =>
+        string.IsNullOrWhiteSpace(model) ? machineName : TrailingBrackets().Replace(model, string.Empty).Trim();
+
+    [GeneratedRegex(@"\s*\([^()]*\)\s*$")]
+    private static partial Regex TrailingBrackets();
+
     // " - RZ09-0328" and the like: a dash, then letters and digits in dash-joined groups, at the end.
     [GeneratedRegex(@"\s+-\s+[A-Z0-9]+(?:-[A-Z0-9]+)+$")]
     private static partial Regex ProductCode();

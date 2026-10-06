@@ -38,8 +38,9 @@ internal abstract class PageView : UserControl
             FlowDirection = FlowDirection.TopDown,
             Location = Point.Empty,
             Margin = Padding.Empty,
-            // 24px all round, less at the sides the glow room of the parts that reach into it (see AddWide).
-            Padding = new Padding(S(24) - UiControls.GlowRoom, S(24), S(24) - UiControls.GlowRoom, S(24)),
+            // 24px at the sides and foot, less at the sides the glow room of the parts that reach into it (see AddWide);
+            // 8px on top, under the window's bar with the X.
+            Padding = new Padding(S(24) - UiControls.GlowRoom, S(8), S(24) - UiControls.GlowRoom, S(24)),
             WrapContents = false
         };
 

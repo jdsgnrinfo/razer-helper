@@ -46,10 +46,13 @@ internal static class Glow
         }
     }
 
-    /// <summary>The glow around <paramref name="body"/>, in the graphics' coordinates.</summary>
+    /// <summary>
+    /// The glow around <paramref name="body"/>, in the graphics' coordinates;
+    /// <paramref name="strength"/> scales it (1 is the buttons' own).
+    /// </summary>
     // Rings of green a pixel apart, strongest at the edge and fading out
     // smoothly (eased), from the outside in.
-    internal static void Paint(Graphics graphics, RectangleF body)
+    internal static void Paint(Graphics graphics, RectangleF body, float strength = 1f)
     {
         var smoothing = graphics.SmoothingMode;
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -59,7 +62,7 @@ internal static class Glow
         for (var step = radius; step >= 1; step--)
         {
             var fade = 1f - (step - 0.5f) / radius;
-            var alpha = (int)(EdgeAlpha * fade * fade * fade);
+            var alpha = (int)(EdgeAlpha * strength * fade * fade * fade);
 
             if (alpha <= 0)
                 continue;

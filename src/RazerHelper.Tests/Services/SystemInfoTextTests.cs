@@ -20,6 +20,13 @@ public class SystemInfoTextTests
     public void GpuName_DropsTheMaker(string name, string expected) =>
         Assert.Equal(expected, SystemInfoText.GpuName(name));
 
+    [Theory]
+    [InlineData("Razer Blade 15 Base (2020)", "Razer Blade 15 Base")]
+    [InlineData("Razer Blade 14", "Razer Blade 14")]
+    [InlineData(null, "DESKTOP-1234")]
+    public void ComputerName_IsTheModelWithoutItsYear_OrWindowsName(string? model, string expected) =>
+        Assert.Equal(expected, SystemInfoText.ComputerName(model, "DESKTOP-1234"));
+
     [Fact]
     public void OsName_CallsWindows11ByItsName() =>
         Assert.Equal("Windows 11 Home", SystemInfoText.OsName("Windows 10 Home", 26200));

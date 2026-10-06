@@ -35,7 +35,9 @@ public sealed class TrayPopupForm : Form
     private readonly DgpuFreeUpCoordinator _dgpuCoordinator;
     private readonly FactoryReset _factoryReset;
     private readonly SynchronizationContext _uiContext;
-    private readonly Sidebar _sidebar = new(LoadLogo(S(18)));
+    private readonly Sidebar _sidebar = new(LoadLogo(S(28)));
+    private readonly WindowCloseButton _closeButton = new();
+    private readonly ThemedToolTip _closeTip = new();
     private readonly Panel _pageHost = new() { AutoScroll = true, BackColor = BackgroundColor, Dock = DockStyle.Fill };
     private readonly Dictionary<DashboardPage, Pages.PageView> _pages = [];
     private DashboardPage _currentPage = DashboardPage.Performance;
@@ -140,6 +142,7 @@ public sealed class TrayPopupForm : Form
 
         // Found before the sections are built: which modes are offered depends on it.
         _model = new DeviceSupportService().TryGetPresentModel(out var model) ? model : null;
+        _sidebar.DeviceName = SystemInfoText.ComputerName(_model?.Name, Environment.MachineName);
 
         var maxFanMethod = _model?.MaxFan ?? MaxFanMethod.ControllerFlag;
 
@@ -524,13 +527,22 @@ public sealed class TrayPopupForm : Form
         _pages[_currentPage].Visible = true;
         _sidebar.Select(_currentPage);
         _sidebar.PageRequested += (_, page) => ShowPage(page);
-        _sidebar.CloseRequested += (_, _) => RequestHide();
 
         // The battery's More details goes to its section.
         _batterySection.DetailsRequested += (_, _) => ShowPage(DashboardPage.Power);
 
-        // Dock order: the sidebar docks first, and the page fills what is left.
+        // The X at the top right, over every page: hides the window to the tray, and the app keeps running.
+        var topBar = new Panel { BackColor = BackgroundColor, Dock = DockStyle.Top, Height = TopBarHeight, Margin = Padding.Empty };
+        _closeButton.AccessibleName = L.T("Close");
+        _closeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        _closeButton.Click += (_, _) => RequestHide();
+        _closeTip.SetToolTip(_closeButton, L.T("Close (RazerHelper keeps running in the tray)"));
+        topBar.Controls.Add(_closeButton);
+        topBar.Resize += (_, _) => _closeButton.Location = new Point(topBar.Width - _closeButton.Width - S(12), S(10));
+
+        // Dock order: the sidebar docks first, then the bar above the pages, and the page fills what is left.
         Controls.Add(_pageHost);
+        Controls.Add(topBar);
         Controls.Add(_sidebar);
 
         // The pages are as wide as the room left beside the scroll bar, so only a tall page scrolls, and only up and down.
@@ -574,7 +586,11 @@ public sealed class TrayPopupForm : Form
 
     // The window's height in the base design, room for every section, even
     // Performance with Custom's levels open, without scrolling.
-    private static int WindowHeight => S(680);
+    private static int WindowHeight => S(680) + TopBarHeight - S(16);
+
+    // The strip above the pages holding the X; the pages start 8px under it
+    // instead of their usual 24 (see PageView), so it costs only 28px.
+    private static int TopBarHeight => S(44);
 
     // A screen too short for the window keeps it shorter (the page scrolls
     // then). Re-anchored to the taskbar so it does not end up floating or
@@ -769,7 +785,7 @@ public sealed class TrayPopupForm : Form
     }
 
     // Successes are visible in the controls themselves, so only failures are
-    // worth words. They show in red at the foot of the sidebar, above Close,
+    // worth words. They show in red at the foot of the sidebar, above the computer's name,
     // until the next result.
     private void ShowStatus(SectionStatus status) =>
         _sidebar.ShowError(status.IsError ? status.Message : null);
@@ -1073,6 +1089,7 @@ public sealed class TrayPopupForm : Form
         if (disposing)
         {
             _hotkey.Dispose();
+            _closeTip.Dispose();
             _profileShortcuts.Dispose();
             _profileToast.Dispose();
             _displayWatcher.Dispose();

@@ -18,15 +18,22 @@ internal enum DashboardPage
 }
 
 /// <summary>
-/// The left of the main window: the app's logo and name, one entry per
-/// section in capitals (the chosen one green, softly glowing, like the app's
-/// other selected buttons), then Close at the bottom.
-/// An error shows in red just above Close, only until the next result. It only reports clicks; the window decides
-/// what they do.
+/// The left of the main window: a rounded card set in from the window's
+/// edges, with no outline, holding the app's logo, one entry per section in
+/// capitals (the chosen one green, with a soft glow) and, at its foot, this
+/// computer's name under a green laptop.
+/// An error shows in red just above the computer, only until the next result.
+/// It only reports clicks; the window decides what they do.
 /// </summary>
 internal sealed class Sidebar : Panel
 {
-    public static int SidebarWidth => S(240);
+    /// <summary>The card and the window's margin to its left.</summary>
+    public static int SidebarWidth => CardMargin + S(240);
+
+    // The gap between the card and the window's edges, above, below and to the left.
+    private static int CardMargin => S(12);
+
+    private static int CardRadius => S(10);
 
     private static int Inset => S(12);
 
@@ -34,23 +41,28 @@ internal sealed class Sidebar : Panel
     // with no margin between them, the fills stay 4px apart.
     private static int EntryRoom => S(2);
 
+    // The selected entry's glow, a little softer than the buttons' own.
+    private const float GlowStrength = 0.7f;
+
     private readonly Dictionary<DashboardPage, NavButton> _entries = [];
     private readonly Label _error;
+    private readonly DeviceBadge _device;
     private readonly ThemedToolTip _toolTip = new();
 
     public Sidebar(Image? logo)
     {
-        BackColor = SidebarColor;
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        BackColor = BackgroundColor;
         Dock = DockStyle.Left;
         Margin = Padding.Empty;
 
-        // No side padding, so the selected entry's glow can spread beside it;
-        // the controls keep their inset as margins instead.
-        Padding = new Padding(0, S(18), 0, S(14));
+        // The parts fill the card's width, so the selected entry's glow can
+        // spread beside it; they keep their inset as margins instead. Above and
+        // below, at least the card's corner, so the parts never square it off.
+        Padding = new Padding(CardMargin, CardMargin + S(14), 0, CardMargin + CardRadius);
         Width = SidebarWidth;
 
-        var entryWidth = SidebarWidth - 2 * Inset;
-        var aside = new Padding(Inset, 0, Inset, 0);
+        var entryWidth = SidebarWidth - CardMargin - 2 * Inset;
 
         var top = new GlowRow
         {
@@ -63,7 +75,11 @@ internal sealed class Sidebar : Panel
             WrapContents = false
         };
 
-        top.Controls.Add(CreateBrand(logo, entryWidth));
+        top.Controls.Add(new BrandRow(logo)
+        {
+            Margin = new Padding(Inset, 0, Inset, S(12)),
+            Size = new Size(entryWidth, S(40))
+        });
 
         foreach (var (page, text) in new[]
         {
@@ -76,7 +92,7 @@ internal sealed class Sidebar : Panel
             (DashboardPage.Settings, "Settings")
         })
         {
-            var entry = new NavButton(null, L.T(text).ToUpper(CultureInfo.CurrentCulture))
+            var entry = new NavButton(L.T(text).ToUpper(CultureInfo.CurrentCulture))
             {
                 Font = SemiBoldFont(14),
                 Height = S(44) + 2 * EntryRoom,
@@ -115,11 +131,12 @@ internal sealed class Sidebar : Panel
         };
         bottom.Controls.Add(_error);
 
-        // Hides the window to the tray, from any section: the app keeps running.
-        var close = new NavButton(Glyph.Close, L.T("Close")) { Width = entryWidth, Margin = aside, LineAbove = true };
-        close.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
-        _toolTip.SetToolTip(close, L.T("Close (RazerHelper keeps running in the tray)"));
-        bottom.Controls.Add(close);
+        _device = new DeviceBadge
+        {
+            Margin = new Padding(Inset, 0, Inset, 0),
+            Size = new Size(entryWidth, S(84))
+        };
+        bottom.Controls.Add(_device);
 
         // Dock order: the last added docks first.
         Controls.Add(bottom);
@@ -129,8 +146,19 @@ internal sealed class Sidebar : Panel
     /// <summary>Raised with the section whose entry was clicked.</summary>
     public event EventHandler<DashboardPage>? PageRequested;
 
-    /// <summary>Raised by Close.</summary>
-    public event EventHandler? CloseRequested;
+    /// <summary>The computer's name at the card's foot.</summary>
+    [System.ComponentModel.Browsable(false)]
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public string DeviceName
+    {
+        get => _device.Text;
+        set
+        {
+            _device.Text = value;
+            _device.AccessibleName = value;
+            _device.Invalidate();
+        }
+    }
 
     /// <summary>Lights the entry of the section on show.</summary>
     public void Select(DashboardPage page)
@@ -145,6 +173,18 @@ internal sealed class Sidebar : Panel
         _error.Text = text ?? string.Empty;
         _error.Visible = text is not null;
         _toolTip.SetToolTip(_error, text ?? string.Empty);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var graphics = e.Graphics;
+        graphics.Clear(BackColor);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        var card = new RectangleF(CardMargin, CardMargin, Width - CardMargin, Height - 2 * CardMargin);
+        using var fill = new SolidBrush(SidebarColor);
+        using var path = RoundedButton.RoundedPath(card, CardRadius);
+        graphics.FillPath(fill, path);
     }
 
     protected override void Dispose(bool disposing)
@@ -165,15 +205,9 @@ internal sealed class Sidebar : Panel
 
             var body = entry.Body;
             body.Offset(entry.Left, entry.Top);
-            Glow.Paint(graphics, body);
+            Glow.Paint(graphics, body, GlowStrength);
         }
     }
-
-    private static Control CreateBrand(Image? logo, int width) => new BrandRow(logo)
-    {
-        Margin = new Padding(Inset, 0, Inset, S(16)),
-        Size = new Size(width, S(24))
-    };
 
     // The entries' column: it paints the selected entry's glow over the room
     // around it (each entry paints the part that falls on itself).
@@ -188,11 +222,9 @@ internal sealed class Sidebar : Panel
         }
     }
 
-    // The logo and the app's name beside it, 8px apart, 16px above the first entry.
+    // The app's logo alone, without its name, 12px above the first entry.
     private sealed class BrandRow : Control
     {
-        private static readonly Font NameFont = SemiBoldTitleFont(16);
-
         private readonly Image? _logo;
 
         public BrandRow(Image? logo)
@@ -208,37 +240,54 @@ internal sealed class Sidebar : Panel
         {
             e.Graphics.Clear(BackColor);
 
-            var x = S(8);
-
             if (_logo is not null)
-            {
-                e.Graphics.DrawImage(_logo, x, (Height - _logo.Height) / 2, _logo.Width, _logo.Height);
-                x += _logo.Width + S(8);
-            }
+                e.Graphics.DrawImage(_logo, S(8), (Height - _logo.Height) / 2, _logo.Width, _logo.Height);
+        }
+    }
 
-            TextRenderer.DrawText(e.Graphics, "RazerHelper", NameFont, new Rectangle(x, 0, Width - x, Height), Color.White,
-                TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+    // A thin line across the top, then a green laptop and, under it, the computer's name, centred.
+    private sealed class DeviceBadge : Control
+    {
+        private static readonly Font NameFont = SemiBoldFont(14);
+
+        private static int IconSize => S(30);
+
+        public DeviceBadge()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            AccessibleRole = AccessibleRole.StaticText;
+            BackColor = SidebarColor;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var graphics = e.Graphics;
+            graphics.Clear(BackColor);
+
+            using (var line = new SolidBrush(DividerColor))
+                graphics.FillRectangle(line, 0, 0, Width, S(1));
+
+            var iconTop = S(16);
+            Glyphs.Draw(graphics, Glyph.Laptop, new RectangleF((Width - IconSize) / 2f, iconTop, IconSize, IconSize), RazerGreen);
+
+            var textTop = iconTop + IconSize + S(6);
+            TextRenderer.DrawText(graphics, Text, NameFont, new Rectangle(0, textTop, Width, Height - textTop), Color.White,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
         }
     }
 
     /// <summary>
-    /// An entry: its name (with an icon before it, on Close), grey at rest,
-    /// green under the pointer, with no fill; and when its section is on show,
-    /// a green fill (lighter under the pointer) with dark text and a soft green
-    /// glow around it, as the app's selected buttons have.
+    /// An entry: its name, grey at rest, green under the pointer, with no
+    /// fill; and when its section is on show, a green fill (lighter under the
+    /// pointer) with dark text and a soft green glow around it.
     /// </summary>
     private sealed class NavButton : Control
     {
-        private static int IconSize => S(18);
-
-        private readonly Glyph? _glyph;
         private bool _hovered;
         private bool _selected;
 
-        public NavButton(Glyph? glyph, string text)
+        public NavButton(string text)
         {
-            _glyph = glyph;
-
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
             AccessibleName = text;
             AccessibleRole = AccessibleRole.PushButton;
@@ -254,19 +303,7 @@ internal sealed class Sidebar : Panel
         public int Room { get; init; }
 
         /// <summary>The entry itself, inside its room, in its own coordinates.</summary>
-        internal RectangleF Body
-        {
-            get
-            {
-                var top = LineAbove ? S(9) : Room;
-                return new RectangleF(Room, top, Width - 2 * Room, Height - top - Room);
-            }
-        }
-
-        /// <summary>A thin line across the top, setting Close apart from the sections.</summary>
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public bool LineAbove { get; init; }
+        internal RectangleF Body => new(Room, Room, Width - 2 * Room, Height - 2 * Room);
 
         [System.ComponentModel.Browsable(false)]
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
@@ -295,12 +332,6 @@ internal sealed class Sidebar : Panel
             graphics.Clear(SidebarColor);
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (LineAbove)
-            {
-                using var line = new SolidBrush(DividerColor);
-                graphics.FillRectangle(line, 0, 0, Width, S(1));
-            }
-
             // The part of the selected entry's glow that falls on this one.
             if (Parent is { } row)
             {
@@ -321,17 +352,7 @@ internal sealed class Sidebar : Panel
             }
 
             var color = _selected ? OnGreenTextColor : _hovered ? RazerGreen : SubtleTextColor;
-            var middle = body.Top + body.Height / 2f;
-
-            // An icon only on Close; the sections are their names alone.
             var textLeft = (int)body.Left + S(16);
-
-            if (_glyph is { } glyph)
-            {
-                var icon = new RectangleF(body.Left + S(12), middle - IconSize / 2f, IconSize, IconSize);
-                Glyphs.Draw(graphics, glyph, icon, color);
-                textLeft = (int)body.Left + S(12) + IconSize + S(10);
-            }
 
             TextRenderer.DrawText(graphics, Text, Font, new Rectangle(textLeft, (int)body.Top, (int)body.Right - textLeft, (int)body.Height), color,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);

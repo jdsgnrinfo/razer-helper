@@ -15,7 +15,10 @@ internal enum Glyph
     Gpu,
 
     // Windows.
-    Close
+    Close,
+
+    // The sidebar's foot: this computer.
+    Laptop
 }
 
 /// <summary>
@@ -61,6 +64,13 @@ internal static class Glyphs
                     // An X, in the same stroke as the outlined icons.
                     graphics.DrawLine(pen, 3.5f, 3.5f, 12.5f, 12.5f);
                     graphics.DrawLine(pen, 12.5f, 3.5f, 3.5f, 12.5f);
+                    break;
+                case Glyph.Laptop:
+                    // A screen on a base a little wider than it, outlined.
+                    using (var screen = RoundedButton.RoundedPath(new RectangleF(3f, 3f, 10f, 7.5f), 1.2f))
+                        graphics.DrawPath(pen, screen);
+
+                    graphics.DrawLine(pen, 1.5f, 13f, 14.5f, 13f);
                     break;
             }
         }
