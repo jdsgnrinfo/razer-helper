@@ -47,7 +47,8 @@ internal sealed class EqualizerGraph : Control
     private int FirstX => S(58);
     private int LastX => Width - S(28);
 
-    private static readonly Color PanelColor = SidebarColor;
+    // The sidebar's background, a step lighter than the page.
+    private static readonly Color PanelColor = Sidebar.NavColor;
     private static readonly Color MutedColor = OffColor;
 
     private readonly double[] _gains = EqBands.Flat();

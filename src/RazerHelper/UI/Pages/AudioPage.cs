@@ -41,8 +41,9 @@ internal sealed record AudioChoices(EqPreset[] Presets, Dictionary<string, Audio
 
 /// <summary>
 /// The output device and its equalizer. Top: the device Windows plays to;
-/// picking another in the list switches Windows to it. Below: the equalizer, with Reset and its on/off switch
-/// beside its title, its preset with Save, New and Delete, the ten bands with
+/// picking another in the list at the right switches Windows to it. Below:
+/// the equalizer, with its on/off switch beside its title, its preset
+/// filling the row before Reset, Save, New and Delete, the ten bands with
 /// their curve, then Bass enhancer, Dynamic boost and Clarity, ten levels each, added to
 /// whatever curve plays. At the bottom, only while it is needed, why the
 /// equalizer cannot play yet: Equalizer APO is missing (with its download),
@@ -97,60 +98,39 @@ internal sealed class AudioPage : PageView
         _savedPresets = [.. choices.Presets.Where(preset => !EqPreset.IsBuiltIn(preset.Name))];
         _devices = new Dictionary<string, AudioDeviceEq>(choices.Devices, StringComparer.OrdinalIgnoreCase);
 
-        // Output device.
-        var first = HeaderRow("Output device");
-        first.Margin = new Padding(0, S(18), 0, 0);
-        Add(first);
-
+        // Output device: its name at the left, the list of devices at the right.
         _deviceList = new DropdownButton([], L.T("No output device"))
         {
-            Font = SemiBoldTitleFont(16)
+            AccessibleName = L.T("Output device"),
+            Font = SemiBoldTitleFont(16),
+            Size = new Size(S(320), RowHeight)
         };
 
-        Add(Row(RowHeight, (_deviceList, Fill: true)));
+        var deviceRow = new SettingRow("Output device", string.Empty, NavIcon.Speaker) { Margin = new Padding(0, S(4), 0, 0) };
+        deviceRow.Add(_deviceList, outset: S(4)); // Out to the content's edge, as the buttons below.
+        AddWide(deviceRow);
 
         var divider = CreateDivider();
         divider.Margin = new Padding(0, S(22), 0, S(20));
         Add(divider);
 
-        // Equalizer: Reset, in grey that turns green under the pointer, and the switch, beside the title.
+        // Equalizer: its switch beside the title.
         _enabled = new ToggleSwitch { AccessibleName = L.T("Equalizer"), Margin = Padding.Empty };
+        Add(HeaderRow("Equalizer", _enabled));
 
-        var reset = new Label
-        {
-            AutoSize = true,
-            Cursor = Cursors.Hand,
-            Font = SemiBoldFont(13),
-            ForeColor = SubtleTextColor,
-            Margin = new Padding(0, S(4), S(16), 0),
-            Text = L.T("Reset")
-        };
-        reset.MouseEnter += (_, _) => reset.ForeColor = RazerGreen;
-        reset.MouseLeave += (_, _) => reset.ForeColor = SubtleTextColor;
+        // The preset takes the room the buttons leave; Reset, beside Save, goes back to flat.
+        _presetList = new DropdownButton([]) { Font = SemiBoldTitleFont(16) };
+        var reset = SizedButton("Reset");
         _toolTip.SetToolTip(reset, L.T("Back to flat, with the boosts off"));
-
-        var beside = new FlowLayoutPanel
-        {
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            BackColor = BackgroundColor,
-            Margin = Padding.Empty,
-            WrapContents = false
-        };
-        beside.Controls.Add(reset);
-        beside.Controls.Add(_enabled);
-        Add(HeaderRow("Equalizer", beside));
-
-        _presetList = new DropdownButton([]) { Font = SemiBoldTitleFont(16), Width = S(228) };
         _save = SizedButton("Save");
         _new = SizedButton("New");
         _delete = SizedButton("Delete");
-        Add(Row(RowHeight, (_presetList, Fill: false), (_save, Fill: false), (_new, Fill: false), (_delete, Fill: false)));
+        Add(Row(RowHeight, (_presetList, Fill: true), (reset, Fill: false), (_save, Fill: false), (_new, Fill: false), (_delete, Fill: false)));
 
         _graph = new EqualizerGraph
         {
             Margin = new Padding(0, S(16), 0, 0),
-            Size = new Size(ContentWidth, S(190))
+            Size = new Size(ContentWidth, S(206))
         };
         Add(_graph);
 
