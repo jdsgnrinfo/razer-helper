@@ -34,8 +34,8 @@ internal class RoundedButton : Button
     private bool _wasGreen;
 
     // Selected, it shrinks to this and springs back past its size before settling.
-    private const double BounceFrom = 0.92;
-    private static readonly Spring.Feel BounceFeel = Spring.Feel.Of(0.38, 0.45);
+    private const double BounceFrom = 0.96;
+    private static readonly Spring.Feel BounceFeel = Spring.Feel.Of(0.32, 0.3);
 
     public RoundedButton()
     {
