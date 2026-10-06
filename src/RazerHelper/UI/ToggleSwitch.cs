@@ -27,9 +27,9 @@ internal sealed class ToggleSwitch : CheckBox
     private static int PressStretch => S(5);
 
     // The stretch a change without a press gives: up to 16% wider and back.
-    private const double PulseSeconds = 0.34;
+    private const double PulseSeconds = 0.22;
     private const double PulseWidth = 0.16;
-    private const double FadeSeconds = 0.25;
+    private const double FadeSeconds = 0.16;
     // A change this soon after a press already had its stretch.
     private const double PressMemory = 0.25;
 
@@ -38,7 +38,10 @@ internal sealed class ToggleSwitch : CheckBox
     private static readonly Color DisabledTrack = Color.FromArgb(0x2A, 0x2A, 0x2A);
 
     // Lands on its end without overshooting the state it reports.
-    private static readonly Spring.Feel Glide = Spring.Feel.Of(0.3, 0);
+    private static readonly Spring.Feel Glide = Spring.Feel.Of(0.18, 0);
+
+    // The press stretch, as quick as the travel.
+    private static readonly Spring.Feel Stretchy = Spring.Feel.Of(0.18, 0.15);
 
     // 0 is fully off, 1 fully on, in between while the thumb travels.
     private readonly Spring _travel = new(0, 0.001);
@@ -253,7 +256,7 @@ internal sealed class ToggleSwitch : CheckBox
             return;
         }
 
-        _stretch.To(pressed ? PressStretch : 0, Spring.Snappy);
+        _stretch.To(pressed ? PressStretch : 0, Stretchy);
         StartFrames();
     }
 
