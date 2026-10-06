@@ -209,7 +209,9 @@ internal sealed class Sidebar : Panel
     {
         private static readonly Font NameFont = SemiBoldFont(14);
 
-        private static int IconSize => S(30);
+        // The laptop: a screen and the small stand under it.
+        private static Size ScreenSize => new(S(40), S(25));
+        private static Size StandSize => new(S(14), S(4));
 
         public DeviceBadge()
         {
@@ -227,11 +229,33 @@ internal sealed class Sidebar : Panel
                 graphics.FillRectangle(line, 0, 0, Width, S(1));
 
             var iconTop = S(16);
-            Glyphs.Draw(graphics, Glyph.Laptop, new RectangleF((Width - IconSize) / 2f, iconTop, IconSize, IconSize), RazerGreen);
+            PaintLaptop(graphics, new PointF(Width / 2f, iconTop));
 
-            var textTop = iconTop + IconSize + S(6);
+            var textTop = iconTop + ScreenSize.Height + StandSize.Height + S(8);
             TextRenderer.DrawText(graphics, Text, NameFont, new Rectangle(0, textTop, Width, Height - textTop), Color.White,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
+        }
+
+        // A screen outlined in green over a faint green fill, with rounded
+        // corners, and a solid green stand centred under it; its top middle at <paramref name="top"/>.
+        private static void PaintLaptop(Graphics graphics, PointF top)
+        {
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            var outline = S(1.5f);
+            var screen = new RectangleF(top.X - ScreenSize.Width / 2f, top.Y, ScreenSize.Width, ScreenSize.Height);
+            var inner = RectangleF.Inflate(screen, -outline / 2, -outline / 2);
+
+            using (var shape = RoundedButton.RoundedPath(inner, S(3f)))
+            using (var fill = new SolidBrush(Color.FromArgb(36, RazerGreen)))
+            using (var pen = new Pen(RazerGreen, outline))
+            {
+                graphics.FillPath(fill, shape);
+                graphics.DrawPath(pen, shape);
+            }
+
+            using var stand = new SolidBrush(RazerGreen);
+            graphics.FillRectangle(stand, top.X - StandSize.Width / 2f, screen.Bottom, StandSize.Width, StandSize.Height);
         }
     }
 }
