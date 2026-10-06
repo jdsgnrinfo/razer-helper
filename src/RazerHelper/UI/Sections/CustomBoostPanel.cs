@@ -5,9 +5,9 @@ namespace RazerHelper.UI.Sections;
 
 /// <summary>
 /// Custom mode's levels, opened under the mode buttons while the laptop is in
-/// Custom: the CPU's row, then the GPU's. Each click applies at once. The
-/// selectors belong to the Performance section, which keeps them up to date.
-/// It is as wide as a page's wide parts, so the levels' glow has room (see
+/// Custom: the CPU's row, then the GPU's, each with a list of its levels;
+/// a pick applies at once. The selectors belong to the Performance section,
+/// which keeps them up to date. It is as wide as a page's wide parts (see
 /// PageView.AddWide).
 /// </summary>
 internal sealed class CustomBoostPanel : Panel

@@ -1,23 +1,26 @@
+using RazerHelper.Core.Localization;
 using RazerHelper.Core.Models;
-using static RazerHelper.UI.UiControls;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI.Sections;
 
 /// <summary>
 /// The Custom performance mode's CPU and GPU boost selectors, each a settings
-/// row: the chip's icon and name, and its levels at the right, as wide as
-/// their names. Two separate rows, so the Custom panel can place them.
+/// row: the chip's icon and name, and at the right a list of its levels.
+/// Two separate rows, so the Custom panel can place them.
 /// </summary>
 internal sealed class CustomBoostSelectors : IDisposable
 {
-    private readonly Dictionary<CpuBoost, Button> _cpuButtons = [];
-    private readonly Dictionary<GpuBoost, Button> _gpuButtons = [];
+    private static readonly CpuBoost[] CpuLevels = Enum.GetValues<CpuBoost>();
+    private static readonly GpuBoost[] GpuLevels = Enum.GetValues<GpuBoost>();
+
+    private readonly DropdownButton _cpuList;
+    private readonly DropdownButton _gpuList;
 
     public CustomBoostSelectors()
     {
-        Cpu = CreateSelector("CPU", NavIcon.Cpu, Enum.GetValues<CpuBoost>(), _cpuButtons, level => CpuSelected?.Invoke(this, level));
-        Gpu = CreateSelector("GPU", NavIcon.Gpu, Enum.GetValues<GpuBoost>(), _gpuButtons, level => GpuSelected?.Invoke(this, level));
+        (Cpu, _cpuList) = CreateSelector("CPU", NavIcon.Cpu, CpuLevels, level => CpuSelected?.Invoke(this, level));
+        (Gpu, _gpuList) = CreateSelector("GPU", NavIcon.Gpu, GpuLevels, level => GpuSelected?.Invoke(this, level));
         Gpu.Divided = true;
     }
 
@@ -31,7 +34,7 @@ internal sealed class CustomBoostSelectors : IDisposable
 
     public event EventHandler<GpuBoost>? GpuSelected;
 
-    /// <summary>Whether the buttons can be used (not while a change is being sent, nor where boosts cannot change).</summary>
+    /// <summary>Whether the lists can be used (not while a change is being sent, nor where boosts cannot change).</summary>
     public bool Enabled
     {
         set
@@ -41,11 +44,11 @@ internal sealed class CustomBoostSelectors : IDisposable
         }
     }
 
-    /// <summary>Highlights the given levels; null clears a selector.</summary>
+    /// <summary>Shows the given levels in the lists; null shows none.</summary>
     public void ShowBoosts(CpuBoost? cpu, GpuBoost? gpu)
     {
-        HighlightSelected(_cpuButtons.Values, cpu is CpuBoost c ? _cpuButtons[c] : null);
-        HighlightSelected(_gpuButtons.Values, gpu is GpuBoost g ? _gpuButtons[g] : null);
+        _cpuList.Select(cpu is { } c ? Array.IndexOf(CpuLevels, c) : -1);
+        _gpuList.Select(gpu is { } g ? Array.IndexOf(GpuLevels, g) : -1);
     }
 
     public void Dispose()
@@ -54,23 +57,32 @@ internal sealed class CustomBoostSelectors : IDisposable
         Gpu.Dispose();
     }
 
-    private static SettingRow CreateSelector<TLevel>(
-        string title,
-        NavIcon icon,
-        TLevel[] levels,
-        Dictionary<TLevel, Button> buttons,
-        Action<TLevel> onSelected)
+    private static (SettingRow Row, DropdownButton List) CreateSelector<TLevel>(string title, NavIcon icon, TLevel[] levels, Action<TLevel> onSelected)
         where TLevel : struct, Enum
     {
-        var strip = CreateChoiceStrip(levels.Select(level => level.ToString()).ToArray(), $"{title}BoostButton", SemiBoldTitleFont(15));
-
-        foreach (var button in strip.Controls.OfType<Button>())
+        var list = new DropdownButton([.. levels.Select(level => LevelName(level.ToString()))])
         {
-            var level = Enum.Parse<TLevel>((string)button.Tag!);
-            buttons[level] = button;
-            button.Click += (_, _) => onSelected(level);
-        }
+            AccessibleName = title,
+            Font = SemiBoldTitleFont(16),
+            Size = S(new Size(190, 38))
+        };
 
-        return new SettingRow(title, icon: icon).Add(strip, GlowRoom);
+        list.SelectionChanged += (_, _) =>
+        {
+            if (list.SelectedIndex >= 0)
+                onSelected(levels[list.SelectedIndex]);
+        };
+
+        var row = new SettingRow(title, icon: icon);
+        row.Add(list, outset: S(4));
+        return (row, list);
     }
+
+    private static string LevelName(string level) => level switch
+    {
+        "Low" => L.T("Low"),
+        "Medium" => L.T("Medium"),
+        "High" => L.T("High"),
+        _ => L.T("Boost")
+    };
 }

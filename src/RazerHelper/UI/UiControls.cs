@@ -194,45 +194,6 @@ internal static class UiControls
     }
 
     /// <summary>
-    /// A short row of buttons each as wide as its name, 8px apart, for a
-    /// choice at the right of a settings row: 36px tall, with the glow room
-    /// of a selected (green) button all round (see <see cref="Glow"/>).
-    /// Each button's Tag is its name as given.
-    /// </summary>
-    public static Panel CreateChoiceStrip(IReadOnlyList<string> buttonNames, string nameSuffix, Font font)
-    {
-        // Each button keeps half the gap to its neighbour inside itself, so the glow can cross it.
-        var inset = S(4);
-        var edge = GlowRoom - inset;
-
-        var strip = new Panel { BackColor = BackgroundColor, Margin = Padding.Empty, Padding = Padding.Empty };
-        Glow.Attach(strip);
-
-        var left = edge;
-
-        foreach (var name in buttonNames)
-        {
-            var button = CreateActionButton(name);
-            var textWidth = TextRenderer.MeasureText(button.Text, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-
-            button.Dock = DockStyle.None;
-            button.Font = font;
-            button.Name = $"{name}{nameSuffix}";
-            button.Tag = name;
-            button.Bounds = new Rectangle(left, edge, textWidth + S(2 * 16) + 2 * inset, S(36) + 2 * inset);
-
-            if (button is RoundedButton rounded)
-                rounded.GlowRoom = inset;
-
-            strip.Controls.Add(button);
-            left += button.Width;
-        }
-
-        strip.Size = new Size(left + edge, S(36) + 2 * GlowRoom);
-        return strip;
-    }
-
-    /// <summary>
     /// Highlights <paramref name="selected"/> and resets the rest; null clears
     /// the selection. A button that becomes the chosen one bounces softly, as
     /// the performance modes do.
