@@ -14,13 +14,13 @@ internal enum LoaderStatus
 /// <summary>
 /// The app's loader: a green ring of four arcs that turns while the arcs
 /// breathe, for while something is being read or done. When it is told how
-/// the job went, the turning stops, the four strokes fold into a mark (a
-/// green check, or a red cross), drawn stroke by stroke, and the mark pops
-/// once. Back to loading, the strokes gather into the ring again.
+/// the job went, the turning stops a little further on, the arcs close one
+/// after another into a whole circle (green, or red if the job failed), and
+/// the circle pops once. Back to loading, the arcs part and turn again.
 /// Each stroke is a middle point, a length, a direction, a bend and a width,
 /// each on its own spring, so any shape becomes any other and a change
 /// halfway keeps its speed. With Windows' animation effects off it shows a
-/// still ring or the mark, and swaps at once. It only animates while shown.
+/// still ring or the whole circle, and swaps at once. It only animates while shown.
 /// </summary>
 internal sealed class LoadingSpinner : Control
 {
@@ -36,7 +36,7 @@ internal sealed class LoadingSpinner : Control
     private const double TurnsPerSecond = 0.9;
     private const double BreathsPerSecond = 1.6;
 
-    // A mark's strokes start one after another, this far apart.
+    // When done, the arcs close one after another, this far apart.
     private const double StrokeStagger = 0.09;
 
     private static readonly Color ErrorColor = Color.FromArgb(0xF0, 0x4A, 0x4A);
@@ -89,7 +89,7 @@ internal sealed class LoadingSpinner : Control
 
             if (value != LoaderStatus.Loading)
             {
-                // The mark pops once as it lands.
+                // The closed circle pops once.
                 _pop.Jump(1);
                 Animate(_pop, 1, Spring.Feel.Of(0.4, 0.5), velocity: 1.6);
             }
@@ -179,7 +179,7 @@ internal sealed class LoadingSpinner : Control
 
         for (var index = 0; index < _strokes.Length; index++)
         {
-            // A mark is drawn stroke by stroke; the ring gathers all at once.
+            // The arcs close one by one; they part all at once.
             var startsAt = _status == LoaderStatus.Loading ? 0 : index * StrokeStagger;
 
             if (now - _statusAt >= startsAt)
@@ -191,7 +191,7 @@ internal sealed class LoadingSpinner : Control
         moving |= _pop.Step(seconds) | _tone.Step(seconds);
         Invalidate();
 
-        // Loading keeps turning; a mark stops once it has settled.
+        // Loading keeps turning; a closed circle stops once it has settled.
         if (_status != LoaderStatus.Loading && !moving)
             _frames.Stop();
     }
@@ -211,34 +211,32 @@ internal sealed class LoadingSpinner : Control
     }
 
     // Where each of the four strokes belongs at this moment.
-    private Pose[] Poses(double time) => _status switch
-    {
-        LoaderStatus.Success =>
-        [
-            // A check: the short stroke down to the corner, then the long one up.
-            Line(-6.2f, 0.4f, -2f, 4.6f, StrokeUnits),
-            Line(-2f, 4.6f, 6.6f, -4.4f, StrokeUnits),
-            Gone(-2f, 4.6f),
-            Gone(-2f, 4.6f)
-        ],
-        LoaderStatus.Error =>
-        [
-            // A cross: one stroke, then the other.
-            Line(-5.2f, -5.2f, 5.2f, 5.2f, StrokeUnits),
-            Line(5.2f, -5.2f, -5.2f, 5.2f, StrokeUnits),
-            Gone(0, 0),
-            Gone(0, 0)
-        ],
-        _ => Ring(time)
-    };
+    private Pose[] Poses(double time) => _status == LoaderStatus.Loading
+        ? Ring(Turn(time), Breath(time))
+        // Done: the turning stops a little further on, upright, and the arcs
+        // close into one whole circle (red if the job failed).
+        : Ring(Upright(Turn(_statusAt)), Closed);
 
-    // The ring: four arcs a quarter apart, turning, their lengths breathing.
-    private static Pose[] Ring(double time)
+    // How far the ring has turned by <paramref name="time"/>, in radians.
+    private static double Turn(double time) => Motion.Reduced ? 0 : time * TurnsPerSecond * 2 * Math.PI;
+
+    // The next quarter turn ahead, where the ring settles.
+    private static double Upright(double turn) => Math.Ceiling(turn / (Math.PI / 2)) * (Math.PI / 2);
+
+    // Each arc spans from about a third to two thirds of its quarter as it breathes.
+    private static double Breath(double time)
     {
-        var turn = Motion.Reduced ? 0 : time * TurnsPerSecond * 2 * Math.PI;
         var breath = Motion.Reduced ? 0.5 : (Math.Sin(time * BreathsPerSecond * 2 * Math.PI) + 1) / 2;
-        // Each arc spans from about a third to two thirds of its quarter.
-        var sweep = Math.PI / 2 * (0.35 + 0.35 * breath);
+        return Math.PI / 2 * (0.35 + 0.35 * breath);
+    }
+
+    // Arcs that meet: a whole circle.
+    private const double Closed = Math.PI / 2;
+
+    // The ring: four arcs a quarter apart, turned by <paramref name="turn"/>, each
+    // <paramref name="sweep"/> long (radians of the circle).
+    private static Pose[] Ring(double turn, double sweep)
+    {
         var poses = new Pose[4];
 
         for (var index = 0; index < 4; index++)
@@ -252,15 +250,6 @@ internal sealed class LoadingSpinner : Control
 
         return poses;
     }
-
-    private static Pose Line(float x1, float y1, float x2, float y2, float width)
-    {
-        var length = MathF.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-        return new Pose((x1 + x2) / 2, (y1 + y2) / 2, length, MathF.Atan2(y2 - y1, x2 - x1), 0, width);
-    }
-
-    // A stroke the mark does not use: shrunk to nothing where the mark joins.
-    private static Pose Gone(float x, float y) => new(x, y, 0, 0, 0, 0);
 
     private static void Animate(Spring spring, double target, Spring.Feel feel, double? velocity = null)
     {
