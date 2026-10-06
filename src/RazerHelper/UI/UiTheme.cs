@@ -28,13 +28,13 @@ internal static class UiTheme
 
     public static Size S(Size size) => new(S(size.Width), S(size.Height));
 
-    public static readonly Color BackgroundColor = Color.FromArgb(0x10, 0x10, 0x10);
+    public static readonly Color BackgroundColor = Color.FromArgb(0x8, 0x8, 0x8);
 
     /// <summary>The sidebar of sections down the left of the main window: a step lighter than the page beside it.</summary>
-    public static readonly Color SidebarColor = Color.FromArgb(0x18, 0x18, 0x18);
+    public static readonly Color SidebarColor = Color.FromArgb(0x22, 0x22, 0x22);
 
     /// <summary>An unselected button's or drop-down's flat fill.</summary>
-    public static readonly Color ButtonColor = Color.FromArgb(0x20, 0x20, 0x20);
+    public static readonly Color ButtonColor = Color.FromArgb(0x22, 0x22, 0x22);
 
     /// <summary>A button's fill under the pointer: a touch lighter.</summary>
     public static readonly Color ButtonHoverColor = Color.FromArgb(0x26, 0x26, 0x26);
