@@ -51,8 +51,8 @@ internal static class NavIcons
     // Each icon's outlines, and the parts filled in solid (the power profiles' slider knobs).
     private static readonly Dictionary<NavIcon, (GraphicsPath Stroke, GraphicsPath? Fill)> Shapes = new()
     {
-        // A gauge: a dial, its needle and the arc of its scale.
-        [NavIcon.Performance] = (SvgPath.Parse(Circle(12, 13, 8) + "M12 13l4-4M8 17a5 5 0 0 1 1-6"), null),
+        // A rocket: its body and window, its fins and its flame.
+        [NavIcon.Performance] = (SvgPath.Parse("M12 2.5c3 2.2 4.5 5.4 4.5 9.2V16h-9v-4.3c0-3.8 1.5-7 4.5-9.2z" + Circle(12, 9.5f, 1.8f) + "M7.5 12.5 5 15v3h2.5M16.5 12.5 19 15v3h-2.5M10.5 19c0 1.2.6 2 1.5 2.5.9-.5 1.5-1.3 1.5-2.5"), null),
 
         // A sun.
         [NavIcon.Lighting] = (SvgPath.Parse(Circle(12, 12, 4) + "M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"), null),
@@ -67,8 +67,8 @@ internal static class NavIcons
         [NavIcon.PowerProfiles] = (SvgPath.Parse("M5 4v16M12 4v16M19 4v16" + Rect(3, 7, 4, 3) + Rect(10, 13, 4, 3) + Rect(17, 9, 4, 3)),
             SvgPath.Parse(Rect(3, 7, 4, 3) + Rect(10, 13, 4, 3) + Rect(17, 9, 4, 3))),
 
-        // A wrench.
-        [NavIcon.Optimize] = (SvgPath.Parse("M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"), null),
+        // A bolt of lightning.
+        [NavIcon.Optimize] = (SvgPath.Parse("M13 2 4 14h7l-1 8 9-12h-7z"), null),
 
         // A chip with its pins.
         [NavIcon.System] = (SvgPath.Parse(Rect(6, 6, 12, 12, 1.5f) + "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"), null),
