@@ -14,43 +14,48 @@ It lives in the system tray, talks to the laptop's controller directly, and need
 
 ## Preview
 
-One window, in sections, like Synapse: a sidebar on the left and the chosen section beside it.
+One window, in sections, like Synapse: a title bar with the logo and a close button, a sidebar on the left with the sections grouped and an icon each (the menu button folds it down to its icons), and the chosen section beside it, under its name.
 
-- **Performance:** Silent, Balanced and Custom as large buttons, with live CPU, GPU and RAM usage rings, temperatures and clocks under them, the fans, and the battery charge limit.
-- **Custom levels in place:** choosing Custom opens the CPU and GPU boost levels right under the modes.
-- **Display and lighting:** refresh rate (Auto, 60 Hz, 120 Hz), color profile (Standard, Warm, Cool, Contrast), keyboard and logo effects with their brightness, and the keyboard light turned off with the screen, after a chosen idle time, or below a chosen battery charge.
+- **Performance:** Silent, Balanced and Custom as large buttons, then the system monitor (live CPU, GPU and RAM usage rings with temperatures and clocks), the battery charge limit and Max RPM with the fans' speeds.
+- **Custom levels in place:** choosing Custom opens a list for the CPU and one for the GPU boost levels right under the modes.
+- **Lighting:** the keyboard's and the logo's effects as pictures with their brightness, beside a panel that names the effect, offers the colors and plays it on a small keyboard; and the keyboard light turned off with the screen, after a chosen idle time, or below a chosen battery charge.
+- **Display:** the panel's part number and maker, size, native resolution, fastest refresh rate, color depth and HDR support, read from the panel itself; the refresh rate (Auto, 60 Hz, 120 Hz) and a list of color profiles (Standard, Warm, Cool, Contrast).
 - **Audio:** the output device, which switches Windows' sound to it, and its own 10-band equalizer with presets and a green curve that follows the sliders, plus Bass enhancer, Dynamic boost and Clarity (ten levels each), played through the free Equalizer APO.
-- **Energy:** live battery details, a performance profile for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
-- **System:** the model, Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
+- **Power profiles:** the battery's figures, compact, a list of modes for plugged in and for on battery, and Windows' power plan, with one click to install the Razer Blade plan.
+- **System:** the laptop's picture beside its model and whether its Razer controls were found, then Windows, CPU, both GPUs, RAM, BIOS and the drives with their space.
 - **Optimize:** free up memory, clean temporary files, the Recycle Bin, Windows Update's and Delivery Optimization's caches and the NVIDIA shader cache, close the apps keeping the dedicated GPU awake, and turn off hibernation to free its file.
 - **Settings:** language, start at login, hide when clicking away, always on top, performance mode shortcuts, maintenance, and a link to the project on GitHub beside the version.
 
 <p align="center">
-  <img src="docs/images/preview-performance.png" width="800" alt="RazerHelper's Performance section: the Silent, Balanced and Custom mode buttons with Balanced selected, CPU, GPU and RAM usage rings with temperature, clock, memory speed and free memory, the fans set to automatic, and the battery charge limit">
+  <img src="docs/images/preview-performance.png" width="800" alt="RazerHelper's Performance section: the sidebar with Performance lit, the Silent, Balanced and Custom mode buttons with Balanced selected, the system monitor with CPU, GPU and RAM usage rings, temperatures, clocks, memory speed and free memory, the charge limit slider and the Max RPM switch">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-custom.png" width="800" alt="The Performance section in Custom mode: CPU boost levels Low, Medium, High and Boost, and GPU levels Low, Medium and High, open under the mode buttons">
+  <img src="docs/images/preview-custom.png" width="800" alt="The Performance section in Custom mode: rows for the CPU and the GPU under the mode buttons, each with a list of its boost levels">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-display.png" width="800" alt="The Display and lighting section: refresh rate buttons Auto, 60 and 120 Hz, color profile buttons Standard, Warm, Cool and Contrast, keyboard and logo lighting effects with brightness sliders, and switches to turn the lighting off with the screen, after an idle time (10 min) and below a battery charge (20%)">
+  <img src="docs/images/preview-lighting.png" width="800" alt="The Lighting section: the keyboard's effects Static, Breathing, Spectrum and Off and the logo's Static, Breathing and Off as pictures with brightness sliders, a panel beside them naming the effect with Reset, the colors as circles and a small keyboard playing it, and switches to turn the lighting off with the screen, after an idle time (10 min) and below a battery charge (20%)">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-audio.png" width="800" alt="The Audio section: the output device list, the equalizer switched on with the Bass boost preset and Save, New and Delete, ten band sliders from 31 Hz to 16 kHz with a green curve through them, Reset and the on/off switch beside the title, and the Bass enhancer, Dynamic boost and Clarity sliders under the curve">
+  <img src="docs/images/preview-display.png" width="800" alt="The Display section: the panel's part number and maker, size, resolution, fastest refresh rate, color depth and HDR support, the refresh rate buttons Auto, 60 and 120 Hz, and the color profile list set to Standard">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-energy.png" width="800" alt="The Energy section: battery power, time left, charge, health, voltage and type, the power source profiles for plugged in and on battery, and the power plan list with the Install Razer Blade plan button">
+  <img src="docs/images/preview-audio.png" width="800" alt="The Audio section: the output device row with its list, the equalizer switched on with the Bass boost preset filling the row before Reset, Save, New and Delete, ten band sliders from 31 Hz to 16 kHz with a green curve through them, and the Bass enhancer, Dynamic boost and Clarity sliders under the curve">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-system.png" width="800" alt="The System section: model, operating system, CPU, integrated and dedicated GPU, RAM in use, BIOS and the system drive's space">
+  <img src="docs/images/preview-energy.png" width="800" alt="The Power profiles section: the battery's charge, health and voltage three to a row, the power source profiles switch with lists for plugged in and on battery, and the power plan list with the Install Razer Blade plan button">
 </p>
 
 <p align="center">
-  <img src="docs/images/preview-optimize.png" width="800" alt="The Optimize section: free up memory, temporary files to clean, the NVIDIA shader cache to clear, free up GPU, the free up GPU when unplugged switch, and the hibernation switch with the size of its file">
+  <img src="docs/images/preview-system.png" width="800" alt="The System section: a laptop drawn in fine lines beside the model, its maker and Razer controls connected, then the operating system, CPU, integrated and dedicated GPU, RAM in use, BIOS and the system drive's space">
+</p>
+
+<p align="center">
+  <img src="docs/images/preview-optimize.png" width="800" alt="The Optimize section: free up memory, temporary files to clean, the NVIDIA shader cache to clear, free up GPU, the free up GPU when unplugged switch, and the hibernation switch">
 </p>
 
 <p align="center">
@@ -75,20 +80,21 @@ Everything the original does still works the same way; on top of it:
 - **Dark tray menu:** the right-click menu of the tray icon in the app's dark style, with rounded corners.
 - **Three performance modes on every model:** Balanced, Silent and Custom, which now carries the game controller icon. Gaming is no longer offered; a profile saved with it is applied as Custom.
 - **Redesigned interface:** a flatter, more compact look for every window, rounded corners from Windows 11, and new icons.
-- **A window in sections, like Synapse:** a sidebar on the left (Performance, Display and lighting, Audio, Energy, System, Optimize, Settings, and the computer's name at the bottom) and the chosen section beside it, with an X at the top right that closes the window to the tray.
-- **Custom levels in place:** choosing Custom opens its CPU and GPU levels under the mode buttons, side by side.
-- **Battery details** (in Energy, or More details on the battery): power in or out, time left, charge, health, voltage.
-- **System information** (the System section): Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
-- **Profiles for each power source** chosen in Energy: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
-- **Keyboard light off by itself** (optional, in Display and lighting): with the screen, after 1 to 30 minutes without a key or the mouse, or on battery below 10 to 50%. It comes back at the brightness it had once none of these holds (a key press after idle brings it back within a second).
+- **A window in sections, like Synapse:** a title bar with the logo and a close button that sends the window to the tray, and a sidebar on the left with an icon per section, grouped under Device (Lighting, Display, Audio) and Assistant (Power profiles, Optimize, System), Performance first and Settings at the foot; the menu button folds it down to its icons, and the app remembers it.
+- **Custom levels in place:** choosing Custom opens a list for the CPU and one for the GPU levels under the mode buttons.
+- **Battery details** (in Power profiles): power in or out, time left, charge, health, voltage.
+- **Display details** (the Display section): the panel's part number and maker, size, native resolution, fastest refresh rate, color depth and HDR support, read from the panel's own EDID.
+- **System information** (the System section): the laptop's picture beside its model, Windows, CPU, integrated and dedicated GPU, RAM, drives with their space, and BIOS.
+- **Profiles for each power source** chosen in Power profiles: the mode for plugged in and for on battery, under the switch that changes between them with the charger.
+- **Keyboard light off by itself** (optional, in Lighting): with the screen, after 1 to 30 minutes without a key or the mouse, or on battery below 10 to 50%. It comes back at the brightness it had once none of these holds (a key press after idle brings it back within a second).
 - **Audio equalizer** (the Audio section): pick an output device (Windows switches to it) and give it its own 10-band equalizer, with presets of the app's and your own; it plays through [Equalizer APO](https://sourceforge.net/projects/equalizerapo/), which is installed separately.
-- **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script or with one click in Energy; see [Razer Blade power plan](#razer-blade-power-plan-optional).
+- **Razer Blade power plan** (optional): a Windows power plan for cooler, quieter rest and longer battery, added with a script or with one click in Power profiles; see [Razer Blade power plan](#razer-blade-power-plan-optional).
 - **Experimental:** on the Blade 15 Base (2020), Max fan asks the controller for 10000 RPM (the original asks for 7000). The fans cannot go beyond their own maximum either way; this is being tested and may go back to 7000.
 
 ## What it does today
 
 - **Performance modes:** Balanced, Silent and Custom, with CPU and GPU boost levels in Custom, on every model.
-- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Energy, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
+- **Power profiles:** separate settings for plugged in and on battery, applied automatically when you plug or unplug. Both are chosen in Power profiles, under the switch that turns the automatic change on or off. On battery Balanced and Silent are offered (Synapse offers only Balanced); Custom needs the charger.
 - **Battery charge limit:** any percentage from 60% to 100% (no limit).
 - **Display refresh rate:** 60 Hz, 120 Hz, or Auto, which follows the power source.
 - **Color profile:** Standard, Warm (less blue, about 5000 K, easier on the eyes at night), Cool (about 8000 K) or Contrast (darker shadows, brighter highlights), on every screen and in every app, games included. It changes the curve the graphics card sends the colors through, as f.lux does, and needs no administrator rights. Standard, and closing the app, give the screen back exactly the curve it had (a calibration included). It is put back after sleep or a change of screen, when Windows may reset it. It cannot make colors more saturated, and it adds to Windows' Night light if that is on.
@@ -184,7 +190,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\RazerBladePowerPlan.ps1 -Activa
 
 Leave out `-Activate` to add it without switching to it, and choose it later in Control Panel > Power Options. `-Remove` takes it away again.
 
-In RazerHelper itself, **Energy** lists your power plans to choose the one Windows uses, and while this plan is not on your PC, the green **Install Razer Blade plan** button adds it and switches to it, with the same settings as the script.
+In RazerHelper itself, **Power profiles** lists your power plans to choose the one Windows uses, and while this plan is not on your PC, the green **Install Razer Blade plan** button adds it and switches to it, with the same settings as the script.
 
 ## Requirements
 
