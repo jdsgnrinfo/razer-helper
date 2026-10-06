@@ -26,7 +26,7 @@ internal sealed class PerformancePage : PageView
         _custom = new CustomBoostPanel(performance.BoostSelectors) { Visible = false };
 
         var monitor = new Panel { BackColor = BackgroundColor, Dock = DockStyle.Fill, Margin = Padding.Empty };
-        monitor.Controls.Add(CreateSectionLabel("System monitor"));
+        monitor.Controls.Add(CreateSectionLabel("System monitor", NavIcon.Monitor));
 
         // The modes' glow room is part of their height, so the gaps under them take it back.
         _stack.AddSection(performance, () => PerformanceSection.ButtonHeight + 2 * GlowRoom, wide: true);

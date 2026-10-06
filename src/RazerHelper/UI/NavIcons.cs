@@ -28,7 +28,15 @@ internal enum NavIcon
     Trash,
     ShaderCache,
     FreeGpu,
-    Moon
+    Moon,
+
+    // The section titles' pictures.
+    Monitor,
+    Palette,
+    RefreshRate,
+    Keyboard,
+    Logo,
+    Equalizer
 }
 
 /// <summary>
@@ -106,7 +114,25 @@ internal static class NavIcons
         [NavIcon.FreeGpu] = (SvgPath.Parse(Rect(6, 6, 12, 12, 1.5f) + Rect(9.5f, 9.5f, 5, 5) + "M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"), null),
 
         // A crescent moon, for hibernation.
-        [NavIcon.Moon] = (SvgPath.Parse("M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"), null)
+        [NavIcon.Moon] = (SvgPath.Parse("M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"), null),
+
+        // A pulse across a line, for the readings as they come.
+        [NavIcon.Monitor] = (SvgPath.Parse("M2 12h4l3-7 5 14 3-7h5"), null),
+
+        // A painter's palette with three dabs of color.
+        [NavIcon.Palette] = (SvgPath.Parse("M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-7.9-9-7.9z" + Circle(7.5f, 11, 1.2f) + Circle(10.5f, 7, 1.2f) + Circle(15.5f, 8, 1.2f)), null),
+
+        // An arrow coming round, for how often the screen redraws.
+        [NavIcon.RefreshRate] = (SvgPath.Parse("M20 12a8 8 0 1 1-2.4-5.7M20 4v4.5h-4.5"), null),
+
+        // A keyboard: its outline, a row of keys and the space bar.
+        [NavIcon.Keyboard] = (SvgPath.Parse(Rect(2, 6, 20, 12, 2) + "M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"), null),
+
+        // A four-pointed spark, for the lit logo.
+        [NavIcon.Logo] = (SvgPath.Parse("M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"), null),
+
+        // An equalizer's bars at different heights.
+        [NavIcon.Equalizer] = (SvgPath.Parse("M4 20v-7M8 20V9M12 20V4M16 20v-9M20 20v-5"), null)
     };
 
     public static void Draw(Graphics graphics, NavIcon icon, RectangleF bounds, Color color)

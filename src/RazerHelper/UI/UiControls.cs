@@ -51,7 +51,7 @@ internal static class UiControls
         return header;
     }
 
-    public static Control CreateSectionHeader(string title, string detail, Glyph? icon = null)
+    public static Control CreateSectionHeader(string title, string detail, NavIcon icon)
     {
         var header = CreateHeaderLayout();
 
@@ -98,8 +98,8 @@ internal static class UiControls
         return button;
     }
 
-    /// <param name="inset">Space before the icon (or the stripes, without one), for titles that line up with an indented row.</param>
-    public static Label CreateSectionLabel(string text, Glyph? icon = null, int inset = 0) => new SectionLabel(icon, inset)
+    /// <param name="inset">Space before the icon, for titles that line up with an indented row.</param>
+    public static Label CreateSectionLabel(string text, NavIcon icon, int inset = 0) => new SectionLabel(icon, inset)
     {
         AutoSize = true,
         BackColor = CardColor,
@@ -115,68 +115,30 @@ internal static class UiControls
     public static Font SectionTitleFont => SemiBoldFont(15);
 
     /// <summary>
-    /// A section title with its mark before it: the icon given, in the text
-    /// color, or else a short band of green stripes slanting to the right. The
-    /// mark sits in the label's left padding, so auto-sizing leaves room for
-    /// it and the text lines up exactly as without one.
+    /// A section title with its icon before it, in thin white lines. The icon
+    /// sits in the label's left padding, so auto-sizing leaves room for it and
+    /// the text lines up exactly as without one.
     /// </summary>
     private sealed class SectionLabel : Label
     {
         private static int IconSize => S(18);
         private static int IconGap => S(10);
 
-        // The stripes: their band, each stripe's width, and the step from one to the next.
-        private static Size StripesSize => new(S(22), S(9));
-        private static float StripeWidth => S(3f);
-        private static float StripeStep => S(6f);
-
-        private readonly Glyph? _icon;
+        private readonly NavIcon _icon;
         private readonly int _inset;
 
-        public SectionLabel(Glyph? icon, int inset = 0)
+        public SectionLabel(NavIcon icon, int inset = 0)
         {
             _icon = icon;
             _inset = inset;
 
-            Padding = new Padding(inset + (icon is null ? StripesSize.Width : IconSize) + IconGap, 0, 0, 0);
+            Padding = new Padding(inset + IconSize + IconGap, 0, 0, 0);
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-
-            if (_icon is { } icon)
-            {
-                Glyphs.Draw(e.Graphics, icon, new RectangleF(_inset, (Height - IconSize) / 2f, IconSize, IconSize), ForeColor);
-                return;
-            }
-
-            PaintStripes(e.Graphics, new RectangleF(_inset, (Height - StripesSize.Height) / 2f, StripesSize.Width, StripesSize.Height));
-        }
-
-        // Green stripes leaning right, cut to the band, as the design's section mark.
-        private static void PaintStripes(Graphics graphics, RectangleF band)
-        {
-            var state = graphics.Save();
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            graphics.SetClip(band);
-
-            // Each stripe leans by the band's height over tan(25°) or so, as a 115° line does.
-            var lean = band.Height * 0.47f;
-            using var green = new SolidBrush(RazerGreen);
-
-            for (var x = band.Left - lean; x < band.Right + lean; x += StripeStep)
-            {
-                graphics.FillPolygon(green,
-                [
-                    new PointF(x + lean, band.Top),
-                    new PointF(x + lean + StripeWidth, band.Top),
-                    new PointF(x + StripeWidth, band.Bottom),
-                    new PointF(x, band.Bottom)
-                ]);
-            }
-
-            graphics.Restore(state);
+            NavIcons.Draw(e.Graphics, _icon, new RectangleF(_inset, (Height - IconSize) / 2f, IconSize, IconSize), Color.White);
         }
     }
 

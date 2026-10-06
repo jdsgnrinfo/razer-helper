@@ -36,7 +36,7 @@ internal sealed class ColorProfileSection : SectionPanel
         header.Padding = new Padding(GlowRoom, 0, GlowRoom, S(12) - GlowRoom);
 
         _statusLabel = CreateHeaderValueLabel();
-        header.Controls.Add(CreateSectionLabel("Color profile"), 0, 0);
+        header.Controls.Add(CreateSectionLabel("Color profile", NavIcon.Palette), 0, 0);
         header.Controls.Add(_statusLabel, 1, 0);
 
         var grid = CreateButtonGrid(Profiles.Select(each => each.Label).ToArray(), "ColorProfileButton", glowRoom: GlowRoom);

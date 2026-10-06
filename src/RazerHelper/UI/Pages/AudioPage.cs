@@ -116,7 +116,7 @@ internal sealed class AudioPage : PageView
 
         // Equalizer: its switch beside the title.
         _enabled = new ToggleSwitch { AccessibleName = L.T("Equalizer"), Margin = Padding.Empty };
-        Add(HeaderRow("Equalizer", _enabled));
+        Add(HeaderRow("Equalizer", NavIcon.Equalizer, _enabled));
 
         // The preset takes the room the buttons leave; Reset, beside Save, goes back to flat.
         _presetList = new DropdownButton([]) { Font = SemiBoldTitleFont(16) };
@@ -476,7 +476,7 @@ internal sealed class AudioPage : PageView
     private static bool Same(string? one, string? other) => string.Equals(one, other, StringComparison.OrdinalIgnoreCase);
 
     // A section title with an optional control at the right, and the gap below it.
-    private static Panel HeaderRow(string title, Control? right = null)
+    private static Panel HeaderRow(string title, NavIcon icon, Control? right = null)
     {
         var row = new Panel
         {
@@ -485,7 +485,7 @@ internal sealed class AudioPage : PageView
             Size = new Size(ContentWidth, SectionHeaderHeight)
         };
 
-        var label = CreateSectionLabel(title);
+        var label = CreateSectionLabel(title, icon);
         label.Dock = DockStyle.None;
         label.Location = Point.Empty;
         label.Height = S(24);

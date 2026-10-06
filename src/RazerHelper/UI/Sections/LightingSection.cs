@@ -89,8 +89,8 @@ internal sealed class LightingSection : SectionPanel
             ? [KeyboardEffect.StaticGreen, KeyboardEffect.Breathing, KeyboardEffect.Spectrum, KeyboardEffect.Wave, KeyboardEffect.Off]
             : [KeyboardEffect.StaticGreen, KeyboardEffect.Breathing, KeyboardEffect.Spectrum, KeyboardEffect.Off];
 
-        _keyboard = new Light("Keyboard", [.. _keyboardEffects.Select(effect => (Describe(effect, offersColor), IconFor(effect)))]);
-        _logo = new Light("Logo", [.. LogoModes.Select(mode => (Describe(mode), IconFor(mode)))]);
+        _keyboard = new Light("Keyboard", NavIcon.Keyboard, [.. _keyboardEffects.Select(effect => (Describe(effect, offersColor), IconFor(effect)))]);
+        _logo = new Light("Logo", NavIcon.Logo, [.. LogoModes.Select(mode => (Describe(mode), IconFor(mode)))]);
 
         _preview = new LightingPreview(offersColor ? [.. PresetColors.Select(preset => ToColor(preset.Color))] : []);
         _preview.ColorPicked += async (_, index) => await PickColorAsync(index);
@@ -391,9 +391,9 @@ internal sealed class LightingSection : SectionPanel
         private readonly Label _title;
         private readonly Label _percent;
 
-        public Light(string name, IReadOnlyList<(string Name, EffectIcon Icon)> effects)
+        public Light(string name, NavIcon icon, IReadOnlyList<(string Name, EffectIcon Icon)> effects)
         {
-            _title = CreateSectionLabel(name);
+            _title = CreateSectionLabel(name, icon);
             _title.Dock = DockStyle.None;
 
             Effects = new EffectPicker(effects, CellWidth) { AccessibleName = L.T(name) };
