@@ -57,6 +57,16 @@ internal static class BatteryDetailsText
             ? L.F("{0} of {1} (factory)", WattHours(full), WattHours(design))
             : null;
 
+    /// <summary>The compact Health card's note: what a full charge holds now and held when new, "57.3 / 65.0 Wh". Null without both.</summary>
+    public static string? HealthShort(BatteryDetails battery) =>
+        battery is { FullChargeMilliwattHours: { } full, DesignMilliwattHours: { } design }
+            ? $"{(full / 1000.0).ToString("0.0", Invariant)} / {WattHours(design)}"
+            : null;
+
+    /// <summary>The energy stored now, "57.3 Wh". Null without a reading.</summary>
+    public static string? Stored(BatteryDetails battery) =>
+        battery.RemainingMilliwattHours is { } now ? WattHours(now) : null;
+
     /// <summary>The header's short status: "Charging", "On battery" or "Plugged in".</summary>
     public static string HeaderStatus(BatteryDetails battery) =>
         L.T(Status(battery) == "Plugged in, not charging" ? "Plugged in" : Status(battery));

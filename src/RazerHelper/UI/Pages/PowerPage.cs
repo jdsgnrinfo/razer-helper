@@ -52,7 +52,7 @@ internal sealed class PowerPage : PageView
         // The profiles: the switch, and under it the mode for each source.
         var profilesCard = CreateSwitchCard("Power source profiles", "When you plug in or unplug the charger, switches to the profile chosen for each.", out _profilesSwitch);
         var divider = CreateDivider();
-        divider.Margin = new Padding(0, S(24), 0, S(12));
+        divider.Margin = new Padding(0, S(8), 0, S(12));
         Add(divider);
         Add(profilesCard);
 

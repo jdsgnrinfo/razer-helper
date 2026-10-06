@@ -323,6 +323,7 @@ internal static class L
         ["Health"] = "Salud",
         ["Voltage"] = "Voltaje",
         ["Cycles"] = "Ciclos",
+        ["{0} cycles"] = "{0} ciclos",
 
         // System information window.
         ["System information"] = "Información del equipo",

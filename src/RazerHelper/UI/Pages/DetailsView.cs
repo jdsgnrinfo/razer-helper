@@ -27,10 +27,11 @@ internal abstract class DetailsView : FlowLayoutPanel
 
     /// <param name="name">What the figures are, in English, for the log.</param>
     /// <param name="semiBoldValues">Sets the figures in semi-bold.</param>
-    protected DetailsView(string name, bool semiBoldValues = false)
+    /// <param name="compact">Three to a row, close together (see BentoGrid).</param>
+    protected DetailsView(string name, bool semiBoldValues = false, bool compact = false)
     {
         Name = name;
-        _cards = new BentoGrid(PageView.ContentWidth, semiBoldValues);
+        _cards = new BentoGrid(PageView.ContentWidth, semiBoldValues, compact);
 
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;

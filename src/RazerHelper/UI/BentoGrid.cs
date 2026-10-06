@@ -33,11 +33,33 @@ internal sealed class BentoGrid : TableLayoutPanel
 
     private string _layoutKey = string.Empty;
     private readonly Font _valueFont;
+    private readonly bool _compact;
 
     /// <param name="semiBoldValues">Sets the figures in semi-bold, as in System information.</param>
-    public BentoGrid(int width, bool semiBoldValues = false)
+    /// <param name="compact">Three to a row, close together and with no lines between, in order; the last card of a short row takes the rest of it.</param>
+    public BentoGrid(int width, bool semiBoldValues = false, bool compact = false)
     {
         _valueFont = semiBoldValues ? SemiBoldFont(18) : DesignFont(18);
+        _compact = compact;
+
+        if (compact)
+        {
+            AutoSize = true;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            BackColor = BackgroundColor;
+            ColumnCount = CompactColumns;
+            Margin = Padding.Empty;
+            Padding = Padding.Empty;
+            Width = width;
+
+            // The first columns take the gaps at their right, so the three figures are as wide.
+            var each = (width - (CompactColumns - 1) * ColumnGap) / CompactColumns;
+
+            for (var column = 0; column < CompactColumns; column++)
+                ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, column < CompactColumns - 1 ? each + ColumnGap : width - (CompactColumns - 1) * (each + ColumnGap)));
+
+            return;
+        }
 
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -56,6 +78,12 @@ internal sealed class BentoGrid : TableLayoutPanel
 
     public void ShowCards(IReadOnlyList<BentoCardSpec> specs)
     {
+        if (_compact)
+        {
+            ShowCompact(specs);
+            return;
+        }
+
         var cards = specs.ToList();
 
         for (var index = 0; index < cards.Count; index++)
@@ -105,7 +133,7 @@ internal sealed class BentoGrid : TableLayoutPanel
                 DividerAbove = row > 0,
                 GapRight = !spec.Wide && column == 0 ? ColumnGap : 0,
                 Dock = DockStyle.Fill,
-                Height = BentoCard.HeightFor(spec),
+                Height = BentoCard.HeightFor(spec, compact: false),
                 Margin = Padding.Empty
             };
 
@@ -137,6 +165,55 @@ internal sealed class BentoGrid : TableLayoutPanel
         ResumeLayout();
     }
 
+    private const int CompactColumns = 3;
+
+    // Three to a row, in order; the last card of a short row reaches to the end of it.
+    private void ShowCompact(IReadOnlyList<BentoCardSpec> cards)
+    {
+        var key = string.Join("|", cards.Select(card => $"{card.Caption}:{card.Bar is not null}"));
+
+        if (key == _layoutKey)
+        {
+            var existing = Controls.OfType<BentoCard>().ToList();
+
+            for (var index = 0; index < cards.Count; index++)
+                existing[index].Show(cards[index]);
+
+            return;
+        }
+
+        _layoutKey = key;
+        SuspendLayout();
+        Controls.Clear();
+        RowStyles.Clear();
+
+        for (var index = 0; index < cards.Count; index++)
+        {
+            var (row, column) = (index / CompactColumns, index % CompactColumns);
+            var span = index == cards.Count - 1 ? CompactColumns - column : 1;
+
+            var card = new BentoCard(_valueFont)
+            {
+                Compact = true,
+                GapRight = column + span < CompactColumns ? ColumnGap : 0,
+                Dock = DockStyle.Fill,
+                Height = BentoCard.HeightFor(cards[index], compact: true),
+                Margin = Padding.Empty
+            };
+
+            card.Show(cards[index]);
+            Controls.Add(card, column, row);
+            SetColumnSpan(card, span);
+        }
+
+        RowCount = (cards.Count + CompactColumns - 1) / CompactColumns;
+
+        for (var index = 0; index < RowCount; index++)
+            RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        ResumeLayout();
+    }
+
     /// <summary>
     /// One figure, flat on the window: a divider line above it (but for the
     /// first), the caption in quiet grey, then the figure in white (a wide
@@ -148,13 +225,14 @@ internal sealed class BentoGrid : TableLayoutPanel
         private static readonly Font CaptionFont = DesignFont(14);
         private static readonly Font DetailFont = DesignFont(14);
 
-        private static int TopGap => S(18);
-        private static int BottomGap => S(18);
+        // Compact, the figures sit closer: rows apart by their gaps alone, with no line between.
+        private static int TopGap(bool compact) => S(compact ? 6 : 18);
+        private static int BottomGap(bool compact) => S(compact ? 14 : 18);
 
         /// <summary>How tall a card is: the gap above, the caption, the figure, the bar or the note, and the gap below.</summary>
-        public static int HeightFor(BentoCardSpec spec) => spec.Picture is { } picture
-            ? TopGap + Math.Max(picture.Height, WordsHeight(spec)) + BottomGap
-            : TopGap + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (NoteUnder(spec) ? S(20) : 0) + BottomGap;
+        public static int HeightFor(BentoCardSpec spec, bool compact) => spec.Picture is { } picture
+            ? TopGap(compact) + Math.Max(picture.Height, WordsHeight(spec)) + BottomGap(compact)
+            : TopGap(compact) + S(20 + 4 + 24) + (spec.Bar is null ? 0 : S(8 + 6)) + (NoteUnder(spec) ? S(20) : 0) + BottomGap(compact);
 
         private static int PictureGap => S(22);
 
@@ -176,6 +254,11 @@ internal sealed class BentoGrid : TableLayoutPanel
             _valueFont = valueFont;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
         }
+
+        /// <summary>Closer to its neighbours, with smaller gaps above and below.</summary>
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public bool Compact { get; init; }
 
         /// <summary>Whether a divider line runs along the top: every card but those in the first row.</summary>
         [System.ComponentModel.Browsable(false)]
@@ -215,7 +298,7 @@ internal sealed class BentoGrid : TableLayoutPanel
             const TextFormatFlags Line = TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine;
 
             var left = 0;
-            var y = TopGap;
+            var y = TopGap(Compact);
 
             if (spec.Picture is { } picture)
             {
