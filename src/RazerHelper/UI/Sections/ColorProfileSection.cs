@@ -34,7 +34,7 @@ internal sealed class ColorProfileSection : SectionPanel
         _statusLabel.Dock = DockStyle.None;
         _statusLabel.BackColor = BackgroundColor;
 
-        _list = new DropdownButton([.. Profiles.Select(Name)])
+        _list = new DropdownButton([.. Profiles.Select(ProfileName)])
         {
             AccessibleName = L.T("Color profile"),
             Font = SemiBoldTitleFont(16),
@@ -94,7 +94,7 @@ internal sealed class ColorProfileSection : SectionPanel
         Arrange();
     }
 
-    private static string Name(ColorProfile profile) => profile switch
+    private static string ProfileName(ColorProfile profile) => profile switch
     {
         ColorProfile.Warm => L.T("Warm"),
         ColorProfile.Cool => L.T("Cool"),
