@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Globalization;
 using RazerHelper.Core.Services;
@@ -12,17 +13,33 @@ namespace RazerHelper.UI;
 /// runs through the thumbs, softly glowing, with a faint green fill under it,
 /// and moves with them. Drag a thumb (or anywhere in its column) to set the
 /// band; the mouse wheel moves the band under the pointer a step, and a
-/// double click puts it back to 0. Off, the curve and fills turn grey.
+/// double click puts it back to 0. With the focus, Left and Right pick a band
+/// and Up and Down move it (Shift, Page Up and Page Down by 3 dB; Home and End
+/// to the ends). Off, the curve and fills turn grey.
+/// The thumbs move on the same springs as the app's other sliders: they follow
+/// the pointer and grow while held, spring to a clicked spot, give like rubber
+/// past ±12, strain and come back when a key pushes at an end, and a new curve
+/// (a preset, another device) sweeps in band by band. A bubble over the moving
+/// thumb shows its gain, and the gains above the bands roll as they change.
 /// </summary>
 /// <remarks>
 /// <see cref="GainsChanged"/> fires on every step while dragging;
-/// <see cref="Committed"/> once the user lets go or the wheel stops.
+/// <see cref="Committed"/> once the user lets go, the wheel stops, or a key is released.
 /// </remarks>
 internal sealed class EqualizerGraph : Control
 {
-    private static int ThumbHalf => S(8);
+    private static int ThumbRadius => S(8);
     private static int TrackWidth => S(5);
     private static int Corner => S(6);
+    private static int Stretch => S(9);
+    private static int Push => S(150);
+    private static int CarryStep => S(12);
+
+    private const double Lifted = 1.16;
+    // A new curve reaches each band this much after the one before.
+    private const double SweepSeconds = 0.022;
+    private const int BubbleLinger = 700;
+    private const double LargeStep = 3;
 
     // The grid's top and bottom (+12 and -12 dB), and its first and last band.
     private int GridTop => S(38);
@@ -34,9 +51,34 @@ internal sealed class EqualizerGraph : Control
     private static readonly Color MutedColor = OffColor;
 
     private readonly double[] _gains = EqBands.Flat();
+
+    // Where each thumb is drawn, in dB, and how big it is.
+    private readonly Spring[] _shown = [.. Enumerable.Range(0, EqBands.Count).Select(_ => new Spring(0, 0.005))];
+    private readonly Spring[] _lifts = [.. Enumerable.Range(0, EqBands.Count).Select(_ => new Spring(1, 0.002))];
+    // When a new curve's sweep reaches each band; infinity once it has.
+    private readonly double[] _sweepAt = [.. Enumerable.Repeat(double.PositiveInfinity, EqBands.Count)];
+    private readonly RollingText[] _labels = [.. Enumerable.Range(0, EqBands.Count).Select(_ => new RollingText())];
+
     private int _dragging = -1;
     private int _hovered = -1;
+    private double _pointer;
+    private double _grab;
+    private readonly Spring _catchUp = new(0, 0.005);
+    private readonly List<(double Time, double Position)> _trail = [];
+
+    private int _focusBand;
+    private bool _keyFocus;
+    private bool _keyMoved;
+
+    private int _bubbleBand = -1;
+    private readonly Spring _bubble = new(0, 0.002);
+    private readonly RollingText _bubbleText = new();
+
     private readonly System.Windows.Forms.Timer _wheelSettle = new() { Interval = 400 };
+    private readonly System.Windows.Forms.Timer _bubbleLinger = new() { Interval = BubbleLinger };
+    private readonly System.Windows.Forms.Timer _frames = new() { Interval = 15 };
+    private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private double _lastFrame;
 
     public EqualizerGraph()
     {
@@ -44,16 +86,28 @@ internal sealed class EqualizerGraph : Control
             ControlStyles.UserPaint |
             ControlStyles.AllPaintingInWmPaint |
             ControlStyles.OptimizedDoubleBuffer |
-            ControlStyles.ResizeRedraw,
+            ControlStyles.ResizeRedraw |
+            ControlStyles.Selectable,
             true);
 
         BackColor = BackgroundColor;
         Cursor = Cursors.Hand;
+        TabStop = true;
+
+        for (var band = 0; band < _labels.Length; band++)
+            _labels[band].Set(FormatGain(0), animate: false);
+
         _wheelSettle.Tick += (_, _) =>
         {
             _wheelSettle.Stop();
             Committed?.Invoke(this, EventArgs.Empty);
         };
+        _bubbleLinger.Tick += (_, _) =>
+        {
+            _bubbleLinger.Stop();
+            HideBubble();
+        };
+        _frames.Tick += (_, _) => Frame();
     }
 
     /// <summary>Fires on every step while a band moves.</summary>
@@ -82,14 +136,54 @@ internal sealed class EqualizerGraph : Control
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IReadOnlyList<double> Gains => _gains;
 
-    /// <summary>Shows a curve without raising any event.</summary>
+    /// <summary>
+    /// Shows a curve without raising any event. On screen, the thumbs sweep to
+    /// it band by band; otherwise they are simply put there.
+    /// </summary>
     public void Show(IReadOnlyList<double> gains)
     {
+        var animate = IsHandleCreated && Visible && !Motion.Reduced;
+        var now = _clock.Elapsed.TotalSeconds;
+        var order = 0;
+
         for (var band = 0; band < _gains.Length; band++)
-            _gains[band] = band < gains.Count ? EqBands.Snap(gains[band]) : 0;
+        {
+            var gain = band < gains.Count ? EqBands.Snap(gains[band]) : 0;
+
+            if (band == _dragging)
+                continue;
+
+            _gains[band] = gain;
+            _labels[band].Set(FormatGain(gain), animate);
+
+            if (!animate)
+            {
+                _shown[band].Jump(gain);
+                _sweepAt[band] = double.PositiveInfinity;
+            }
+            else if (_shown[band].Target != gain)
+            {
+                _sweepAt[band] = now + order++ * SweepSeconds;
+            }
+        }
+
+        // A bubble left over from the last move would show an old gain.
+        if (_dragging < 0)
+        {
+            _bubbleLinger.Stop();
+            _bubble.Jump(0);
+            _bubbleBand = -1;
+        }
+
+        if (animate)
+            StartFrames();
 
         Invalidate();
     }
+
+    protected override bool IsInputKey(Keys keyData) =>
+        (keyData & Keys.KeyCode) is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown ||
+        base.IsInputKey(keyData);
 
     protected override void OnMouseDown(MouseEventArgs e)
     {
@@ -99,8 +193,33 @@ internal sealed class EqualizerGraph : Control
             return;
 
         Focus();
+        _keyFocus = false;
+        _focusBand = band;
         _dragging = band;
-        SetGain(band, GainAt(e.Y));
+        _sweepAt[band] = double.PositiveInfinity;
+        _trail.Clear();
+        _trail.Add((_clock.Elapsed.TotalMilliseconds, GainAt(e.Y)));
+
+        // Grabbing the thumb keeps it under the pointer as it was; a click
+        // elsewhere in the column springs it over from where it was.
+        var current = _shown[band].Position;
+
+        if (Math.Abs(e.Y - YOf(Rubberized(current))) <= ThumbRadius + S(2))
+        {
+            _grab = current - GainAt(e.Y);
+            _catchUp.Jump(0);
+        }
+        else
+        {
+            _grab = 0;
+            _catchUp.Jump(current - GainAt(e.Y));
+            Animate(_catchUp, 0, Spring.Snappy);
+        }
+
+        _pointer = GainAt(e.Y) + _grab;
+        Animate(_lifts[band], Lifted, Spring.Snappy);
+        FollowPointer();
+        StartFrames();
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -109,7 +228,11 @@ internal sealed class EqualizerGraph : Control
 
         if (_dragging >= 0)
         {
-            SetGain(_dragging, GainAt(e.Y));
+            var now = _clock.Elapsed.TotalMilliseconds;
+            _trail.Add((now, GainAt(e.Y)));
+            _trail.RemoveAll(point => now - point.Time > 80 && _trail.Count > 2);
+            _pointer = GainAt(e.Y) + _grab;
+            FollowPointer();
             return;
         }
 
@@ -136,7 +259,22 @@ internal sealed class EqualizerGraph : Control
         if (_dragging < 0)
             return;
 
+        var band = _dragging;
+        var from = Dragged;
+        var velocity = SliderPhysics.ReleaseVelocity(_trail, _clock.Elapsed.TotalMilliseconds) + _catchUp.Velocity;
+        var stepHeight = EqBands.Step * PixelsPerDecibel;
+
+        // On a coarse grid a quick release carries the thumb one step further, never more.
+        var carry = stepHeight >= CarryStep ? Math.Clamp(SliderPhysics.Project(velocity), -EqBands.Step, EqBands.Step) : 0;
+
         _dragging = -1;
+        _catchUp.Jump(0);
+        _shown[band].Jump(from);
+        SetGain(band, Math.Clamp(from, -EqBands.Range, EqBands.Range) + carry);
+        Animate(_shown[band], _gains[band], Spring.Snappy, velocity);
+        Animate(_lifts[band], 1, Spring.Snappy);
+        LetBubbleGo();
+        StartFrames();
         Committed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -147,6 +285,8 @@ internal sealed class EqualizerGraph : Control
         if (BandAt(e.X) is { } band)
         {
             SetGain(band, 0);
+            Animate(_shown[band], 0, Spring.Snappy);
+            StartFrames();
             Committed?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -158,9 +298,69 @@ internal sealed class EqualizerGraph : Control
         if (BandAt(e.X) is not { } band)
             return;
 
-        SetGain(band, _gains[band] + Math.Sign(e.Delta) * EqBands.Step);
+        MoveBand(band, _gains[band] + Math.Sign(e.Delta) * EqBands.Step, Math.Sign(e.Delta));
         _wheelSettle.Stop();
         _wheelSettle.Start();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        var band = _focusBand;
+        var step = e.Shift ? LargeStep : EqBands.Step;
+
+        switch (e.KeyCode)
+        {
+            case Keys.Left or Keys.Right:
+                _focusBand = Math.Clamp(band + (e.KeyCode == Keys.Right ? 1 : -1), 0, EqBands.Count - 1);
+                _keyFocus = true;
+                Invalidate();
+                e.Handled = true;
+                return;
+            case Keys.Up:
+                _keyMoved |= MoveBand(band, _gains[band] + step, 1);
+                break;
+            case Keys.Down:
+                _keyMoved |= MoveBand(band, _gains[band] - step, -1);
+                break;
+            case Keys.PageUp:
+                _keyMoved |= MoveBand(band, _gains[band] + LargeStep, 1);
+                break;
+            case Keys.PageDown:
+                _keyMoved |= MoveBand(band, _gains[band] - LargeStep, -1);
+                break;
+            case Keys.Home:
+                _keyMoved |= MoveBand(band, -EqBands.Range, 0);
+                break;
+            case Keys.End:
+                _keyMoved |= MoveBand(band, EqBands.Range, 0);
+                break;
+            default:
+                return;
+        }
+
+        _keyFocus = true;
+        e.Handled = true;
+        LetBubbleGo(BubbleLinger * 2);
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+
+        if (!_keyMoved)
+            return;
+
+        _keyMoved = false;
+        Committed?.Invoke(this, EventArgs.Empty);
+    }
+
+    protected override void OnLostFocus(EventArgs e)
+    {
+        base.OnLostFocus(e);
+        _keyFocus = false;
+        Invalidate();
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -178,7 +378,7 @@ internal sealed class EqualizerGraph : Control
 
         PaintGrid(graphics);
 
-        var points = _gains.Select((gain, band) => new PointF(XOf(band), YOf(gain))).ToArray();
+        var points = Enumerable.Range(0, EqBands.Count).Select(band => new PointF(XOf(band), YOf(Shown(band)))).ToArray();
         var zero = YOf(0);
 
         // The area under the curve, fading down to nothing.
@@ -217,29 +417,40 @@ internal sealed class EqualizerGraph : Control
             graphics.DrawPath(line, curve);
         }
 
-        using var thumb = new SolidBrush(Color.White);
         var valueFont = SemiBoldFont(12);
         var bandFont = SemiBoldFont(13);
+        const TextFormatFlags Flags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix;
 
         for (var band = 0; band < points.Length; band++)
         {
             var point = points[band];
-            var grow = band == _dragging || band == _hovered ? S(1) : 0;
-            var box = new RectangleF(point.X - ThumbHalf - grow, point.Y - ThumbHalf - grow, 2 * (ThumbHalf + grow), 2 * (ThumbHalf + grow));
+            var radius = ThumbRadius * (float)_lifts[band].Position;
+            ThemedSlider.PaintThumb(graphics, point, radius, band == _dragging || band == _hovered, _keyFocus && Focused && band == _focusBand, PanelColor);
 
-            using (var shape = RoundedButton.RoundedPath(box, S(2f)))
-                graphics.FillPath(thumb, shape);
+            // The gain above the band, rolling as it changes.
+            var color = _gains[band] == 0 ? SubtleTextColor : Color.White;
+            var labelHeight = TextRenderer.MeasureText(graphics, "0", valueFont, Size.Empty, Flags).Height;
+            _labels[band].Paint(
+                graphics,
+                new RectangleF(point.X - Spacing / 2, GridTop - S(22) - labelHeight / 2f - S(2), Spacing, labelHeight + S(4)),
+                HorizontalAlignment.Center,
+                text => TextRenderer.MeasureText(graphics, text, valueFont, Size.Empty, Flags),
+                (text, at, opacity) => TextRenderer.DrawText(graphics, text, valueFont, Point.Round(at), Motion.Blend(PanelColor, color, Math.Clamp(opacity, 0, 1)), Flags));
 
-            var gain = _gains[band];
-            DrawCentered(graphics, FormatGain(gain), valueFont, gain == 0 ? SubtleTextColor : Color.White, point.X, GridTop - S(22));
             DrawCentered(graphics, EqBands.Label(EqBands.Frequencies[band]), bandFont, SubtleTextColor, point.X, GridBottom + S(14));
         }
+
+        PaintBubble(graphics, points);
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             _wheelSettle.Dispose();
+            _bubbleLinger.Dispose();
+            _frames.Dispose();
+        }
 
         base.Dispose(disposing);
     }
@@ -247,6 +458,24 @@ internal sealed class EqualizerGraph : Control
     /// <summary>A gain as written above its band: +5.5, 0, -1.</summary>
     internal static string FormatGain(double gain) =>
         (gain > 0 ? "+" : "") + gain.ToString("0.#", CultureInfo.CurrentCulture);
+
+    // The bubble over the moving band's thumb, kept inside the panel.
+    private void PaintBubble(Graphics graphics, PointF[] points)
+    {
+        if (_bubbleBand < 0 || _bubble.Position <= 0)
+            return;
+
+        var point = points[_bubbleBand];
+        var radius = ThumbRadius * (float)_lifts[_bubbleBand].Position;
+        var lowest = BubbleArt.PillHeight + BubbleArt.PointerSize + S(2);
+        var tip = new PointF(point.X, Math.Max(lowest, point.Y - radius - S(4)));
+
+        var width = BubbleArt.Width(graphics, _bubbleText);
+        var left = tip.X - width / 2;
+        var shift = Math.Clamp(left, S(4), Width - S(4) - width) - left;
+
+        BubbleArt.Paint(graphics, tip, shift, _bubbleText, (float)_bubble.Position);
+    }
 
     private void PaintGrid(Graphics graphics)
     {
@@ -303,6 +532,27 @@ internal sealed class EqualizerGraph : Control
         return path;
     }
 
+    // Moves a band by a key or the wheel, springing its thumb there; at an end
+    // it strains that way and comes back. True if the gain changed.
+    private bool MoveBand(int band, double gain, int push)
+    {
+        var before = _gains[band];
+        _sweepAt[band] = double.PositiveInfinity;
+
+        if (EqBands.Snap(gain) == before && push != 0)
+            Animate(_shown[band], before, Spring.Morph, push * Push / PixelsPerDecibel);
+        else
+        {
+            SetGain(band, gain);
+            Animate(_shown[band], _gains[band], Spring.Snappy);
+        }
+
+        ShowBubble(band);
+        LetBubbleGo(BubbleLinger * 2);
+        StartFrames();
+        return _gains[band] != before;
+    }
+
     private void SetGain(int band, double gain)
     {
         var snapped = EqBands.Snap(gain);
@@ -311,9 +561,127 @@ internal sealed class EqualizerGraph : Control
             return;
 
         _gains[band] = snapped;
+        _labels[band].Set(FormatGain(snapped));
         Invalidate();
         GainsChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    // The dragged band follows the pointer; its gain takes the nearest step.
+    private void FollowPointer()
+    {
+        SetGain(_dragging, Math.Clamp(Dragged, -EqBands.Range, EqBands.Range));
+        ShowBubble(_dragging);
+        Invalidate();
+    }
+
+    private double Dragged => _pointer + _catchUp.Position;
+
+    // Where a band's thumb is drawn, in dB, with the stretch past the ends.
+    private double Shown(int band) => Rubberized(band == _dragging ? Dragged : _shown[band].Position);
+
+    private double Rubberized(double gain)
+    {
+        var range = EqBands.Range;
+
+        if (Math.Abs(gain) <= range)
+            return gain;
+
+        var past = (Math.Abs(gain) - range) * PixelsPerDecibel;
+        return Math.Sign(gain) * (range + SliderPhysics.Rubber(past, Stretch) / PixelsPerDecibel);
+    }
+
+    private void ShowBubble(int band)
+    {
+        _bubbleLinger.Stop();
+        var text = FormatGain(_gains[band]) + " dB";
+
+        if (_bubbleBand != band || _bubble.Target <= 0)
+        {
+            _bubbleText.Set(text, animate: false);
+
+            if (_bubbleBand != band)
+                _bubble.Jump(0);
+        }
+        else
+        {
+            _bubbleText.Set(text);
+        }
+
+        _bubbleBand = band;
+        Animate(_bubble, 1, Spring.Snappy);
+        StartFrames();
+    }
+
+    private void HideBubble()
+    {
+        if (_dragging >= 0)
+            return;
+
+        Animate(_bubble, 0, Spring.Snappy);
+        StartFrames();
+    }
+
+    private void LetBubbleGo(int milliseconds = BubbleLinger)
+    {
+        _bubbleLinger.Stop();
+        _bubbleLinger.Interval = milliseconds;
+        _bubbleLinger.Start();
+    }
+
+    // A spring heads for its target, or with animation effects off jumps there.
+    private static void Animate(Spring spring, double target, Spring.Feel feel, double? velocity = null)
+    {
+        if (Motion.Reduced)
+            spring.Jump(target);
+        else
+            spring.To(target, feel, velocity);
+    }
+
+    private void StartFrames()
+    {
+        if (!_frames.Enabled)
+        {
+            _lastFrame = _clock.Elapsed.TotalSeconds;
+            _frames.Start();
+        }
+
+        Invalidate();
+    }
+
+    private void Frame()
+    {
+        var now = _clock.Elapsed.TotalSeconds;
+        var seconds = Math.Min(0.032, now - _lastFrame);
+        _lastFrame = now;
+        var busy = _dragging >= 0;
+
+        for (var band = 0; band < EqBands.Count; band++)
+        {
+            // A new curve's sweep starts each band in turn.
+            if (now >= _sweepAt[band])
+            {
+                _sweepAt[band] = double.PositiveInfinity;
+                _shown[band].To(_gains[band], Spring.Snappy);
+            }
+
+            busy |= _shown[band].Step(seconds) | _lifts[band].Step(seconds) | !double.IsPositiveInfinity(_sweepAt[band]) | _labels[band].Rolling;
+        }
+
+        busy |= _catchUp.Step(seconds) | _bubble.Step(seconds) | _bubbleText.Rolling;
+
+        if (_dragging >= 0)
+            FollowPointer();
+
+        if (_bubble.Target <= 0 && !_bubble.Moving)
+            _bubbleBand = -1;
+
+        Invalidate();
+
+        if (!busy)
+            _frames.Stop();
+    }
+
+    private double PixelsPerDecibel => (GridBottom - GridTop) / (2.0 * EqBands.Range);
 
     private float Spacing => (LastX - FirstX) / (float)(EqBands.Count - 1);
 

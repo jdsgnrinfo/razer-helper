@@ -1,16 +1,21 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
+using System.Globalization;
 using static RazerHelper.UI.UiTheme;
 
 namespace RazerHelper.UI;
 
 /// <summary>
-/// A dark, flat slider that snaps to fixed steps: a thin track filling in green,
-/// and a white square thumb. The stock TrackBar ignores
-/// the theme, so this draws the track and thumb itself.
-/// While dragging, the thumb follows the pointer freely and the value moves
-/// in steps under it; on release, or after a click or a key, the thumb glides
-/// to the step instead of jumping there.
+/// A dark, flat slider that snaps to fixed steps: a round-ended track filling
+/// in green, with a dot at each step when there are few, and a round white
+/// thumb. The stock TrackBar ignores the theme, so this draws it all itself.
+/// It moves on springs: the thumb follows the pointer exactly and grows a
+/// little while held; a click on the track sends it over from where it was;
+/// a release with speed carries it at most a step further before it settles;
+/// past either end it gives like rubber; a key at an end makes it push and
+/// spring back. A bubble over the thumb shows the value while it moves.
+/// With Windows' animation effects off it moves without any of that.
 /// </summary>
 /// <remarks>
 /// <see cref="ValueChanged"/> fires on every step while dragging;
@@ -19,19 +24,34 @@ namespace RazerHelper.UI;
 /// </remarks>
 internal sealed class ThemedSlider : Control
 {
-    private static int ThumbRadius => S(8);
+    private static int ThumbRadius => S(9);
     private static int TrackHeight => S(6);
+
+    // The track starts and ends this far in, leaving room for the grown thumb and its stretch.
+    private static int Inset => S(16);
+
+    // How far past an end the thumb can be pulled, and a key's push at an end.
+    private static int Stretch => S(5);
+    private static int Push => S(150);
+
+    // A release can carry the thumb one step further only when steps are at least this far apart.
+    private static int CarryStep => S(12);
+
+    // Steps shown as dots when there are no more than this many.
+    private const int MostDots = 20;
+
+    private const double Lifted = 1.16;
+    private const int BubbleLinger = 700;
 
     // Unavailable: the filled part is a mid grey instead of green.
     private static readonly Color DisabledFillColor = Color.FromArgb(0x78, 0x78, 0x78);
 
-    // Drawing objects shared by every slider and reused on every repaint. A
-    // slider repaints on each mouse move while dragging, so building these each
-    // time was steady garbage for nothing.
+    // Drawing objects shared by every slider and reused on every repaint.
     private static readonly SolidBrush TrackBrush = new(TrackColor);
     private static readonly SolidBrush FillBrush = new(RazerGreen);
     private static readonly SolidBrush DisabledFillBrush = new(DisabledFillColor);
-    private static readonly SolidBrush ThumbBrush = new(Color.White);
+    private static readonly SolidBrush DotBrush = new(Color.FromArgb(0x4A, 0x4A, 0x4A));
+    private static readonly SolidBrush FilledDotBrush = new(Color.FromArgb(0x1B, 0x5C, 0x12));
 
     private readonly int _minimum;
     private readonly int _maximum;
@@ -39,15 +59,25 @@ internal sealed class ThemedSlider : Control
 
     private int _value;
     private bool _dragging;
-
-    // Where the thumb is drawn. It follows the pointer while dragging and
-    // eases towards the value's place otherwise.
-    private float _thumbX = float.NaN;
-    // How far from the thumb's centre it was grabbed, so it does not jump
-    // under the pointer.
-    private float _grabOffset;
-    private readonly System.Windows.Forms.Timer _glide = new() { Interval = 15 };
+    private bool _hovered;
+    // The ring shows after a key, not after a click.
+    private bool _keyFocus;
     private bool _keyMovedValue;
+
+    // Where the thumb is, in pixels: the pointer plus a catch-up offset while
+    // dragging, a spring towards the value's place otherwise.
+    private readonly Spring _position = new(0, 0.1);
+    private readonly Spring _catchUp = new(0, 0.1);
+    private readonly Spring _lift = new(1, 0.002);
+    private double _pointer;
+    private double _grab;
+    private readonly List<(double Time, double Position)> _trail = [];
+
+    private readonly System.Windows.Forms.Timer _frames = new() { Interval = 15 };
+    private readonly System.Windows.Forms.Timer _bubbleLinger = new() { Interval = BubbleLinger };
+    private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private double _lastFrame;
+    private bool _placed;
 
     public ThemedSlider(int minimum, int maximum, int step)
     {
@@ -69,9 +99,16 @@ internal sealed class ThemedSlider : Control
             true);
         TabStop = true;
         BackColor = CardColor;
-        Height = S(20);
+        Height = S(24);
         Cursor = Cursors.Hand;
-        _glide.Tick += (_, _) => GlideStep();
+        _frames.Tick += (_, _) => Frame();
+        _bubbleLinger.Tick += (_, _) =>
+        {
+            _bubbleLinger.Stop();
+
+            if (!_dragging)
+                SliderBubble.Shared.Release(this);
+        };
     }
 
     /// <summary>True while the user is moving it, with the mouse or a held key.</summary>
@@ -80,6 +117,11 @@ internal sealed class ThemedSlider : Control
     public event EventHandler? ValueChanged;
 
     public event EventHandler? Committed;
+
+    /// <summary>How the bubble writes the value: "80 %", "4". The number alone if not set.</summary>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Func<int, string>? Format { get; set; }
 
     /// <summary>
     /// False draws the slider like a disabled one and ignores the mouse and
@@ -94,11 +136,15 @@ internal sealed class ThemedSlider : Control
         get => _available;
         set
         {
+            if (_available == value)
+                return;
+
             _available = value;
             TabStop = value;
             _dragging = false;
             Cursor = value ? Cursors.Hand : Cursors.Default;
             SettleThumb();
+            SliderBubble.Shared.Release(this);
             Invalidate();
         }
     }
@@ -115,20 +161,24 @@ internal sealed class ThemedSlider : Control
         get => _value;
         set
         {
-            var snapped = Snap(value);
-
-            if (snapped == _value)
-                return;
-
-            _value = snapped;
-
             // Set from outside (a refresh, say), the thumb goes straight there.
-            if (!_dragging && !_glide.Enabled)
+            if (ChangeValue(value) && !_dragging && !_position.Moving)
                 SettleThumb();
-
-            Invalidate();
-            ValueChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    // Takes the step nearest <paramref name="value"/>, leaving the thumb where it is; true if it changed.
+    private bool ChangeValue(int value)
+    {
+        var snapped = Snap(value);
+
+        if (snapped == _value)
+            return false;
+
+        _value = snapped;
+        Invalidate();
+        ValueChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     /// <summary>Sets the value from outside and lets the thumb glide there, unless the user is moving it.</summary>
@@ -137,14 +187,19 @@ internal sealed class ThemedSlider : Control
         if (IsBeingMoved)
             return;
 
-        _thumbX = CurrentThumbX;
-        _glide.Start(); // So the value's setter leaves the thumb to glide.
-        Value = value;
-        GlideToValue();
+        // Off screen there is nothing to watch: it goes straight there.
+        if (!IsHandleCreated || !Visible)
+        {
+            Value = value;
+            return;
+        }
+
+        ChangeValue(value);
+        SpringTo(XAt(_value));
     }
 
     protected override bool IsInputKey(Keys keyData) =>
-        keyData is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Home or Keys.End ||
+        (keyData & Keys.KeyCode) is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown ||
         base.IsInputKey(keyData);
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -154,23 +209,70 @@ internal sealed class ThemedSlider : Control
         if (e.Button != MouseButtons.Left || !IsLive)
             return;
 
+        // Where the thumb is, read before the drag starts (from then on it follows the pointer).
+        var current = ThumbPosition;
+
         Focus();
+        _keyFocus = false;
         _dragging = true;
-        _glide.Stop();
+        _trail.Clear();
+        _trail.Add((_clock.Elapsed.TotalMilliseconds, e.X));
 
         // Grabbing the thumb keeps it where it is under the pointer; a click on
-        // the track brings it to the pointer.
-        var thumbX = CurrentThumbX;
-        _grabOffset = Math.Abs(e.X - thumbX) <= ThumbRadius + S(2) ? e.X - thumbX : 0;
-        DragTo(e.X);
+        // the track springs it over from where it was.
+
+        if (Math.Abs(e.X - ShownX(current)) <= ThumbRadius + S(2))
+        {
+            _grab = current - e.X;
+            _catchUp.Jump(0);
+        }
+        else
+        {
+            _grab = 0;
+            _catchUp.Jump(current - e.X);
+            Animate(_catchUp, 0, Spring.Snappy);
+        }
+
+        _position.Jump(current);
+        _pointer = e.X + _grab;
+        Animate(_lift, Lifted, Spring.Snappy);
+        FollowPointer();
+        StartFrames();
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
 
-        if (_dragging)
-            DragTo(e.X);
+        if (!_dragging)
+        {
+            var hovered = IsLive && Math.Abs(e.X - ShownX(ThumbPosition)) <= ThumbRadius + S(4);
+
+            if (hovered != _hovered)
+            {
+                _hovered = hovered;
+                Invalidate();
+            }
+
+            return;
+        }
+
+        var now = _clock.Elapsed.TotalMilliseconds;
+        _trail.Add((now, e.X));
+        _trail.RemoveAll(point => now - point.Time > 80 && _trail.Count > 2);
+        _pointer = e.X + _grab;
+        FollowPointer();
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+
+        if (_hovered)
+        {
+            _hovered = false;
+            Invalidate();
+        }
     }
 
     protected override void OnMouseUp(MouseEventArgs e)
@@ -180,8 +282,21 @@ internal sealed class ThemedSlider : Control
         if (!_dragging)
             return;
 
+        var from = ThumbPosition;
+        var velocity = SliderPhysics.ReleaseVelocity(_trail, _clock.Elapsed.TotalMilliseconds) + _catchUp.Velocity;
+        var stepWidth = TrackWidth * _step / (double)(_maximum - _minimum);
+
+        // On a coarse grid a quick release carries the thumb one step further, never more.
+        var carry = stepWidth >= CarryStep ? Math.Clamp(SliderPhysics.Project(velocity), -stepWidth, stepWidth) : 0;
+
         _dragging = false;
-        GlideToValue();
+        _catchUp.Jump(0);
+        _position.Jump(from);
+        ChangeValue(ValueAt(Math.Clamp(from, XAt(_minimum), XAt(_maximum)) + carry));
+        Animate(_position, XAt(_value), Spring.Snappy, velocity);
+        Animate(_lift, 1, Spring.Snappy);
+        StartFrames();
+        LetBubbleGo();
         Committed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -192,28 +307,43 @@ internal sealed class ThemedSlider : Control
         if (!IsLive)
             return;
 
-        var target = e.KeyCode switch
+        var largeStep = Math.Max(_step, Snap(_minimum + (_maximum - _minimum) / 10) - _minimum);
+        var step = e.Shift ? largeStep : _step;
+
+        var (target, push) = e.KeyCode switch
         {
-            Keys.Left or Keys.Down => _value - _step,
-            Keys.Right or Keys.Up => _value + _step,
-            Keys.Home => _minimum,
-            Keys.End => _maximum,
-            _ => (int?)null
+            Keys.Left or Keys.Down => (_value - step, -1),
+            Keys.Right or Keys.Up => (_value + step, 1),
+            Keys.PageDown => (_value - largeStep, -1),
+            Keys.PageUp => (_value + largeStep, 1),
+            Keys.Home => (_minimum, 0),
+            Keys.End => (_maximum, 0),
+            _ => ((int?)null, 0)
         };
 
         if (target is null)
             return;
 
         e.Handled = true;
+        _keyFocus = true;
 
-        var before = _value;
-        // The thumb glides from where it is; starting the timer first keeps the
-        // value's setter from putting it straight in place.
-        _thumbX = CurrentThumbX;
-        _glide.Start();
-        Value = target.Value;
-        GlideToValue();
-        _keyMovedValue |= _value != before;
+        if (Snap(target.Value) == _value && push != 0)
+        {
+            // At an end the thumb strains towards the key and springs home, so the key still answers.
+            Animate(_position, XAt(_value), Spring.Morph, push * Push);
+        }
+        else
+        {
+            var before = _value;
+            _position.Jump(ThumbPosition);
+            ChangeValue(target.Value);
+            Animate(_position, XAt(_value), Spring.Snappy);
+            _keyMovedValue |= _value != before;
+        }
+
+        StartFrames();
+        ShowBubble();
+        LetBubbleGo(BubbleLinger * 2);
     }
 
     protected override void OnKeyUp(KeyEventArgs e)
@@ -229,10 +359,25 @@ internal sealed class ThemedSlider : Control
         Committed?.Invoke(this, EventArgs.Empty);
     }
 
+    protected override void OnLostFocus(EventArgs e)
+    {
+        base.OnLostFocus(e);
+        _keyFocus = false;
+        Invalidate();
+    }
+
     protected override void OnEnabledChanged(EventArgs e)
     {
         base.OnEnabledChanged(e);
         Invalidate();
+    }
+
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+
+        if (!Visible)
+            SliderBubble.Shared.Release(this);
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -241,19 +386,53 @@ internal sealed class ThemedSlider : Control
         graphics.Clear(BackColor);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var thumbX = CurrentThumbX;
+        var thumbX = (float)ShownX(ThumbPosition);
+        var start = XAt(_minimum);
+        var end = XAt(_maximum);
 
-        // Track, the full width with round ends, then the filled part up to the thumb.
+        // Track, round-ended, then the filled part up to the thumb.
         var top = TrackY - TrackHeight / 2f;
-        FillPill(graphics, TrackBrush, new RectangleF(0, top, Width - 1, TrackHeight));
-        // The filled part is green up to the thumb, grey while the slider cannot be used.
-        FillPill(graphics, IsLive ? FillBrush : DisabledFillBrush, new RectangleF(0, top, thumbX, TrackHeight));
+        FillPill(graphics, TrackBrush, new RectangleF(start - TrackHeight / 2f, top, end - start + TrackHeight, TrackHeight));
+        FillPill(graphics, IsLive ? FillBrush : DisabledFillBrush, new RectangleF(start - TrackHeight / 2f, top, thumbX - start + TrackHeight / 2f, TrackHeight));
 
-        // Thumb: a white square with softened corners, with no outline.
-        var thumb = new RectangleF(thumbX - ThumbRadius, TrackY - ThumbRadius, ThumbRadius * 2, ThumbRadius * 2);
+        // A dot at each step, when they are few enough to tell apart.
+        if ((_maximum - _minimum) / _step <= MostDots)
+        {
+            var dot = S(4);
 
-        using (var thumbShape = RoundedButton.RoundedPath(thumb, S(2f)))
-            graphics.FillPath(ThumbBrush, thumbShape);
+            for (var value = _minimum; value <= _maximum; value += _step)
+            {
+                var x = XAt(value);
+                graphics.FillEllipse(x < thumbX - dot ? (IsLive ? FilledDotBrush : DotBrush) : DotBrush, x - dot / 2f, TrackY - dot / 2f, dot, dot);
+            }
+        }
+
+        PaintThumb(graphics, new PointF(thumbX, TrackY), ThumbRadius * (float)_lift.Position, IsLive && (_hovered || _dragging), _keyFocus && Focused, BackColor);
+    }
+
+    /// <summary>
+    /// A slider's thumb: a white disc with a soft shadow, a faint green halo
+    /// while the pointer is on it, and a green ring when the keys are moving it.
+    /// </summary>
+    internal static void PaintThumb(Graphics graphics, PointF center, float radius, bool halo, bool ring, Color background)
+    {
+        if (ring)
+        {
+            using var green = new SolidBrush(RazerGreen);
+            using var gap = new SolidBrush(background);
+            graphics.FillEllipse(green, center.X - radius - S(4), center.Y - radius - S(4), 2 * (radius + S(4)), 2 * (radius + S(4)));
+            graphics.FillEllipse(gap, center.X - radius - S(2), center.Y - radius - S(2), 2 * (radius + S(2)), 2 * (radius + S(2)));
+        }
+        else if (halo)
+        {
+            using var soft = new SolidBrush(Color.FromArgb(46, RazerGreen));
+            graphics.FillEllipse(soft, center.X - radius - S(3), center.Y - radius - S(3), 2 * (radius + S(3)), 2 * (radius + S(3)));
+        }
+
+        using (var shadow = new SolidBrush(Color.FromArgb(90, Color.Black)))
+            graphics.FillEllipse(shadow, center.X - radius, center.Y - radius + S(1), 2 * radius, 2 * radius);
+
+        graphics.FillEllipse(Brushes.White, center.X - radius, center.Y - radius, 2 * radius, 2 * radius);
     }
 
     protected override void OnResize(EventArgs e)
@@ -265,49 +444,124 @@ internal sealed class ThemedSlider : Control
     protected override void Dispose(bool disposing)
     {
         if (disposing)
-            _glide.Dispose();
+        {
+            _frames.Dispose();
+            _bubbleLinger.Dispose();
+        }
 
         base.Dispose(disposing);
     }
 
-    private float CurrentThumbX => float.IsNaN(_thumbX) ? XAt(_value) : _thumbX;
-
-    // The thumb under the pointer, kept on the track; the value takes the nearest step.
-    private void DragTo(int x)
+    // Where the thumb is now, before any stretch past the ends.
+    private double ThumbPosition
     {
-        _thumbX = Math.Clamp(x - _grabOffset, ThumbRadius, ThumbRadius + TrackWidth);
-        Value = ValueAt((int)Math.Round(_thumbX));
+        get
+        {
+            if (_dragging)
+                return _pointer + _catchUp.Position;
+
+            if (!_placed)
+            {
+                _position.Jump(XAt(_value));
+                _placed = true;
+            }
+
+            return _position.Position;
+        }
+    }
+
+    // Past an end, the thumb gives less and less.
+    private double ShownX(double x)
+    {
+        var start = XAt(_minimum);
+        var end = XAt(_maximum);
+
+        return x < start ? start + SliderPhysics.Rubber(x - start, Stretch)
+            : x > end ? end + SliderPhysics.Rubber(x - end, Stretch)
+            : x;
+    }
+
+    // While dragging, the value takes the step nearest the thumb.
+    private void FollowPointer()
+    {
+        ChangeValue(ValueAt(Math.Clamp(ThumbPosition, XAt(_minimum), XAt(_maximum))));
+        ShowBubble();
         Invalidate();
     }
 
     private void SettleThumb()
     {
-        _glide.Stop();
-        _thumbX = float.NaN;
+        _position.Jump(XAt(_value));
+        _catchUp.Jump(0);
+        _placed = true;
         Invalidate();
     }
 
-    private void GlideToValue()
+    private void SpringTo(double x)
     {
-        if (float.IsNaN(_thumbX) || Math.Abs(_thumbX - XAt(_value)) < 0.5f)
-        {
-            SettleThumb();
-            return;
-        }
-
-        _glide.Start();
+        _position.Jump(ThumbPosition);
+        Animate(_position, x, Spring.Snappy);
+        StartFrames();
     }
 
-    // Each tick covers a share of what is left, so the thumb slows as it lands.
-    private void GlideStep()
+    // A spring heads for its target, or with animation effects off jumps there.
+    private static void Animate(Spring spring, double target, Spring.Feel feel, double? velocity = null)
     {
-        var target = XAt(_value);
-        _thumbX += (target - _thumbX) * 0.35f;
-
-        if (Math.Abs(target - _thumbX) < 0.5f)
-            SettleThumb();
+        if (Motion.Reduced)
+            spring.Jump(target);
         else
-            Invalidate();
+            spring.To(target, feel, velocity);
+    }
+
+    private void StartFrames()
+    {
+        _lastFrame = _clock.Elapsed.TotalSeconds;
+
+        if (!_frames.Enabled)
+            _frames.Start();
+
+        Invalidate();
+    }
+
+    private void Frame()
+    {
+        var now = _clock.Elapsed.TotalSeconds;
+        var seconds = Math.Min(0.032, now - _lastFrame);
+        _lastFrame = now;
+
+        var moving = _position.Step(seconds) | _catchUp.Step(seconds) | _lift.Step(seconds);
+
+        if (_dragging)
+            FollowPointer();
+        else if (BubbleShowing)
+            ShowBubble();
+
+        Invalidate();
+
+        if (!moving && !_dragging)
+            _frames.Stop();
+    }
+
+    private bool BubbleShowing => _dragging || _bubbleLinger.Enabled;
+
+    private void ShowBubble()
+    {
+        if (!IsHandleCreated || !Visible)
+            return;
+
+        var tip = PointToScreen(new Point((int)Math.Round(ShownX(ThumbPosition)), TrackY - (int)Math.Ceiling(ThumbRadius * _lift.Position) - S(4)));
+        var left = PointToScreen(new Point(XAt(_minimum) - Inset, 0)).X;
+        var right = PointToScreen(new Point(XAt(_maximum) + Inset, 0)).X;
+        var text = Format?.Invoke(_value) ?? _value.ToString(CultureInfo.CurrentCulture);
+        SliderBubble.Shared.Follow(this, tip, left, right, text);
+    }
+
+    // The bubble stays a moment after the thumb stops, then goes.
+    private void LetBubbleGo(int milliseconds = BubbleLinger)
+    {
+        _bubbleLinger.Stop();
+        _bubbleLinger.Interval = milliseconds;
+        _bubbleLinger.Start();
     }
 
     // A bar with fully rounded ends.
@@ -322,14 +576,14 @@ internal sealed class ThemedSlider : Control
 
     private int TrackY => Height / 2;
 
-    private int TrackWidth => Math.Max(1, Width - ThumbRadius * 2 - 1);
+    private int TrackWidth => Math.Max(1, Width - Inset * 2 - 1);
 
     private int XAt(int value) =>
-        ThumbRadius + (int)Math.Round((value - _minimum) / (double)(_maximum - _minimum) * TrackWidth);
+        Inset + (int)Math.Round((value - _minimum) / (double)(_maximum - _minimum) * TrackWidth);
 
-    private int ValueAt(int x)
+    private int ValueAt(double x)
     {
-        var fraction = Math.Clamp((x - ThumbRadius) / (double)TrackWidth, 0, 1);
+        var fraction = Math.Clamp((x - Inset) / TrackWidth, 0, 1);
         return Snap(_minimum + (int)Math.Round(fraction * (_maximum - _minimum)));
     }
 

@@ -302,13 +302,13 @@ internal sealed class AudioPage : PageView
         _enabled.Checked = device.Enabled;
         _graph.Show(device.Gains);
         _graph.Active = device.Enabled;
-        _bassBoost.Value = device.BassBoost;
+        _bassBoost.GlideTo(device.BassBoost);
         _bassBoostValue.Text = $"{device.BassBoost}";
-        _dynamicBoost.Value = device.DynamicBoost;
+        _dynamicBoost.GlideTo(device.DynamicBoost);
         _dynamicBoostValue.Text = $"{device.DynamicBoost}";
         _bassBoost.Available = device.Enabled;
         _dynamicBoost.Available = device.Enabled;
-        _clarityBoost.Value = device.ClarityBoost;
+        _clarityBoost.GlideTo(device.ClarityBoost);
         _clarityBoostValue.Text = $"{device.ClarityBoost}";
         _clarityBoost.Available = device.Enabled;
         _showing = false;
@@ -582,7 +582,7 @@ internal sealed class AudioPage : PageView
 
         var slider = new ThemedSlider(0, EqBoosts.Levels, 1) { AccessibleName = L.T(text) };
 
-        var value = new Label
+        var value = new RollingLabel
         {
             AutoSize = false,
             Font = DesignFont(16, FontStyle.Bold),

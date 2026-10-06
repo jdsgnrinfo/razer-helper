@@ -8,6 +8,18 @@ internal static class Motion
 {
     public const double Milliseconds = 300;
 
+    /// <summary>
+    /// Whether Windows' "Animation effects" is off: then the sliders' springs,
+    /// stretch and rolling digits give way to instant changes.
+    /// </summary>
+    public static bool Reduced => SystemParametersInfo(GetClientAreaAnimation, 0, out var on, 0) && !on;
+
+    private const uint GetClientAreaAnimation = 0x1042;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool SystemParametersInfo(uint action, uint param, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] out bool value, uint winIni);
+
     /// <summary>Eases a linear 0..1 progress in and out (cubic).</summary>
     public static float Ease(float progress)
     {

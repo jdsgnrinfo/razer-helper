@@ -79,11 +79,12 @@ internal sealed class BatterySection : SectionPanel
         // The slider, with the chosen limit at its right, as the lighting sliders show brightness.
         _slider = new ThemedSlider(BatteryLimitRange.Minimum, BatteryLimitRange.Maximum, BatteryLimitRange.Step)
         {
+            Format = value => $"{value} %",
             Dock = DockStyle.Fill,
             Margin = Padding.Empty
         };
 
-        _limitLabel = new Label
+        _limitLabel = new RollingLabel
         {
             AutoSize = false,
             Dock = DockStyle.Fill,

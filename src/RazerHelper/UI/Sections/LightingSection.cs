@@ -391,11 +391,12 @@ internal sealed class LightingSection : SectionPanel
 
             Brightness = new ThemedSlider(LightingBrightness.MinimumPercent, LightingBrightness.MaximumPercent, 1)
             {
+                Format = value => $"{value} %",
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty
             };
 
-            _percent = new Label
+            _percent = new RollingLabel
             {
                 AutoSize = false,
                 Dock = DockStyle.Fill,
